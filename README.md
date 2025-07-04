@@ -1,4 +1,16 @@
+## HWM 401k Payment Tracker 
 This is a 401(k) payment management system built for Hohimer Wealth Management that runs as a Microsoft Teams tab, enabling internal staff to track client fee payments, monitor compliance status, and manage payment schedules. The architecture follows a clean three-tier design: a React frontend handles the user interface and authentication via Azure AD, a FastAPI backend manages all business logic including payment calculations and compliance tracking, and an Azure SQL database stores client contracts, payment history, and fee structures, etc. The app is designed for internal use only, leveraging Teams as the delivery platform while maintaining a straightforward deployment model with the frontend hosted on Azure Static Web Apps and the API on Azure App Service, ensuring both security through token-based authentication and ease of maintenance through clear separation of concerns. This is a small scale app for my company to use - not hyper enterprise app. Automatic identity for our company via Teams SSO / Entra ID
+
+## This app has gone through refactoring hell. This time, we are doing it the normal clean way. See the chaos here from the most recent old version (there have been many prior itterations as well but this one is decent reference): 
+* OLD_CODE_INSPO\BACKEND_COMPLEX.txt 
+* *LD_CODE_INSPO\FRONTEND_COMPLEX.txt 
+
+## How to use the old code effectively:
+When reading the old codebase, think of it as an archaeological dig — you're looking for the business logic artifacts buried under layers of Teams Toolkit sediment. Extract ONLY the pure logic: payment calculations, compliance rules, SQL queries, and data shapes. Ignore all the scaffolding, Teams Toolkit patterns, and deployment configurations.
+The old code will try to convince you that you need Functions, TeamsFX, complex middleware, and multiple deployment targets. You don't. Every time you see a Teams Toolkit pattern, ask yourself: "What is this actually doing?" The answer is usually something straightforward that got wrapped in unnecessary abstractions.
+Copy the SQL queries, the payment period logic, the compliance calculations, and the data transformation functions. Leave behind everything else. If the old code has complex routing, replace it with simple FastAPI endpoints. If it has elaborate deployment scripts, replace them with "deploy frontend to Static Web App, backend to App Service."
+For the UI: Extract the visual design patterns, component layouts, and user flows — these are good and should be preserved. The actual React components can be modernized if you see an opportunity but not needed, but the design language and UX decisions were made for good reasons. Keep the Tailwind classes, the color schemes, the dashboard layouts, and the table structures. Just rebuild as needed to be cleaner.
+Remember: The complexity wasn't necessary — it was accumulated. Your job is to extract the gold (business logic and proven UI patterns) and leave the dirt (framework bloat) behind. Focus on what the code does, not how Teams Toolkit made you do it.
 
 =================
 
@@ -55,7 +67,85 @@ SQL_AUTH=ActiveDirectory
 
 =================
 
-DATABASE SCHEMA:
+## Key Business Logic
+
+### Payment Tracking
+
+- Payments are recorded **after** they're received (checks in hand)
+- Each payment applies to a **single period** (Q1-Q4 or months 1-12)
+- Payments can be applied retroactively to any unpaid period
+- **🚨 REMOVED FROM OLD CODE: Split payment functionality where one payment could cover multiple periods. Now each payment = one period only**
+
+### Fee Calculations
+
+- All fees in the database are already adjusted for payment frequency
+- Annual rates are pre-divided by 4 (quarterly) or 12 (monthly) based on the contract's payment frequency
+- Two fee types: `flat` (fixed dollar amount) or `percentage` (% of AUM)
+- Expected fees auto-calculate based on contract terms
+
+### Payment Status
+
+- **🚨 SIMPLIFIED FROM OLD CODE: Single status system replacing separate "compliance" and "payment status" tracking. No longer tracks overdue periods or payment history. Only focuses on whether the CURRENT PERIOD is paid. Status resets to "Due" when a new period begins**
+- Binary status: **Paid** (green) or **Due** (yellow)
+- affects the color tag on the client sidebar as well as the compliance card. 
+- **🚨 REMOVED FROM OLD CODE: Red/overdue status and overdue_periods array. No cumulative debt tracking**
+- "Current period" = one period back from today (payments in arrears)
+  - Example: if today is 03/25/2025: Monthly applied period = Feb 2025, Quarterly applied period = Q4 2024
+- **🚨 NEW BEHAVIOR: Status automatically resets each period based on payment schedule - no carryover of unpaid periods**
+
+### Available Periods
+
+- Payment form only shows periods from earliest payment up to previous period
+- Enforces arrears logic - can't record payments for current/future periods
+- If no payment history, defaults to start of current year
+- **🚨 SIMPLIFIED FROM OLD CODE: Removed complex period range calculations for split payments**
+=================
+
+## Frontend Component User Experience
+
+### Sidebar
+* Lists all clients with payment status indicators
+* **🚨 SIMPLIFIED FROM OLD CODE: Only shows green (paid) or yellow (due) - removed red/overdue status**
+* Click client to load their payment dashboard
+* Search bar filters clients by name or provider
+* Toggle to group clients by provider
+* Currently selected client is highlighted
+
+### Main Dashboard (after selecting client)
+* Shows client name at top with document viewer toggle button
+* Three info cards display contract details, payment information, and payment status
+* Contract card shows provider, payment schedule, fee type and amount
+* Payment info shows AUM, expected fee, last payment details, current period
+* **🚨 SIMPLIFIED FROM OLD CODE: Status card only shows if current period is paid/due - removed overdue periods list and compliance tracking**
+
+### Payment Form
+* Record new payments or edit existing ones
+* Enter received date, payment amount, AUM, payment method, notes
+* **🚨 SIMPLIFIED FROM OLD CODE: Single period dropdown - removed split payment toggle and end period selection**
+* Select which period the payment applies to
+* Shows expected fee calculation based on contract
+* Clear form or cancel edit buttons
+
+### Payment History Table
+* Lists all payments with date, provider, applied period, amounts, variance
+* **🚨 SIMPLIFIED FROM OLD CODE: Removed expand button for split payments - each row is one period**
+* Edit button loads payment into form above
+* Delete button with confirmation dialog
+* File icon opens document viewer (UI only - no backend functionality)
+* Filter by year dropdown
+* Pagination controls
+
+### Document Viewer
+* Opens as right panel when toggled
+* PDF viewer interface with zoom and page controls
+* File selection tabs for multiple documents
+* **🚨 NOTE: Currently UI mockup only - no actual file loading implemented**
+* Close button returns to full-width view
+
+
+=================
+
+# DATABASE SCHEMA:
 === TABLES ===
 --- client_files ---
   - file_id: int(10) [PRIMARY KEY, NOT NULL]
