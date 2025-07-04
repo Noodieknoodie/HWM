@@ -47,6 +47,14 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
    - Database connection using pyodbc + Azure AD auth
    - Pydantic models matching EXISTING schema
    - CORS configuration for Teams
+   - Create `.env.example` with template:
+     ```
+     AZURE_SQL_CONNECTION_STRING=Driver={ODBC Driver 18 for SQL Server};Server=your-server.database.windows.net;Database=your-db;Authentication=ActiveDirectoryDefault;
+     ```
+   - Standardized error response format:
+     ```python
+     {"error": {"code": "ERROR_CODE", "message": "Human readable message"}}
+     ```
 
 ### Validation:
 - Can query EXISTING database views successfully
@@ -99,6 +107,9 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
    - POST /api/payments - Single period only
    - PUT/DELETE /api/payments
    - Remove ANY split payment logic
+   - **CRITICAL**: Expected fee calculations MUST use SQL views ONLY
+   - **NO** Python calculations for expected fees or variance
+   - **NO** JavaScript calculations in frontend
 
 2. Implement smart periods endpoint:
    - GET /api/periods - Simple JOIN against `payment_periods` table
@@ -168,6 +179,29 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
    - Static tab configuration
    - No Teams Toolkit complexity
    - Direct URLs to frontend
+   - Complete `manifest.json` structure:
+     ```json
+     {
+       "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+       "manifestVersion": "1.16",
+       "version": "1.0.0",
+       "id": "<unique-guid>",
+       "packageName": "com.company.401ktracker",
+       "developer": {...},
+       "name": {"short": "401k Tracker", "full": "401k Payment Tracker"},
+       "description": {...},
+       "icons": {...},
+       "accentColor": "#0078D4",
+       "staticTabs": [{
+         "entityId": "401k-tracker-tab",
+         "name": "401k Tracker",
+         "contentUrl": "https://your-frontend-url.com",
+         "scopes": ["personal"]
+       }],
+       "permissions": ["identity", "messageTeamMembers"],
+       "validDomains": ["your-frontend-url.com", "your-api-url.com"]
+     }
+     ```
 
 ### Validation:
 - SSO works within Teams
@@ -361,6 +395,11 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
 6. **Clean Architecture**: React + FastAPI + SQL, no middleware magic
 7. **Performance**: Leverage new indexes and views for speed
 8. **Maintainability**: Clear file structure, obvious patterns
+9. **Date Handling**: 
+   - Database columns are proper DATE type (not strings)
+   - API communication uses ISO format (YYYY-MM-DD)
+   - NO string manipulation for dates (no split('T')[0])
+   - Let database handle date comparisons and calculations
 
 ## Success Metrics
 
