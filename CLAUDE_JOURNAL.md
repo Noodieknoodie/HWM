@@ -38,3 +38,22 @@ Critical for Future Sprints:
 - Provider grouping happens in SQL ORDER BY - frontend just displays pre-sorted data
 - Contract validation ensures either percent_rate OR flat_rate is set based on fee_type
 ===============================
+
+# Sprint 3 - Payment Management & Smart Periods | 2025-07-04
+Description: Implemented payment CRUD endpoints and smart periods using database views
+Reason: Replace 150+ lines of period generation and variance calculations with simple SQL queries
+Files Touched: backend/app/api/payments.py, backend/app/api/periods.py, backend/app/main.py
+Result: Clean payment management with all calculations in SQL views
+Key Implementation Details:
+- GET /api/payments?client_id={id} uses payment_variance_view for variance data
+- POST/PUT/DELETE /api/payments with single period support only (no split payments)
+- GET /api/periods queries payment_periods table directly (no dynamic generation)
+- All payment responses include variance_amount, variance_percent, variance_status from view
+- Soft deletes via valid_to timestamp
+- Database triggers handle client_metrics updates automatically
+Critical for Future Sprints:
+- Expected fees come from database views - NEVER calculate in code
+- Period dropdown uses /api/periods endpoint - instant loading
+- Frontend must display variance data as-is from API (no calculations)
+- Dashboard endpoint (Sprint 4) can leverage payment_variance_view for summary data
+===============================
