@@ -24,7 +24,7 @@ update_yearly_after_quarterly
 
 ## Evidence-Backed Game Plan
 
-### 1. Fix Date Columns (nvarchar → DATE)
+### 1. Fix Date Columns (nvarchar → DATE) with CHECK Constraints
 
 **Evidence:**
 - **Schema:** All date columns are `nvarchar(50)`
@@ -37,6 +37,7 @@ update_yearly_after_quarterly
 - **Backend Changes:** Remove date string handling in all endpoints
 - **Frontend Changes:** Simplify `formatDate()` function, remove parseISO calls
 - **Performance:** Massive improvement in date-based queries and sorting
+- **Data Integrity:** Add CHECK constraints on applied_period (1-12 for monthly, 1-4 for quarterly) to guarantee valid periods at database level
 
 ### 2. Remove Dead Columns from client_metrics
 
@@ -71,7 +72,7 @@ update_yearly_after_quarterly
 - **Current Issue:** Every period dropdown request runs this expensive calculation
 
 **Impact:**
-- **New Table:** `payment_periods` with pre-populated 2020-2030 data
+- **New Table:** `payment_periods` with pre-populated 2015-2030 data
 - **Backend Simplification:** Replace 150 lines with a simple JOIN query
 - **Performance:** Instant period lookups vs runtime generation
 
@@ -147,22 +148,6 @@ FROM payments
 **Impact:**
 - **Query Performance:** 10-100x faster payment period lookups
 - **Affects:** All payment queries, period availability checks
-
-### 6. Optional: Add Computed Column
-
-**Evidence:**
-- **Backend (`payments/__init__.py`):** Constantly recalculating expected fee:
-  ```python
-  if payment_dict['expected_fee'] is None:
-      if payment_dict['fee_type'] == 'percentage' and payment_dict['percent_rate'] and payment_dict['total_assets']:
-          payment_dict['expected_fee'] = payment_dict['total_assets'] * payment_dict['percent_rate']
-  ```
-- **Same logic repeated in:** Multiple endpoints
-
-**Impact:**
-- **Consistency:** Expected fee always calculated the same way
-- **Backend Simplification:** Remove repeated calculation logic
-- **Performance:** No runtime calculations
 
 ## Complete Impact Summary
 
