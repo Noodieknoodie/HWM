@@ -50,6 +50,8 @@ Welcome to the team. You're brilliant. Use it.
 11. Rewrite BOTH entries for clarity - strip unnecessary detail, keep only essential information other agents need. Must maintain separate PRE and POST entries after revision
 12. IF NEEDED (rare) - Update future sprints/documentation if discoveries impact upcoming work. Fix prior sprint code/logs if discoveries invalidate completed work. Keep everything current - no conflicting or legacy information allowed
 
+[OPTIONAL: DB_SCHEMA_REFERENCE.txt if your task requires this context for accuracy]
+
 =======
 
 LETS GO!  

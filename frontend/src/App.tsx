@@ -1,37 +1,39 @@
 // frontend/src/App.tsx
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { useAuth } from './auth/useAuth'
+import PageLayout from './components/PageLayout'
+import Home from './pages/Home'
+import Payments from './pages/Payments'
+import Documents from './pages/Documents'
 
 function AppContent() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex items-center justify-center h-screen">
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            HWM 401k Payment Tracker
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Authenticating...
           </h1>
-          {user && (
-            <div className="mb-4">
-              <p className="text-gray-600 mb-2">
-                Welcome, {user.name || user.email}
-              </p>
-              <button
-                onClick={signOut}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
           <p className="text-gray-600">
-            Frontend foundation ready - Routes and components to be added in Sprint 6+
+            Signing in with Microsoft Teams
           </p>
         </div>
       </div>
-    </div>
+    );
+  }
+  
+  return (
+    <Routes>
+      <Route path="/" element={<PageLayout />}>
+        <Route index element={<Home />} />
+        <Route path="payments" element={<Payments />} />
+        <Route path="documents" element={<Documents />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   )
 }
 

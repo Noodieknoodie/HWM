@@ -32,8 +32,7 @@ async def get_payments(client_id: int = Query(..., description="Client ID to get
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status,
-                    pv.has_file
+                    pv.variance_status
                 FROM payment_variance_view pv
                 WHERE pv.client_id = ?
                 ORDER BY pv.received_date DESC, pv.payment_id DESC
@@ -56,8 +55,7 @@ async def get_payments(client_id: int = Query(..., description="Client ID to get
                     applied_year=row.applied_year,
                     variance_amount=row.variance_amount,
                     variance_percent=row.variance_percent,
-                    variance_status=row.variance_status,
-                    has_file=row.has_file
+                    variance_status=row.variance_status
                 )
                 payments.append(payment)
             
@@ -131,8 +129,7 @@ async def create_payment(payment: PaymentCreate, user: TokenUser = Depends(requi
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status,
-                    pv.has_file
+                    pv.variance_status
                 FROM payment_variance_view pv
                 WHERE pv.payment_id = ?
             """, payment_id)
@@ -153,8 +150,7 @@ async def create_payment(payment: PaymentCreate, user: TokenUser = Depends(requi
                 applied_year=row.applied_year,
                 variance_amount=row.variance_amount,
                 variance_percent=row.variance_percent,
-                variance_status=row.variance_status,
-                has_file=row.has_file
+                variance_status=row.variance_status
             )
             
     except HTTPException:
@@ -233,8 +229,7 @@ async def update_payment(payment_id: int, payment: PaymentUpdate, user: TokenUse
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status,
-                    pv.has_file
+                    pv.variance_status
                 FROM payment_variance_view pv
                 WHERE pv.payment_id = ?
             """, payment_id)
@@ -255,8 +250,7 @@ async def update_payment(payment_id: int, payment: PaymentUpdate, user: TokenUse
                 applied_year=row.applied_year,
                 variance_amount=row.variance_amount,
                 variance_percent=row.variance_percent,
-                variance_status=row.variance_status,
-                has_file=row.has_file
+                variance_status=row.variance_status
             )
             
     except HTTPException:

@@ -18,6 +18,16 @@ Remember: The complexity wasn't necessary — it was accumulated. Your job is to
 
 **🚨 NEW WITH DATABASE CHANGES: The old code repeatedly JOINs clients with contracts and metrics in every query. The new `clients_by_provider_view` eliminates these redundant JOINs. The frontend's client-side provider grouping logic can also be removed.**
 
+**🚨 NEW WITH DATABASE CHANGES: All file handling code can be deleted - no more OneDrive integration, file upload endpoints, document management UI, file-to-payment linking logic, or file path validation. The entire `files` Azure Function folder and related frontend components are obsolete.**
+
+**🚨 NEW WITH DATABASE CHANGES: The 150+ lines of period generation code (calculating quarter boundaries, month names, date ranges) can be deleted. The `payment_periods` table has all periods pre-populated through 2030. The frontend's `generatePeriods()` and related date math functions are no longer needed.**
+
+**🚨 NEW WITH DATABASE CHANGES: Manual client metrics updates throughout the codebase can be removed. The `update_client_metrics_after_payment` trigger automatically maintains last payment info, YTD totals, and quarterly averages. No more scattered UPDATE statements after payment inserts.**
+
+**🚨 NEW WITH DATABASE CHANGES: The CHECK constraint on `payments.applied_period` enforces valid ranges at the database level. All frontend and backend validation for period ranges (1-12 for monthly, 1-4 for quarterly) can be removed. Invalid data is now impossible to insert.**
+
+**🚨 NEW WITH DATABASE CHANGES: The new composite index on payments `(client_id, applied_year, applied_period)` with INCLUDE columns makes payment lookups instant. All the manual query optimization, caching logic, and workarounds for slow payment queries can be deleted.**
+
 =================
 
 **Languages & Frameworks**
@@ -160,47 +170,49 @@ SQL_AUTH=ActiveDirectory
 
 # DATABASE SCHEMA:
 
+[See DB_SCHEMA_REFERENCE.txt for full schema]
 -- TABLES
--- client_files: file_id(int PK), client_id(int FK->clients), file_name(nvarchar255), onedrive_path(nvarchar500), uploaded_at(datetime def:getdate())
--- client_metrics: id(int PK), client_id(int FK->clients UNIQUE), last_payment_date(date), last_payment_amount(float), total_ytd_payments(float), avg_quarterly_payment(float), last_recorded_assets(float), last_updated(datetime), next_payment_due(date)
--- **🚨 NEW WITH DATABASE CHANGES: Removed dead columns `last_payment_quarter` and `last_payment_year` that weren't being maintained by triggers**
--- clients: client_id(int PK), display_name(nvarchar255), full_name(nvarchar255), ima_signed_date(date), onedrive_folder_path(nvarchar500), valid_from(datetime def:getdate()), valid_to(datetime)
--- contacts: contact_id(int PK), client_id(int FK->clients), contact_type(nvarchar50), contact_name(nvarchar255), phone(nvarchar50), email(nvarchar255), fax(nvarchar50), physical_address(nvarchar500), mailing_address(nvarchar500), valid_from(datetime def:getdate()), valid_to(datetime)
--- contracts: contract_id(int PK), client_id(int FK->clients), contract_number(nvarchar100), provider_name(nvarchar255), contract_start_date(date), fee_type(nvarchar50), percent_rate(float), flat_rate(float), payment_schedule(nvarchar50), num_people(int), notes(nvarcharMAX), valid_from(datetime def:getdate()), valid_to(datetime)
--- payment_files: payment_id(int FK->payments), file_id(int FK->client_files), linked_at(datetime def:getdate()), PK(file_id,payment_id)
--- payment_periods: period_type(nvarchar10 CHK:quarterly|monthly), year(int), period(int), period_name(nvarchar50), start_date(date), end_date(date), is_current(bit def:0), PK(period,period_type,year)
--- **🚨 NEW WITH DATABASE CHANGES: This table replaces 150+ lines of period generation code. Pre-populated with all periods 2015-2030.**
--- payments: payment_id(int PK), contract_id(int FK->contracts), client_id(int FK->clients), received_date(date), total_assets(float), expected_fee(float), actual_fee(float), method(nvarchar50), notes(nvarcharMAX), valid_from(datetime def:getdate()), valid_to(datetime), applied_period_type(nvarchar10), applied_period(int), applied_year(int), CHK(period ranges)
--- **🚨 NEW WITH DATABASE CHANGES: All date columns are now proper DATE type instead of nvarchar(50). CHECK constraint enforces valid period ranges.**
--- quarterly_summaries: id(int PK), client_id(int FK->clients), year(int), quarter(int), total_payments(float), total_assets(float), payment_count(int), avg_payment(float), expected_total(float), last_updated(datetime)
--- yearly_summaries: id(int PK), client_id(int FK->clients), year(int), total_payments(float), total_assets(float), payment_count(int), avg_payment(float), yoy_growth(float), last_updated(datetime)
+-- **🚨 REMOVED: client_files table (entire table removed)**
+-- **🚨 REMOVED: payment_files table (entire table removed)**
+-- client_metrics: id(int IDENTITY PK), client_id(int FK->clients UNIQUE), last_payment_date(date), last_payment_amount(float), total_ytd_payments(float), avg_quarterly_payment(float), last_recorded_assets(float), last_updated(datetime), next_payment_due(date)
+-- clients: client_id(int IDENTITY PK), display_name(nvarchar255), full_name(nvarchar255), ima_signed_date(date), valid_from(datetime def:getdate()), valid_to(datetime)
+-- **🚨 REMOVED: onedrive_folder_path column from clients table**
+-- contacts: contact_id(int IDENTITY PK), client_id(int FK->clients), contact_type(nvarchar50), contact_name(nvarchar255), phone(nvarchar50), email(nvarchar255), fax(nvarchar50), physical_address(nvarchar500), mailing_address(nvarchar500), valid_from(datetime def:getdate()), valid_to(datetime)
+-- contracts: contract_id(int IDENTITY PK), client_id(int FK->clients), contract_number(nvarchar100), provider_name(nvarchar255), contract_start_date(date), fee_type(nvarchar50), percent_rate(float), flat_rate(float), payment_schedule(nvarchar50), num_people(int), notes(nvarcharMAX), valid_from(datetime def:getdate()), valid_to(datetime)
+-- payment_periods: period_type(nvarchar10 CHK:quarterly|monthly), year(int), period(int), period_name(nvarchar50), start_date(date), end_date(date), is_current(bit def:0), PK(period_type,year,period)
+-- **🚨 Pre-populated with all periods 2015-2030. Replaces 150+ lines of period generation code.**
+-- payments: payment_id(int IDENTITY PK), contract_id(int FK->contracts), client_id(int FK->clients), received_date(date), total_assets(float), expected_fee(float), actual_fee(float), method(nvarchar50), notes(nvarcharMAX), valid_from(datetime def:getdate()), valid_to(datetime), applied_period_type(nvarchar10), applied_period(int), applied_year(int), CHK(applied_period ranges)
+-- **🚨 CHECK constraint enforces valid period ranges (monthly 1-12, quarterly 1-4).**
+-- quarterly_summaries: id(int IDENTITY PK), client_id(int FK->clients), year(int), quarter(int), total_payments(float), total_assets(float), payment_count(int), avg_payment(float), expected_total(float), last_updated(datetime)
+-- yearly_summaries: id(int IDENTITY PK), client_id(int FK->clients), year(int), total_payments(float), total_assets(float), payment_count(int), avg_payment(float), yoy_growth(float), last_updated(datetime)
 
+[See DB_SCHEMA_REFERENCE.txt for full schema]
 -- VIEWS
--- client_payment_status: Shows payment status (Due/Paid) based on current period, includes expected fees calc
+-- **🚨 REMOVED: payment_file_view (entire view removed - was showing payment-to-file relationships)**
+-- client_payment_status: Shows payment status (Due/Paid) based on current period, includes expected fees calc, joins clients+contracts+metrics
 -- clients_by_provider_view: Joins clients+contracts+metrics+payment_status, adds compliance_status(green/yellow)
--- **🚨 NEW WITH DATABASE CHANGES: This view eliminates repetitive JOINs in every client query**
--- payment_file_view: Payments LEFT JOIN files, shows has_file flag
+-- **🚨 This view eliminates repetitive JOINs in every client query**
+-- **🚨 UPDATED: Removed onedrive_folder_path from view definition**
 -- payment_variance_view: Calculates variance_amount/percent, variance_status(exact/acceptable/warning/alert)
--- **🚨 NEW WITH DATABASE CHANGES: This view replaces the entire `calculations` Azure Function and frontend variance logic**
+-- **🚨 This view replaces complex variance calculation logic in application code**
 
+[See DB_SCHEMA_REFERENCE.txt for full schema]
 -- INDEXES
 -- client_metrics: lookup(client_id), UQ(client_id)
 -- contacts: client_id, type(client_id,contact_type)
 -- contracts: client_id, provider(provider_name)
 -- payment_periods: dates(period_type,start_date,end_date)
--- payments: client_id, contract_id, date(client_id,received_date), period_lookup(multi-col INCLUDE)
--- **🚨 NEW WITH DATABASE CHANGES: The new composite index on (client_id, applied_year, applied_period) with INCLUDE columns makes payment lookups 10-100x faster**
+-- payments: client_id, contract_id, date(client_id,received_date), period_lookup(client_id,applied_year,applied_period INCLUDE actual_fee,expected_fee,total_assets,received_date)
+-- **🚨 The composite index with INCLUDE columns makes payment period lookups 10-100x faster**
 -- quarterly_summaries: lookup(client_id,year,quarter), UQ(client_id,year,quarter)
 -- yearly_summaries: lookup(client_id,year), UQ(client_id,year)
 
+[See DB_SCHEMA_REFERENCE.txt for full schema]
 -- TRIGGERS
 -- update_client_metrics_after_payment: ON payments AFTER INSERT/UPDATE/DELETE -> Updates client_metrics (last payment info, YTD totals, quarterly avg)
--- update_quarterly_after_payment: ON payments AFTER INSERT -> MERGE quarterly_summaries (aggregates by quarter)
+-- update_quarterly_after_payment: ON payments AFTER INSERT -> MERGE quarterly_summaries (aggregates by quarter for quarterly payments only)
 -- update_yearly_after_quarterly: ON quarterly_summaries AFTER INSERT -> MERGE yearly_summaries (aggregates by year)
 
-
-## Note on File Handling:
-The database is fully structured to support OneDrive PDF file storage and payment-file associations (via client_files and payment_files tables), but the current application intentionally doesn't implement any file processing functionality. The frontend includes a PDF viewer component that displays "Coming Soon" when expanded — this is a planned feature placeholder, not a bug or missing implementation. The OneDrive paths are stored in the database for future use, but no actual file upload, download, or preview functionality exists in either the frontend or backend code at this time. Just ignore PDF shit right now. Out of sight out of mind for now. 
 
 =================
 

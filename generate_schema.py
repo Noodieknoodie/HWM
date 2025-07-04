@@ -7,7 +7,6 @@ class DatabaseSchemaExtractor:
         self.schema_text = []
         
     def extract_all(self, output_file='database_schema.txt'):
-        """Extract all database objects and save to file"""
         print("📋 Extracting database schema...")
         
         self.add_header()
@@ -16,32 +15,24 @@ class DatabaseSchemaExtractor:
         self.extract_indexes()
         self.extract_triggers()
         
+        # Remove blank lines
+        final_text = '\n'.join(line for line in self.schema_text if line.strip())
+        
         # Write to file
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(self.schema_text))
+            f.write(final_text)
             
         print(f"✅ Schema saved to: {output_file}")
         
     def add_header(self):
-        """Add header information"""
         self.schema_text.extend([
             "-- =====================================================",
-            "-- HohimerPro 401k Database Schema",
             f"-- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            "-- =====================================================",
-            "",
-            "-- This file contains the complete database schema including:",
-            "-- • Tables with all columns, data types, and constraints",
-            "-- • Views for reporting and data access", 
-            "-- • Indexes for query optimization",
-            "-- • Triggers for automated data maintenance",
-            "",
             "-- =====================================================",
             ""
         ])
         
     def extract_tables(self):
-        """Extract all table definitions"""
         self.schema_text.extend([
             "-- =====================================================",
             "-- TABLES",
@@ -49,128 +40,111 @@ class DatabaseSchemaExtractor:
             ""
         ])
         
-        # Get all user tables
         cursor = self.conn.cursor()
+        
+        # Get all user tables with schema
         cursor.execute("""
-            SELECT TABLE_NAME 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_TYPE = 'BASE TABLE' 
-            AND TABLE_NAME NOT LIKE 'sys%'
-            ORDER BY TABLE_NAME
+            SELECT SCHEMA_NAME(schema_id) as schema_name, name as table_name
+            FROM sys.tables 
+            WHERE is_ms_shipped = 0
+            ORDER BY schema_name, name
         """)
         
-        tables = [row[0] for row in cursor.fetchall()]
+        tables = cursor.fetchall()
         
-        for table in tables:
-            print(f"  Extracting table: {table}")
-            self.schema_text.append(f"-- Table: {table}")
-            self.schema_text.append(f"CREATE TABLE [{table}] (")
+        for schema_name, table_name in tables:
+            print(f"  Extracting table: {table_name}")
+            self.schema_text.append(f"-- Table: {table_name}")
+            self.schema_text.append(f"CREATE TABLE [{schema_name}].[{table_name}] (")
             
-            # Get columns
+            # Get columns separately (no JOIN with constraints to avoid duplicates)
             cursor.execute(f"""
                 SELECT 
-                    c.COLUMN_NAME,
-                    c.DATA_TYPE,
-                    c.CHARACTER_MAXIMUM_LENGTH,
-                    c.NUMERIC_PRECISION,
-                    c.NUMERIC_SCALE,
-                    c.IS_NULLABLE,
-                    c.COLUMN_DEFAULT,
-                    cc.CONSTRAINT_NAME,
-                    cc.CONSTRAINT_TYPE
-                FROM INFORMATION_SCHEMA.COLUMNS c
-                LEFT JOIN (
-                    SELECT cu.COLUMN_NAME, tc.CONSTRAINT_NAME, tc.CONSTRAINT_TYPE
-                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                    JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu
-                        ON tc.CONSTRAINT_NAME = cu.CONSTRAINT_NAME
-                    WHERE tc.TABLE_NAME = '{table}'
-                ) cc ON c.COLUMN_NAME = cc.COLUMN_NAME
-                WHERE c.TABLE_NAME = '{table}'
-                ORDER BY c.ORDINAL_POSITION
+                    c.name AS column_name,
+                    t.name AS data_type,
+                    c.max_length,
+                    c.precision,
+                    c.scale,
+                    c.is_nullable,
+                    dc.definition AS default_value,
+                    c.is_identity
+                FROM sys.columns c
+                INNER JOIN sys.types t ON c.user_type_id = t.user_type_id
+                LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id
+                WHERE c.object_id = OBJECT_ID('{schema_name}.{table_name}')
+                ORDER BY c.column_id
             """)
             
             columns = cursor.fetchall()
             column_defs = []
             
             for col in columns:
-                col_def = f"    [{col[0]}] {self._format_data_type(col)}"
+                col_def = f"    [{col[0]}] {self._format_data_type(col[1], col[2], col[3], col[4])}"
                 
-                # Add NOT NULL
-                if col[5] == 'NO':
+                if col[7]:  # is_identity
+                    col_def += " IDENTITY(1,1)"
+                    
+                if not col[5]:  # is_nullable = 0
                     col_def += " NOT NULL"
                     
-                # Add DEFAULT
-                if col[6]:
+                if col[6]:  # default_value
                     col_def += f" DEFAULT {col[6]}"
-                    
-                # Add PRIMARY KEY inline if single column PK
-                if col[8] == 'PRIMARY KEY':
-                    col_def += " PRIMARY KEY"
                     
                 column_defs.append(col_def)
             
-            # Get multi-column constraints
+            # Get primary key as separate constraint
             cursor.execute(f"""
                 SELECT 
-                    tc.CONSTRAINT_NAME,
-                    tc.CONSTRAINT_TYPE,
-                    STRING_AGG(cu.COLUMN_NAME, ', ') WITHIN GROUP (ORDER BY cu.COLUMN_NAME) as COLUMNS
-                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu
-                    ON tc.CONSTRAINT_NAME = cu.CONSTRAINT_NAME
-                WHERE tc.TABLE_NAME = '{table}'
-                    AND tc.CONSTRAINT_TYPE IN ('PRIMARY KEY', 'FOREIGN KEY', 'CHECK')
-                GROUP BY tc.CONSTRAINT_NAME, tc.CONSTRAINT_TYPE
-                HAVING COUNT(*) > 1 OR tc.CONSTRAINT_TYPE != 'PRIMARY KEY'
+                    kc.name AS constraint_name,
+                    STRING_AGG(c.name, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) AS columns
+                FROM sys.key_constraints kc
+                INNER JOIN sys.index_columns ic ON kc.parent_object_id = ic.object_id AND kc.unique_index_id = ic.index_id
+                INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                WHERE kc.parent_object_id = OBJECT_ID('{schema_name}.{table_name}') AND kc.type = 'PK'
+                GROUP BY kc.name
             """)
             
-            constraints = cursor.fetchall()
+            pk = cursor.fetchone()
+            if pk:
+                column_defs.append(f"    CONSTRAINT [{pk[0]}] PRIMARY KEY ({pk[1]})")
             
-            for constraint in constraints:
-                if constraint[1] == 'PRIMARY KEY':
-                    column_defs.append(f"    CONSTRAINT [{constraint[0]}] PRIMARY KEY ({constraint[2]})")
-                elif constraint[1] == 'CHECK':
-                    # Get check constraint definition
-                    cursor.execute(f"""
-                        SELECT cc.DEFINITION 
-                        FROM sys.check_constraints cc
-                        JOIN sys.tables t ON cc.parent_object_id = t.object_id
-                        WHERE t.name = '{table}' AND cc.name = '{constraint[0]}'
-                    """)
-                    check_def = cursor.fetchone()
-                    if check_def:
-                        column_defs.append(f"    CONSTRAINT [{constraint[0]}] CHECK {check_def[0]}")
+            # Get check constraints
+            cursor.execute(f"""
+                SELECT cc.name, cc.definition
+                FROM sys.check_constraints cc
+                WHERE cc.parent_object_id = OBJECT_ID('{schema_name}.{table_name}')
+            """)
+            
+            for check in cursor.fetchall():
+                column_defs.append(f"    CONSTRAINT [{check[0]}] CHECK {check[1]}")
             
             self.schema_text.append(',\n'.join(column_defs))
             self.schema_text.append(");")
-            self.schema_text.append("")
             
-            # Get foreign keys
+            # Get foreign keys with proper grouping
             cursor.execute(f"""
                 SELECT 
-                    fk.name AS FK_NAME,
-                    tp.name AS PARENT_TABLE,
-                    cp.name AS PARENT_COLUMN,
-                    tr.name AS REFERENCED_TABLE,
-                    cr.name AS REFERENCED_COLUMN
+                    fk.name AS fk_name,
+                    STRING_AGG(COL_NAME(fkc.parent_object_id, fkc.parent_column_id), ', ') 
+                        WITHIN GROUP (ORDER BY fkc.constraint_column_id) AS parent_columns,
+                    SCHEMA_NAME(tr.schema_id) AS ref_schema,
+                    tr.name AS ref_table,
+                    STRING_AGG(COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id), ', ') 
+                        WITHIN GROUP (ORDER BY fkc.constraint_column_id) AS ref_columns
                 FROM sys.foreign_keys fk
-                JOIN sys.tables tp ON fk.parent_object_id = tp.object_id
-                JOIN sys.tables tr ON fk.referenced_object_id = tr.object_id
-                JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
-                JOIN sys.columns cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id
-                JOIN sys.columns cr ON fkc.referenced_object_id = cr.object_id AND fkc.referenced_column_id = cr.column_id
-                WHERE tp.name = '{table}'
+                INNER JOIN sys.tables tr ON fk.referenced_object_id = tr.object_id
+                INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+                WHERE fk.parent_object_id = OBJECT_ID('{schema_name}.{table_name}')
+                GROUP BY fk.name, tr.schema_id, tr.name
             """)
             
-            foreign_keys = cursor.fetchall()
-            for fk in foreign_keys:
-                self.schema_text.append(f"ALTER TABLE [{table}] ADD CONSTRAINT [{fk[0]}]")
-                self.schema_text.append(f"    FOREIGN KEY ([{fk[2]}]) REFERENCES [{fk[3]}]([{fk[4]}]);")
-                self.schema_text.append("")
+            for fk in cursor.fetchall():
+                self.schema_text.append(f"ALTER TABLE [{schema_name}].[{table_name}] ADD CONSTRAINT [{fk[0]}]")
+                self.schema_text.append(f"    FOREIGN KEY ({fk[1]}) REFERENCES [{fk[2]}].[{fk[3]}] ({fk[4]});")
+            
+            self.schema_text.append("")
         
     def extract_views(self):
-        """Extract all view definitions"""
         self.schema_text.extend([
             "",
             "-- =====================================================",
@@ -182,24 +156,22 @@ class DatabaseSchemaExtractor:
         cursor = self.conn.cursor()
         cursor.execute("""
             SELECT 
-                v.name AS VIEW_NAME,
-                m.definition AS VIEW_DEFINITION
+                SCHEMA_NAME(v.schema_id) AS schema_name,
+                v.name AS view_name,
+                m.definition AS view_definition
             FROM sys.views v
             JOIN sys.sql_modules m ON v.object_id = m.object_id
             WHERE v.is_ms_shipped = 0
-            ORDER BY v.name
+            ORDER BY schema_name, view_name
         """)
         
-        views = cursor.fetchall()
-        
-        for view in views:
-            print(f"  Extracting view: {view[0]}")
-            self.schema_text.append(f"-- View: {view[0]}")
-            self.schema_text.append(view[1].strip())
+        for schema_name, view_name, definition in cursor.fetchall():
+            print(f"  Extracting view: {view_name}")
+            self.schema_text.append(f"-- View: {view_name}")
+            self.schema_text.append(definition.strip())
             self.schema_text.append("")
             
     def extract_indexes(self):
-        """Extract all index definitions"""
         self.schema_text.extend([
             "",
             "-- =====================================================",
@@ -209,24 +181,21 @@ class DatabaseSchemaExtractor:
         ])
         
         cursor = self.conn.cursor()
+        
+        # Get all indexes first
         cursor.execute("""
-            SELECT 
-                i.name AS INDEX_NAME,
-                t.name AS TABLE_NAME,
+            SELECT DISTINCT
+                i.name AS index_name,
+                SCHEMA_NAME(t.schema_id) AS schema_name,
+                t.name AS table_name,
                 i.type_desc,
                 i.is_unique,
-                i.is_primary_key,
-                STRING_AGG(c.name, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) AS INDEX_COLUMNS,
-                STRING_AGG(CASE WHEN ic.is_included_column = 1 THEN c.name END, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) AS INCLUDED_COLUMNS
+                i.object_id,
+                i.index_id
             FROM sys.indexes i
             JOIN sys.tables t ON i.object_id = t.object_id
-            JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-            JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-            WHERE i.is_primary_key = 0 
-                AND i.type != 0
-                AND t.is_ms_shipped = 0
-            GROUP BY i.name, t.name, i.type_desc, i.is_unique, i.is_primary_key
-            ORDER BY t.name, i.name
+            WHERE i.is_primary_key = 0 AND i.type != 0 AND t.is_ms_shipped = 0
+            ORDER BY schema_name, table_name, index_name
         """)
         
         indexes = cursor.fetchall()
@@ -234,22 +203,40 @@ class DatabaseSchemaExtractor:
         for idx in indexes:
             if idx[0]:  # Skip unnamed indexes
                 print(f"  Extracting index: {idx[0]}")
-                create_stmt = "CREATE "
-                if idx[3]:  # is_unique
-                    create_stmt += "UNIQUE "
-                create_stmt += f"{idx[2]} INDEX [{idx[0]}]"
-                create_stmt += f" ON [{idx[1]}] ({idx[5]})"
                 
-                if idx[6]:  # has included columns
-                    create_stmt += f" INCLUDE ({idx[6]})"
+                # Get index columns
+                cursor.execute(f"""
+                    SELECT c.name
+                    FROM sys.index_columns ic
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE ic.object_id = {idx[5]} AND ic.index_id = {idx[6]} AND ic.is_included_column = 0
+                    ORDER BY ic.key_ordinal
+                """)
+                index_cols = [row[0] for row in cursor.fetchall()]
+                
+                # Get included columns
+                cursor.execute(f"""
+                    SELECT c.name
+                    FROM sys.index_columns ic
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE ic.object_id = {idx[5]} AND ic.index_id = {idx[6]} AND ic.is_included_column = 1
+                    ORDER BY ic.index_column_id
+                """)
+                included_cols = [row[0] for row in cursor.fetchall()]
+                
+                stmt = "CREATE "
+                if idx[4]:  # is_unique
+                    stmt += "UNIQUE "
+                stmt += f"{idx[3]} INDEX [{idx[0]}] ON [{idx[1]}].[{idx[2]}] ({', '.join(index_cols)})"
+                
+                if included_cols:
+                    stmt += f" INCLUDE ({', '.join(included_cols)})"
                     
-                create_stmt += ";"
-                
-                self.schema_text.append(create_stmt)
+                stmt += ";"
+                self.schema_text.append(stmt)
                 self.schema_text.append("")
                 
     def extract_triggers(self):
-        """Extract all trigger definitions"""
         self.schema_text.extend([
             "",
             "-- =====================================================",
@@ -261,44 +248,41 @@ class DatabaseSchemaExtractor:
         cursor = self.conn.cursor()
         cursor.execute("""
             SELECT 
-                t.name AS TRIGGER_NAME,
-                p.name AS TABLE_NAME,
-                m.definition AS TRIGGER_DEFINITION
+                t.name AS trigger_name,
+                SCHEMA_NAME(p.schema_id) AS schema_name,
+                p.name AS table_name,
+                m.definition AS trigger_definition
             FROM sys.triggers t
             JOIN sys.tables p ON t.parent_id = p.object_id
             JOIN sys.sql_modules m ON t.object_id = m.object_id
             WHERE t.is_ms_shipped = 0
-            ORDER BY p.name, t.name
+            ORDER BY schema_name, table_name, trigger_name
         """)
         
-        triggers = cursor.fetchall()
-        
-        for trigger in triggers:
-            print(f"  Extracting trigger: {trigger[0]}")
-            self.schema_text.append(f"-- Trigger: {trigger[0]} on {trigger[1]}")
-            self.schema_text.append(trigger[2].strip())
+        for trigger_name, schema_name, table_name, definition in cursor.fetchall():
+            print(f"  Extracting trigger: {trigger_name}")
+            self.schema_text.append(f"-- Trigger: {trigger_name} on {table_name}")
+            self.schema_text.append(definition.strip())
             self.schema_text.append("GO")
             self.schema_text.append("")
             
-    def _format_data_type(self, col_info):
+    def _format_data_type(self, data_type, max_length, precision, scale):
         """Format data type with precision/length"""
-        data_type = col_info[1]
-        
-        if col_info[2]:  # character length
-            if col_info[2] == -1:
+        if data_type in ('varchar', 'nvarchar', 'char', 'nchar', 'varbinary', 'binary'):
+            if max_length == -1:
                 return f"{data_type}(MAX)"
+            elif data_type in ('nvarchar', 'nchar'):
+                return f"{data_type}({max_length // 2})"
             else:
-                return f"{data_type}({col_info[2]})"
-        elif col_info[3]:  # numeric precision
-            if col_info[4]:  # scale
-                return f"{data_type}({col_info[3]},{col_info[4]})"
-            else:
-                return f"{data_type}({col_info[3]})"
+                return f"{data_type}({max_length})"
+        elif data_type in ('decimal', 'numeric'):
+            return f"{data_type}({precision},{scale})"
+        elif data_type == 'float' and precision and precision < 53:
+            return f"{data_type}({precision})"
         else:
             return data_type
             
     def close(self):
-        """Close database connection"""
         self.conn.close()
 
 
@@ -320,4 +304,3 @@ if __name__ == "__main__":
     extractor.close()
     
     print("\n📄 Schema extraction complete!")
-    print("   File contains all tables, views, indexes, and triggers")
