@@ -21,3 +21,20 @@ Key Notes:
 - Standardized error format: {"error": {"code": "X", "message": "Y"}}
 - All dates are proper DATE columns - no string manipulation needed
 ===============================
+
+# Sprint 2 - Core API Endpoints | 2025-07-04
+Description: Implemented client and contract endpoints using database views
+Reason: Replace complex manual JOINs with optimized views, eliminate client-side calculations
+Files Touched: backend/app/api/clients.py, backend/app/api/contracts.py
+Result: Clean API endpoints leveraging database views for all complex queries
+Key Implementation Details:
+- GET /api/clients uses `clients_by_provider_view` - eliminates manual JOINs and provider grouping
+- Binary status only: compliance_status returns "green" or "yellow" (removed red/overdue)
+- Contract endpoints validate fee_type consistency (percentage→percent_rate, flat→flat_rate)
+- All dates handled as DATE type - no string manipulation
+- Soft deletes via valid_to timestamps
+Critical for Future Sprints:
+- ClientWithStatus model includes compliance_status from view - use this, don't calculate
+- Provider grouping happens in SQL ORDER BY - frontend just displays pre-sorted data
+- Contract validation ensures either percent_rate OR flat_rate is set based on fee_type
+===============================
