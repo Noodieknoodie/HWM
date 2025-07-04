@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "packageName": "com.hohimer.401ktracker",
+  "developer": {
+    "name": "Hohimer Wealth Management",
+    "websiteUrl": "https://www.hohimer.com",
+    "privacyUrl": "https://www.hohimer.com/privacy",
+    "termsOfUseUrl": "https://www.hohimer.com/terms"
+  },
+  "name": {
+    "short": "401k Tracker",
+    "full": "HWM 401k Payment Tracker"
+  },
+  "description": {
+    "short": "Track 401k client payments and compliance",
+    "full": "Internal application for Hohimer Wealth Management to track 401k client fee payments, monitor compliance status, and manage payment schedules."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0078D4",
+  "staticTabs": [
+    {
+      "entityId": "401k-tracker-tab",
+      "name": "401k Tracker",
+      "contentUrl": "https://your-frontend-url.azurestaticapps.net",
+      "scopes": ["personal"]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "your-frontend-url.azurestaticapps.net",
+    "your-api-url.azurewebsites.net"
+  ],
+  "webApplicationInfo": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "resource": "api://your-api-url.azurewebsites.net/00000000-0000-0000-0000-000000000000"
+  }
+}
