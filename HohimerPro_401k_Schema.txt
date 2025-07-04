@@ -1,0 +1,499 @@
+-- =====================================================
+-- HohimerPro 401k Database Schema
+-- Generated: 2025-07-04 02:00:31
+-- =====================================================
+
+-- This file contains the complete database schema including:
+-- • Tables with all columns, data types, and constraints
+-- • Views for reporting and data access
+-- • Indexes for query optimization
+-- • Triggers for automated data maintenance
+
+-- =====================================================
+
+-- =====================================================
+-- TABLES
+-- =====================================================
+
+-- Table: client_files
+CREATE TABLE [client_files] (
+    [file_id] int(10) NOT NULL PRIMARY KEY,
+    [client_id] int(10) NOT NULL,
+    [file_name] nvarchar(255) NOT NULL,
+    [onedrive_path] nvarchar(500) NOT NULL,
+    [uploaded_at] datetime DEFAULT (getdate())
+);
+
+ALTER TABLE [client_files] ADD CONSTRAINT [FK_client_files_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+-- Table: client_metrics
+CREATE TABLE [client_metrics] (
+    [id] int(10) NOT NULL PRIMARY KEY,
+    [client_id] int(10) NOT NULL,
+    [client_id] int(10) NOT NULL,
+    [last_payment_date] date,
+    [last_payment_amount] float(53),
+    [total_ytd_payments] float(53),
+    [avg_quarterly_payment] float(53),
+    [last_recorded_assets] float(53),
+    [last_updated] datetime,
+    [next_payment_due] date
+);
+
+ALTER TABLE [client_metrics] ADD CONSTRAINT [FK_client_metrics_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+-- Table: clients
+CREATE TABLE [clients] (
+    [client_id] int(10) NOT NULL PRIMARY KEY,
+    [display_name] nvarchar(255) NOT NULL,
+    [full_name] nvarchar(255),
+    [ima_signed_date] date,
+    [onedrive_folder_path] nvarchar(500),
+    [valid_from] datetime DEFAULT (getdate()),
+    [valid_to] datetime
+);
+
+-- Table: contacts
+CREATE TABLE [contacts] (
+    [contact_id] int(10) NOT NULL PRIMARY KEY,
+    [client_id] int(10) NOT NULL,
+    [contact_type] nvarchar(50) NOT NULL,
+    [contact_name] nvarchar(255),
+    [phone] nvarchar(50),
+    [email] nvarchar(255),
+    [fax] nvarchar(50),
+    [physical_address] nvarchar(500),
+    [mailing_address] nvarchar(500),
+    [valid_from] datetime DEFAULT (getdate()),
+    [valid_to] datetime
+);
+
+ALTER TABLE [contacts] ADD CONSTRAINT [FK_contacts_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+-- Table: contracts
+CREATE TABLE [contracts] (
+    [contract_id] int(10) NOT NULL PRIMARY KEY,
+    [client_id] int(10) NOT NULL,
+    [contract_number] nvarchar(100),
+    [provider_name] nvarchar(255),
+    [contract_start_date] date,
+    [fee_type] nvarchar(50),
+    [percent_rate] float(53),
+    [flat_rate] float(53),
+    [payment_schedule] nvarchar(50),
+    [num_people] int(10),
+    [notes] nvarchar(MAX),
+    [valid_from] datetime DEFAULT (getdate()),
+    [valid_to] datetime
+);
+
+ALTER TABLE [contracts] ADD CONSTRAINT [FK_contracts_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+-- Table: payment_files
+CREATE TABLE [payment_files] (
+    [payment_id] int(10) NOT NULL PRIMARY KEY,
+    [payment_id] int(10) NOT NULL,
+    [file_id] int(10) NOT NULL PRIMARY KEY,
+    [file_id] int(10) NOT NULL,
+    [linked_at] datetime DEFAULT (getdate()),
+    CONSTRAINT [PK_payment_files] PRIMARY KEY (file_id, payment_id)
+);
+
+ALTER TABLE [payment_files] ADD CONSTRAINT [FK_payment_files_client_files]
+    FOREIGN KEY ([file_id]) REFERENCES [client_files]([file_id]);
+
+ALTER TABLE [payment_files] ADD CONSTRAINT [FK_payment_files_payments]
+    FOREIGN KEY ([payment_id]) REFERENCES [payments]([payment_id]);
+
+-- Table: payment_periods
+CREATE TABLE [payment_periods] (
+    [period_type] nvarchar(10) NOT NULL PRIMARY KEY,
+    [period_type] nvarchar(10) NOT NULL,
+    [year] int(10) NOT NULL PRIMARY KEY,
+    [period] int(10) NOT NULL PRIMARY KEY,
+    [period_name] nvarchar(50) NOT NULL,
+    [start_date] date NOT NULL,
+    [end_date] date NOT NULL,
+    [is_current] bit NOT NULL DEFAULT ((0)),
+    CONSTRAINT [CK__payment_p__perio__76619304] CHECK ([period_type]='quarterly' OR [period_type]='monthly'),
+    CONSTRAINT [PK__payment___EA8CC9CD5742350A] PRIMARY KEY (period, period_type, year)
+);
+
+-- Table: payments
+CREATE TABLE [payments] (
+    [payment_id] int(10) NOT NULL PRIMARY KEY,
+    [contract_id] int(10) NOT NULL,
+    [client_id] int(10) NOT NULL,
+    [received_date] date,
+    [total_assets] float(53),
+    [expected_fee] float(53),
+    [actual_fee] float(53),
+    [method] nvarchar(50),
+    [notes] nvarchar(MAX),
+    [valid_from] datetime DEFAULT (getdate()),
+    [valid_to] datetime,
+    [applied_period_type] nvarchar(10),
+    [applied_period] int(10),
+    [applied_year] int(10),
+    CONSTRAINT [chk_applied_period] CHECK ([applied_period_type]='monthly' AND ([applied_period]>=(1) AND [applied_period]<=(12)) OR [applied_period_type]='quarterly' AND ([applied_period]>=(1) AND [applied_period]<=(4)))
+);
+
+ALTER TABLE [payments] ADD CONSTRAINT [FK_payments_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+ALTER TABLE [payments] ADD CONSTRAINT [FK_payments_contracts]
+    FOREIGN KEY ([contract_id]) REFERENCES [contracts]([contract_id]);
+
+-- Table: quarterly_summaries
+CREATE TABLE [quarterly_summaries] (
+    [id] int(10) NOT NULL PRIMARY KEY,
+    [client_id] int(10) NOT NULL,
+    [client_id] int(10) NOT NULL,
+    [year] int(10) NOT NULL,
+    [quarter] int(10) NOT NULL,
+    [total_payments] float(53),
+    [total_assets] float(53),
+    [payment_count] int(10),
+    [avg_payment] float(53),
+    [expected_total] float(53),
+    [last_updated] datetime
+);
+
+ALTER TABLE [quarterly_summaries] ADD CONSTRAINT [FK_quarterly_summaries_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+-- Table: yearly_summaries
+CREATE TABLE [yearly_summaries] (
+    [id] int(10) NOT NULL PRIMARY KEY,
+    [client_id] int(10) NOT NULL,
+    [client_id] int(10) NOT NULL,
+    [year] int(10) NOT NULL,
+    [total_payments] float(53),
+    [total_assets] float(53),
+    [payment_count] int(10),
+    [avg_payment] float(53),
+    [yoy_growth] float(53),
+    [last_updated] datetime
+);
+
+ALTER TABLE [yearly_summaries] ADD CONSTRAINT [FK_yearly_summaries_clients]
+    FOREIGN KEY ([client_id]) REFERENCES [clients]([client_id]);
+
+
+-- =====================================================
+-- VIEWS
+-- =====================================================
+
+-- View: client_payment_status
+CREATE VIEW client_payment_status AS
+SELECT
+    c.client_id,
+    c.display_name,
+    ct.payment_schedule,
+    ct.fee_type,
+    ct.flat_rate,
+    ct.percent_rate,
+    cm.last_payment_date,
+    cm.last_payment_amount,
+    latest.applied_period,
+    latest.applied_year,
+    latest.applied_period_type,
+    
+    -- Current period calculation (one period back from today)
+    CASE 
+        WHEN ct.payment_schedule = 'monthly' THEN 
+            CASE WHEN MONTH(GETDATE()) = 1 THEN 12 ELSE MONTH(GETDATE()) - 1 END
+        WHEN ct.payment_schedule = 'quarterly' THEN 
+            CASE WHEN DATEPART(QUARTER, GETDATE()) = 1 THEN 4 ELSE DATEPART(QUARTER, GETDATE()) - 1 END
+    END AS current_period,
+    
+    CASE 
+        WHEN MONTH(GETDATE()) = 1 AND ct.payment_schedule = 'monthly' THEN YEAR(GETDATE()) - 1
+        WHEN DATEPART(QUARTER, GETDATE()) = 1 AND ct.payment_schedule = 'quarterly' THEN YEAR(GETDATE()) - 1
+        ELSE YEAR(GETDATE())
+    END AS current_year,
+    
+    cm.last_recorded_assets,
+    
+    CASE
+        WHEN ct.fee_type = 'flat' THEN ct.flat_rate
+        WHEN ct.fee_type = 'percentage' AND cm.last_recorded_assets IS NOT NULL THEN 
+            ROUND(cm.last_recorded_assets * (ct.percent_rate / 100.0), 2)
+        ELSE NULL
+    END AS expected_fee,
+    
+    -- Simplified payment status
+    CASE
+        WHEN latest.applied_year IS NULL THEN 'Due'
+        WHEN latest.applied_year < CASE 
+            WHEN (MONTH(GETDATE()) = 1 AND ct.payment_schedule = 'monthly') OR 
+                 (DATEPART(QUARTER, GETDATE()) = 1 AND ct.payment_schedule = 'quarterly') 
+            THEN YEAR(GETDATE()) - 1
+            ELSE YEAR(GETDATE()) 
+        END THEN 'Due'
+        WHEN latest.applied_year = CASE 
+            WHEN (MONTH(GETDATE()) = 1 AND ct.payment_schedule = 'monthly') OR 
+                 (DATEPART(QUARTER, GETDATE()) = 1 AND ct.payment_schedule = 'quarterly') 
+            THEN YEAR(GETDATE()) - 1
+            ELSE YEAR(GETDATE()) 
+        END AND latest.applied_period < CASE
+            WHEN ct.payment_schedule = 'monthly' THEN 
+                CASE WHEN MONTH(GETDATE()) = 1 THEN 12 ELSE MONTH(GETDATE()) - 1 END
+            WHEN ct.payment_schedule = 'quarterly' THEN 
+                CASE WHEN DATEPART(QUARTER, GETDATE()) = 1 THEN 4 ELSE DATEPART(QUARTER, GETDATE()) - 1 END
+        END THEN 'Due'
+        ELSE 'Paid'
+    END AS payment_status
+FROM clients c
+JOIN contracts ct ON c.client_id = ct.client_id AND ct.valid_to IS NULL
+LEFT JOIN client_metrics cm ON c.client_id = cm.client_id
+LEFT JOIN (
+    SELECT * FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY received_date DESC) as rn
+        FROM payments WHERE valid_to IS NULL
+    ) AS numbered WHERE rn = 1
+) latest ON c.client_id = latest.client_id
+WHERE c.valid_to IS NULL;
+
+-- View: clients_by_provider_view
+-- Step 4B: Create clients by provider view
+CREATE VIEW clients_by_provider_view AS
+SELECT 
+    c.client_id,
+    c.display_name,
+    c.full_name,
+    c.ima_signed_date,
+    c.onedrive_folder_path,
+    c.valid_from,
+    c.valid_to,
+    ct.contract_id,
+    ct.provider_name,
+    ct.fee_type,
+    ct.percent_rate,
+    ct.flat_rate,
+    ct.payment_schedule,
+    cm.last_payment_date,
+    cm.last_payment_amount,
+    cm.last_recorded_assets,
+    cm.total_ytd_payments,
+    cps.payment_status,
+    CASE 
+        WHEN cps.payment_status = 'Paid' THEN 'green'
+        ELSE 'yellow'
+    END AS compliance_status
+FROM clients c
+LEFT JOIN contracts ct ON c.client_id = ct.client_id AND ct.valid_to IS NULL
+LEFT JOIN client_metrics cm ON c.client_id = cm.client_id
+LEFT JOIN client_payment_status cps ON c.client_id = cps.client_id
+WHERE c.valid_to IS NULL;
+
+-- View: payment_file_view
+CREATE VIEW payment_file_view AS
+SELECT 
+    p.payment_id,
+    p.client_id,
+    p.contract_id,
+    p.received_date,
+    p.actual_fee,
+    CASE WHEN cf.file_id IS NOT NULL THEN 1 ELSE 0 END AS has_file,
+    cf.file_id,
+    cf.file_name,
+    cf.onedrive_path
+FROM 
+    payments p
+LEFT JOIN 
+    payment_files pf ON p.payment_id = pf.payment_id
+LEFT JOIN 
+    client_files cf ON pf.file_id = cf.file_id;
+
+-- View: payment_variance_view
+-- Step 4A: Create payment variance view
+CREATE VIEW payment_variance_view AS
+SELECT 
+    p.*,
+    p.actual_fee - p.expected_fee AS variance_amount,
+    CASE 
+        WHEN p.expected_fee = 0 OR p.expected_fee IS NULL THEN NULL
+        ELSE ((p.actual_fee - p.expected_fee) / p.expected_fee) * 100
+    END AS variance_percent,
+    CASE 
+        WHEN p.expected_fee IS NULL OR p.expected_fee = 0 THEN 'unknown'
+        WHEN ABS(p.actual_fee - p.expected_fee) < 0.01 THEN 'exact'
+        WHEN ABS(((p.actual_fee - p.expected_fee) / p.expected_fee) * 100) <= 5 THEN 'acceptable'
+        WHEN ABS(((p.actual_fee - p.expected_fee) / p.expected_fee) * 100) <= 15 THEN 'warning'
+        ELSE 'alert'
+    END AS variance_status
+FROM payments p
+WHERE p.valid_to IS NULL;
+
+
+-- =====================================================
+-- INDEXES
+-- =====================================================
+
+CREATE NONCLUSTERED INDEX [idx_client_metrics_lookup] ON [client_metrics] (client_id);
+
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_client_metrics_client_id] ON [client_metrics] (client_id);
+
+CREATE NONCLUSTERED INDEX [idx_contacts_client_id] ON [contacts] (client_id);
+
+CREATE NONCLUSTERED INDEX [idx_contacts_type] ON [contacts] (client_id, contact_type);
+
+CREATE NONCLUSTERED INDEX [idx_contracts_client_id] ON [contracts] (client_id);
+
+CREATE NONCLUSTERED INDEX [idx_contracts_provider] ON [contracts] (provider_name);
+
+CREATE NONCLUSTERED INDEX [idx_payment_periods_dates] ON [payment_periods] (period_type, start_date, end_date);
+
+CREATE NONCLUSTERED INDEX [idx_payments_client_id] ON [payments] (client_id);
+
+CREATE NONCLUSTERED INDEX [idx_payments_contract_id] ON [payments] (contract_id);
+
+CREATE NONCLUSTERED INDEX [idx_payments_date] ON [payments] (client_id, received_date);
+
+CREATE NONCLUSTERED INDEX [idx_payments_period_lookup] ON [payments] (actual_fee, expected_fee, total_assets, received_date, client_id, applied_year, applied_period) INCLUDE (actual_fee, expected_fee, total_assets, received_date);
+
+CREATE NONCLUSTERED INDEX [idx_quarterly_lookup] ON [quarterly_summaries] (client_id, year, quarter);
+
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_quarterly_summaries] ON [quarterly_summaries] (client_id, year, quarter);
+
+CREATE NONCLUSTERED INDEX [idx_yearly_lookup] ON [yearly_summaries] (client_id, year);
+
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_yearly_summaries] ON [yearly_summaries] (client_id, year);
+
+
+-- =====================================================
+-- TRIGGERS
+-- =====================================================
+
+-- Trigger: update_client_metrics_after_payment on payments
+CREATE TRIGGER update_client_metrics_after_payment
+ON payments
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    -- Update metrics for affected clients
+    WITH affected_clients AS (
+        SELECT client_id FROM inserted
+        UNION
+        SELECT client_id FROM deleted
+    )
+    UPDATE cm
+    SET 
+        last_payment_date = lp.received_date,
+        last_payment_amount = lp.actual_fee,
+        last_recorded_assets = lp.total_assets,
+        total_ytd_payments = ytd.total,
+        avg_quarterly_payment = qavg.avg_payment,
+        last_updated = CONVERT(nvarchar(50), GETDATE(), 120)
+    FROM client_metrics cm
+    INNER JOIN affected_clients ac ON cm.client_id = ac.client_id
+    OUTER APPLY (
+        SELECT TOP 1 received_date, actual_fee, total_assets
+        FROM payments 
+        WHERE client_id = cm.client_id AND valid_to IS NULL
+        ORDER BY received_date DESC
+    ) lp
+    OUTER APPLY (
+        SELECT SUM(actual_fee) as total
+        FROM payments 
+        WHERE client_id = cm.client_id 
+        AND applied_year = YEAR(GETDATE())
+        AND valid_to IS NULL
+    ) ytd
+    OUTER APPLY (
+        SELECT AVG(total_payments) as avg_payment
+        FROM quarterly_summaries
+        WHERE client_id = cm.client_id
+    ) qavg;
+END;
+GO
+
+-- Trigger: update_quarterly_after_payment on payments
+CREATE TRIGGER [dbo].[update_quarterly_after_payment]
+ON [dbo].[payments]
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    MERGE quarterly_summaries AS target
+    USING (
+        SELECT 
+            i.client_id, 
+            i.applied_year as year, 
+            i.applied_period as quarter,
+            SUM(p.actual_fee) as total_payments, 
+            AVG(p.total_assets) as total_assets, 
+            COUNT(*) as payment_count, 
+            AVG(p.actual_fee) as avg_payment, 
+            MAX(p.expected_fee) as expected_total
+        FROM inserted i
+        JOIN payments p ON p.client_id = i.client_id 
+            AND p.applied_year = i.applied_year 
+            AND p.applied_period = i.applied_period
+            AND p.applied_period_type = 'quarterly'
+        WHERE i.applied_period_type = 'quarterly'
+        GROUP BY i.client_id, i.applied_year, i.applied_period
+    ) AS source
+    ON target.client_id = source.client_id 
+        AND target.year = source.year 
+        AND target.quarter = source.quarter
+    WHEN MATCHED THEN
+        UPDATE SET 
+            total_payments = source.total_payments,
+            total_assets = source.total_assets,
+            payment_count = source.payment_count,
+            avg_payment = source.avg_payment,
+            expected_total = source.expected_total,
+            last_updated = CONVERT(NVARCHAR(50), GETDATE(), 120)
+    WHEN NOT MATCHED THEN
+        INSERT (client_id, year, quarter, total_payments, total_assets, 
+                payment_count, avg_payment, expected_total, last_updated)
+        VALUES (source.client_id, source.year, source.quarter, source.total_payments, 
+                source.total_assets, source.payment_count, source.avg_payment, 
+                source.expected_total, CONVERT(NVARCHAR(50), GETDATE(), 120));
+END;
+GO
+
+-- Trigger: update_yearly_after_quarterly on quarterly_summaries
+CREATE TRIGGER update_yearly_after_quarterly
+ON quarterly_summaries
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    MERGE yearly_summaries AS target
+    USING (
+        SELECT 
+            i.client_id, 
+            i.year, 
+            SUM(q.total_payments) as total_payments, 
+            AVG(q.total_assets) as total_assets, 
+            SUM(q.payment_count) as payment_count, 
+            AVG(q.avg_payment) as avg_payment
+        FROM inserted i
+        JOIN quarterly_summaries q ON q.client_id = i.client_id AND q.year = i.year
+        GROUP BY i.client_id, i.year
+    ) AS source
+    ON target.client_id = source.client_id AND target.year = source.year
+    WHEN MATCHED THEN
+        UPDATE SET 
+            total_payments = source.total_payments,
+            total_assets = source.total_assets,
+            payment_count = source.payment_count,
+            avg_payment = source.avg_payment,
+            last_updated = CONVERT(NVARCHAR(50), GETDATE(), 120)
+    WHEN NOT MATCHED THEN
+        INSERT (client_id, year, total_payments, total_assets, 
+                payment_count, avg_payment, yoy_growth, last_updated)
+        VALUES (source.client_id, source.year, source.total_payments, 
+                source.total_assets, source.payment_count, source.avg_payment, 
+                NULL, CONVERT(NVARCHAR(50), GETDATE(), 120));
+END;
+GO
