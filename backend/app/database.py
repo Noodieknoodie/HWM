@@ -3,25 +3,39 @@
 
 import os
 import pyodbc
+import struct
 from contextlib import contextmanager
 from typing import Generator
+from azure.identity import DefaultAzureCredential
 
-# Get connection string from environment
+# Get connection string from environment (without Authentication parameter)
 CONNECTION_STRING = os.getenv(
     "AZURE_SQL_CONNECTION_STRING",
-    "Driver={ODBC Driver 18 for SQL Server};Server=tcp:hohimerpro-db-server.database.windows.net,1433;Database=HohimerPro-401k;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;Authentication=ActiveDirectoryDefault;"
+    "Driver={ODBC Driver 18 for SQL Server};Server=tcp:hohimerpro-db-server.database.windows.net,1433;Database=HohimerPro-401k;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
 )
 
 
 class Database:
-    """Database connection manager for Azure SQL"""
+    """Database connection manager for Azure SQL with passwordless authentication"""
     
     def __init__(self):
         self.connection_string = CONNECTION_STRING
+        self.credential = DefaultAzureCredential(exclude_interactive_browser_credential=False)
         
     def get_connection(self) -> pyodbc.Connection:
-        """Create and return a new database connection"""
-        return pyodbc.connect(self.connection_string)
+        """Create and return a new database connection using Azure AD token"""
+        # Get access token for Azure SQL Database
+        token = self.credential.get_token("https://database.windows.net/.default").token
+        
+        # Convert token to bytes for pyodbc
+        token_bytes = token.encode("UTF-16-LE")
+        token_struct = struct.pack(f'<I{len(token_bytes)}s', len(token_bytes), token_bytes)
+        
+        # Connect using token
+        SQL_COPT_SS_ACCESS_TOKEN = 1256
+        conn = pyodbc.connect(self.connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
+        
+        return conn
     
     @contextmanager
     def get_cursor(self) -> Generator[pyodbc.Cursor, None, None]:

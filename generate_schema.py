@@ -1,4 +1,4 @@
-import pyodbc
+import pyodbc # type: ignore
 from datetime import datetime
 
 class DatabaseSchemaExtractor:
