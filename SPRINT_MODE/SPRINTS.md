@@ -1,12 +1,25 @@
 # SPRINT MODE - 401k Payment Tracker Migration Sprints
 
+## 🚨 CRITICAL: DATABASE IS ALREADY CONFIGURED 🚨
+**THE AZURE SQL DATABASE HAS BEEN FULLY UPDATED WITH ALL MODIFICATIONS.**
+- ✅ All new tables (payment_periods, etc.) are ALREADY CREATED
+- ✅ All views (payment_variance_view, clients_by_provider_view, etc.) are ALREADY CREATED  
+- ✅ All indexes are ALREADY APPLIED
+- ✅ All DATE column conversions are ALREADY COMPLETE
+- ✅ All CHECK constraints are ALREADY IN PLACE
+- ✅ The payment_periods table is ALREADY POPULATED (2015-2030)
+
+**AGENTS MUST NOT MODIFY THE AZURE SQL DATABASE STRUCTURE IN ANY WAY!**
+
 ## Overview
 This document contains the comprehensive sprint plan for migrating the 401k Payment Tracker from the complex Teams Toolkit/Azure Functions architecture to a clean React/FastAPI architecture. Each sprint has specific objectives, context from old code, and validation criteria.
 
+**Note:** The database improvements mentioned throughout these sprints are for context only - they have already been implemented. Focus on using the existing database structure, not modifying it.
+
 ---
 
-## SPRINT 1: Foundation & Database Improvements
-**Objective:** Set up project foundation and implement critical database improvements from Foundational-change.md
+## SPRINT 1: Foundation & Project Setup
+**Objective:** Set up project foundation and connect to the EXISTING database structure
 
 ### Context from Old Code:
 - Backend has complex date string manipulation (parseISO, toISOString().split('T')[0])
@@ -21,25 +34,25 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
    - `/teams-manifest` - Simple Teams manifest
    - Remove all Teams Toolkit configuration files
 
-2. Apply database improvements:
-   - Create `payment_periods` table (pre-populate 2015-2030)
-   - Create `payment_variance_view` 
-   - Create `clients_by_provider_view`
-   - Add composite index: `idx_payments_period_lookup`
-   - Verify all DATE columns are proper DATE type (not nvarchar)
-   - Verify CHECK constraints on payment periods
+2. Connect to EXISTING database (DO NOT MODIFY):
+   - Database already has `payment_periods` table (populated 2015-2030)
+   - Database already has `payment_variance_view` 
+   - Database already has `clients_by_provider_view`
+   - Database already has composite index: `idx_payments_period_lookup`
+   - All DATE columns are already proper DATE type
+   - CHECK constraints are already in place
 
 3. Set up backend foundation:
    - FastAPI app structure with proper routing
    - Database connection using pyodbc + Azure AD auth
-   - Pydantic models matching new schema
+   - Pydantic models matching EXISTING schema
    - CORS configuration for Teams
 
 ### Validation:
-- Database views return correct data
+- Can query EXISTING database views successfully
 - FastAPI server starts successfully
 - Can connect to Azure SQL with proper auth
-- All date columns use native DATE type
+- Pydantic models match EXISTING database schema
 
 ---
 
@@ -92,7 +105,7 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
    - Return only unpaid periods
    - No dynamic generation - just query the table!
 
-3. Let database triggers handle metrics updates
+3. Database triggers ALREADY handle metrics updates automatically
 
 ### Validation:
 - Variance calculations come from view (not computed)
