@@ -9,6 +9,7 @@ Files Touched: blah.poo, pee.ha
 Result: blah blah blah
 ===============================
 
+
 # Sprint 1 - Foundation & Project Setup | 2025-07-04
 Description: Created clean project structure for 401k tracker (React/FastAPI/Teams)
 Reason: Starting from empty codebase, avoiding old Teams Toolkit complexity
@@ -122,4 +123,42 @@ Critical for Future Sprints:
 - Access user via useAuth() hook: {id, email, name, tenantId}
 - Teams SSO works automatically - no manual login needed
 - Environment vars: AZURE_TENANT_ID, AZURE_CLIENT_ID (backend), VITE_API_URL (frontend)
+===============================
+
+# Sprint 6 PRE-CODE - Frontend Foundation & Routing | 2025-01-04
+EVAL: Ready to build React app structure on existing foundation
+Reason: Auth complete, need UI structure for client management
+Key Observations:
+- Foundation solid: React+Vite+TS configured, Tailwind ready, auth working
+- React Router DOM v7.1.1 installed but no routes defined
+- Zustand v5.0.2 installed but no stores created
+- No component structure yet - blank slate for UI
+- Old code shows: LaunchMenu, PageLayout, Header, document viewer pattern
+Plan:
+- Create component directories: components/, pages/, stores/
+- Router setup: Home (LaunchMenu), Payments, Documents routes
+- PageLayout wrapper with Header navigation
+- LaunchMenu with only Payments module enabled
+- Zustand store: selectedClient, documentViewerOpen, apiBase
+- Responsive design matching old UI patterns
+===============================
+
+# Sprint 6 - Frontend Foundation & Routing | 2025-01-04
+Description: Implemented React app structure with routing and global state
+Reason: Foundation needed for client management UI in upcoming sprints
+Files Touched: App.tsx, stores/useAppStore.ts, components/{PageLayout,Header,LaunchMenu}.tsx, pages/{Home,Payments,Documents}.tsx
+Result: Working React app with navigation, state management, and module selection
+Key Implementation:
+- Routes: / (LaunchMenu), /payments, /documents with PageLayout wrapper
+- Zustand store tracks: selectedClient, documentViewerOpen, apiBase
+- LaunchMenu shows 3 modules - only Payments enabled
+- Header shows nav links, selected client, document viewer toggle
+- Document viewer slides in from right (placeholder UI)
+- Responsive layout adjusts when document viewer open
+Critical for Future Sprints:
+- Sprint 7 needs client sidebar - use selectedClient from store
+- Document viewer toggle ready - just placeholder content
+- Payments page checks for selectedClient - shows warning if none
+- All components use Tailwind classes from old UI patterns
+- Navigation highlights active route with blue underline
 ===============================

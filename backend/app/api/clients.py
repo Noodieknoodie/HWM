@@ -27,7 +27,6 @@ async def get_clients(user: TokenUser = Depends(require_auth)):
                     display_name, 
                     full_name, 
                     ima_signed_date,
-                    onedrive_folder_path,
                     valid_from,
                     valid_to,
                     provider_name,
@@ -68,7 +67,6 @@ async def get_client(client_id: int, user: TokenUser = Depends(require_auth)):
                     display_name, 
                     full_name, 
                     ima_signed_date,
-                    onedrive_folder_path,
                     valid_from,
                     valid_to,
                     provider_name,
@@ -111,16 +109,14 @@ async def create_client(client_data: ClientCreate, user: TokenUser = Depends(req
                 INSERT INTO clients (
                     display_name, 
                     full_name, 
-                    ima_signed_date, 
-                    onedrive_folder_path
+                    ima_signed_date
                 )
                 OUTPUT INSERTED.*
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, ?)
             """, (
                 client_data.display_name,
                 client_data.full_name,
-                client_data.ima_signed_date,
-                client_data.onedrive_folder_path
+                client_data.ima_signed_date
             ))
             
             row = cursor.fetchone()
@@ -160,10 +156,6 @@ async def update_client(client_id: int, client_data: ClientUpdate, user: TokenUs
         if client_data.ima_signed_date is not None:
             update_fields.append("ima_signed_date = ?")
             params.append(client_data.ima_signed_date)
-        
-        if client_data.onedrive_folder_path is not None:
-            update_fields.append("onedrive_folder_path = ?")
-            params.append(client_data.onedrive_folder_path)
         
         if not update_fields:
             raise HTTPException(

@@ -11,7 +11,6 @@ class ClientBase(BaseModel):
     display_name: str = Field(..., max_length=255)
     full_name: str = Field(..., max_length=255)
     ima_signed_date: Optional[date] = None
-    onedrive_folder_path: Optional[str] = Field(None, max_length=500)
 
 
 class ClientCreate(ClientBase):
@@ -22,7 +21,6 @@ class ClientUpdate(BaseModel):
     display_name: Optional[str] = Field(None, max_length=255)
     full_name: Optional[str] = Field(None, max_length=255)
     ima_signed_date: Optional[date] = None
-    onedrive_folder_path: Optional[str] = Field(None, max_length=500)
 
 
 class Client(ClientBase):
@@ -140,7 +138,6 @@ class PaymentWithVariance(Payment):
     variance_amount: float
     variance_percent: float
     variance_status: Literal["exact", "acceptable", "warning", "alert"]
-    has_file: bool = False
 
 
 class PaymentPeriod(BaseModel):
@@ -178,7 +175,6 @@ class DashboardClient(BaseModel):
     display_name: str
     full_name: str
     ima_signed_date: Optional[date] = None
-    onedrive_folder_path: Optional[str] = None
 
 
 class DashboardContract(BaseModel):
@@ -218,7 +214,6 @@ class DashboardPayment(BaseModel):
     applied_period: int
     applied_year: int
     applied_period_type: Literal["monthly", "quarterly"]
-    has_files: bool = False
     period_display: str  # e.g., "December 2024" or "Q4 2024"
     variance_amount: Optional[float] = None
     variance_percent: Optional[float] = None

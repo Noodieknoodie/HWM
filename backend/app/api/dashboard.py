@@ -42,7 +42,6 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                     c.display_name,
                     c.full_name,
                     c.ima_signed_date,
-                    c.onedrive_folder_path,
                     c.contract_id,
                     c.provider_name,
                     c.fee_type,
@@ -78,8 +77,7 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                 client_id=row.client_id,
                 display_name=row.display_name,
                 full_name=row.full_name,
-                ima_signed_date=row.ima_signed_date,
-                onedrive_folder_path=row.onedrive_folder_path
+                ima_signed_date=row.ima_signed_date
             )
             
             # Build contract info
@@ -134,11 +132,7 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                     pv.applied_period_type,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status,
-                    CASE WHEN EXISTS (
-                        SELECT 1 FROM payment_files pf 
-                        WHERE pf.payment_id = pv.payment_id
-                    ) THEN 1 ELSE 0 END as has_files
+                    pv.variance_status
                 FROM payment_variance_view pv
                 WHERE pv.client_id = ? AND pv.valid_to IS NULL
                 ORDER BY pv.received_date DESC, pv.payment_id DESC
@@ -160,7 +154,6 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                     applied_period=payment_row.applied_period,
                     applied_year=payment_row.applied_year,
                     applied_period_type=payment_row.applied_period_type,
-                    has_files=bool(payment_row.has_files),
                     period_display=period_display,
                     variance_amount=payment_row.variance_amount,
                     variance_percent=payment_row.variance_percent,
