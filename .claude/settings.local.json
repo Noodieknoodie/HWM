@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(source:*)",
+      "Bash(python test:*)",
+      "Bash(python.exe:*)",
+      "Bash(ls:*)",
+      "Bash(.venv/Scripts/pip.exe install:*)",
+      "Bash(.venv/Scripts/python.exe test_backend.py:*)",
+      "Bash(az account:*)"
+    ],
+    "deny": []
+  }
+}
