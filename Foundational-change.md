@@ -32,12 +32,31 @@ update_yearly_after_quarterly
 - **Frontend (`dateUtils.ts`):** Has `parseISO()` and complex date formatting because dates come as strings
 - **Frontend (`PaymentFormFields.tsx`):** Default date setting requires string manipulation: `new Date().toISOString().split('T')[0]`
 
+**Implementation:**
+```sql
+ALTER TABLE clients ALTER COLUMN ima_signed_date DATE;
+ALTER TABLE contracts ALTER COLUMN contract_start_date DATE;
+ALTER TABLE payments ALTER COLUMN received_date DATE;
+ALTER TABLE client_metrics ALTER COLUMN last_payment_date DATE;
+ALTER TABLE client_metrics ALTER COLUMN last_updated DATETIME;
+ALTER TABLE client_metrics ALTER COLUMN next_payment_due DATE;
+ALTER TABLE quarterly_summaries ALTER COLUMN last_updated DATETIME;
+ALTER TABLE yearly_summaries ALTER COLUMN last_updated DATETIME;
+
+-- Add period validation
+ALTER TABLE payments
+ADD CONSTRAINT chk_applied_period CHECK (
+    (applied_period_type = 'monthly' AND applied_period BETWEEN 1 AND 12)
+    OR (applied_period_type = 'quarterly' AND applied_period BETWEEN 1 AND 4)
+);
+```
+
 **Impact:**
 - **SQL Benefits:** Can use DATEPART, DATEDIFF, proper sorting, date comparisons
 - **Backend Changes:** Remove date string handling in all endpoints
 - **Frontend Changes:** Simplify `formatDate()` function, remove parseISO calls
 - **Performance:** Massive improvement in date-based queries and sorting
-- **Data Integrity:** Add CHECK constraints on applied_period (1-12 for monthly, 1-4 for quarterly) to guarantee valid periods at database level
+- **Data Integrity:** CHECK constraints guarantee valid periods at database level
 
 ### 2. Remove Dead Columns from client_metrics
 
@@ -52,6 +71,12 @@ update_yearly_after_quarterly
 - **Backend (`dashboard/__init__.py`):** Never queries these columns
 - **Frontend:** Never displays quarter/year from client_metrics
 - **Database:** These columns are storing stale, unmaintained data
+
+**Implementation:**
+```sql
+ALTER TABLE client_metrics DROP COLUMN last_payment_quarter;
+ALTER TABLE client_metrics DROP COLUMN last_payment_year;
+```
 
 **Impact:**
 - **Tables Affected:** client_metrics (ALTER TABLE DROP COLUMN)
@@ -71,12 +96,29 @@ update_yearly_after_quarterly
 - **Frontend (`PaymentForm`):** Relies on this complex endpoint for dropdown
 - **Current Issue:** Every period dropdown request runs this expensive calculation
 
+**Implementation:**
+```sql
+CREATE TABLE payment_periods (
+    period_type NVARCHAR(10) NOT NULL CHECK (period_type IN ('monthly', 'quarterly')),
+    year INT NOT NULL,
+    period INT NOT NULL,
+    period_name NVARCHAR(50) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    is_current BIT NOT NULL DEFAULT 0,
+    PRIMARY KEY (period_type, year, period)
+);
+
+CREATE INDEX idx_payment_periods_dates 
+ON payment_periods (period_type, start_date, end_date);
+```
+
 **Impact:**
 - **New Table:** `payment_periods` with pre-populated 2015-2030 data
 - **Backend Simplification:** Replace 150 lines with a simple JOIN query
 - **Performance:** Instant period lookups vs runtime generation
 
-### 4. Add Three Critical Views
+### 4. Add Two Critical Views
 
 #### A. payment_variance_view
 
@@ -90,21 +132,25 @@ update_yearly_after_quarterly
   ```
 - **Performance Issue:** Network call for each variance calculation
 
-**New View:**
+**Implementation:**
 ```sql
 CREATE VIEW payment_variance_view AS
-SELECT *, 
-  actual_fee - expected_fee as variance_amount,
-  CASE WHEN expected_fee = 0 THEN 0 
-       ELSE ((actual_fee - expected_fee) / expected_fee) * 100 
-  END as variance_percent,
-  CASE 
-    WHEN ABS(actual_fee - expected_fee) < 0.01 THEN 'exact'
-    WHEN ABS(variance_percent) <= 5 THEN 'acceptable'
-    WHEN ABS(variance_percent) <= 15 THEN 'warning'
-    ELSE 'alert'
-  END as variance_status
-FROM payments
+SELECT 
+    p.*,
+    p.actual_fee - p.expected_fee AS variance_amount,
+    CASE 
+        WHEN p.expected_fee = 0 OR p.expected_fee IS NULL THEN NULL
+        ELSE ((p.actual_fee - p.expected_fee) / p.expected_fee) * 100
+    END AS variance_percent,
+    CASE 
+        WHEN p.expected_fee IS NULL OR p.expected_fee = 0 THEN 'unknown'
+        WHEN ABS(p.actual_fee - p.expected_fee) < 0.01 THEN 'exact'
+        WHEN ABS(((p.actual_fee - p.expected_fee) / p.expected_fee) * 100) <= 5 THEN 'acceptable'
+        WHEN ABS(((p.actual_fee - p.expected_fee) / p.expected_fee) * 100) <= 15 THEN 'warning'
+        ELSE 'alert'
+    END AS variance_status
+FROM payments p
+WHERE p.valid_to IS NULL;
 ```
 
 **Impact:**
@@ -127,13 +173,42 @@ FROM payments
   }
   ```
 
+**Implementation:**
+```sql
+CREATE VIEW clients_by_provider_view AS
+SELECT 
+    c.client_id,
+    c.display_name,
+    c.full_name,
+    c.ima_signed_date,
+    c.onedrive_folder_path,
+    c.valid_from,
+    c.valid_to,
+    ct.contract_id,
+    ct.provider_name,
+    ct.fee_type,
+    ct.percent_rate,
+    ct.flat_rate,
+    ct.payment_schedule,
+    cm.last_payment_date,
+    cm.last_payment_amount,
+    cm.last_recorded_assets,
+    cm.total_ytd_payments,
+    cps.payment_status,
+    CASE 
+        WHEN cps.payment_status = 'Paid' THEN 'green'
+        ELSE 'yellow'
+    END AS compliance_status
+FROM clients c
+LEFT JOIN contracts ct ON c.client_id = ct.client_id AND ct.valid_to IS NULL
+LEFT JOIN client_metrics cm ON c.client_id = cm.client_id
+LEFT JOIN client_payment_status cps ON c.client_id = cps.client_id
+WHERE c.valid_to IS NULL;
+```
+
 **Impact:**
 - **Backend:** Simplify all client queries
 - **Frontend:** Remove client-side grouping logic
-
-#### C. available_periods_view
-
-**Evidence:** Already covered above - replaces complex period generation
 
 ### 5. Add Missing Index
 
@@ -144,6 +219,13 @@ FROM payments
   ```
 - **Current Schema:** No index on this combination
 - **Performance:** Full table scans on payment lookups
+
+**Implementation:**
+```sql
+CREATE NONCLUSTERED INDEX idx_payments_period_lookup
+ON payments (client_id, applied_year, applied_period)
+INCLUDE (actual_fee, expected_fee, total_assets, received_date);
+```
 
 **Impact:**
 - **Query Performance:** 10-100x faster payment period lookups
@@ -156,7 +238,7 @@ FROM payments
 2. Simplify `periods/__init__.py` from 150 to ~20 lines
 3. Remove date string handling throughout
 4. Simplify all client queries (remove JOINs)
-5. Remove expected fee calculations
+5. Keep period availability logic as parameterized query (not a view)
 
 **Frontend Changes:**
 1. Delete `calculateVariance()` function
