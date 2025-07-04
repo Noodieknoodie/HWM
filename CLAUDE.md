@@ -21,6 +21,7 @@ CLAUDE-5 - the next gen Ai Coding assistant who is one of many that the user wil
 # This Project, Dev Mantra Keywords: 
 minimalist, manageable, maintainable, 1-2-3-GO!, 100% Agentic Code Agent written and maintained (no humans), no bloat, clear separation, frontend-backend split, auth not magic, Teams Tab App, fast iteration, Teams-integrated, static frontend, API-driven backend, real business logic, simple = better, no unessesary abstraction, keep it flat, practical structure, no scaffolding hell, no toolkit noise, token-based auth, internal-use-only, SQL-first, FastAPI clarity, Vite speed, React flexibility, Python where it counts, free of orphaned code, alignment, holistic, ship it clean. 
 
+
 # FILES FOR YOU TO LEAN ON
 
 ## README.md
@@ -47,4 +48,8 @@ Add to this VERY RARELY and usually only after you have to apologize to the user
 # DO NOT DO XYZ 
 - this is depreciated
 - use ABC instead!
+
+========
+
+PS. IF THE USER GIVES THE COMMAND "/SPRINT" + gives you a SubAgent / Sprint Number, then access the directory "SPRINT_MODE" and read SPRINT_MODE\subagent_welcome.md. This is a special mode that is user-directed. Don't access this folder unless this mode is triggered by the user. 
 
