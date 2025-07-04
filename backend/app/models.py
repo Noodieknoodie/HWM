@@ -169,3 +169,86 @@ class ErrorResponse(BaseModel):
                 }
             }
         }
+
+
+# Dashboard Models
+class DashboardClient(BaseModel):
+    """Client information for dashboard"""
+    client_id: int
+    display_name: str
+    full_name: str
+    ima_signed_date: Optional[date] = None
+    onedrive_folder_path: Optional[str] = None
+
+
+class DashboardContract(BaseModel):
+    """Contract details for dashboard"""
+    contract_id: int
+    provider_name: str
+    fee_type: Literal["percentage", "flat"]
+    percent_rate: Optional[float] = None
+    flat_rate: Optional[float] = None
+    payment_schedule: Literal["monthly", "quarterly"]
+
+
+class DashboardPaymentStatus(BaseModel):
+    """Current payment status for dashboard"""
+    status: Literal["Paid", "Due"]
+    current_period: str  # e.g., "December 2024" or "Q4 2024"
+    current_period_number: int
+    current_year: int
+    last_payment_date: Optional[date] = None
+    last_payment_amount: Optional[float] = None
+    expected_fee: float
+
+
+class DashboardCompliance(BaseModel):
+    """Compliance information for dashboard"""
+    status: Literal["compliant"] = "compliant"
+    color: Literal["green", "yellow"]
+    reason: str  # e.g., "Current period paid" or "Awaiting December 2024 payment"
+
+
+class DashboardPayment(BaseModel):
+    """Recent payment information for dashboard"""
+    payment_id: int
+    received_date: date
+    actual_fee: float
+    total_assets: float
+    applied_period: int
+    applied_year: int
+    applied_period_type: Literal["monthly", "quarterly"]
+    has_files: bool = False
+    period_display: str  # e.g., "December 2024" or "Q4 2024"
+    variance_amount: Optional[float] = None
+    variance_percent: Optional[float] = None
+    variance_status: Optional[Literal["exact", "acceptable", "warning", "alert"]] = None
+
+
+class DashboardMetrics(BaseModel):
+    """Payment metrics for dashboard"""
+    total_ytd_payments: float
+    avg_quarterly_payment: float
+    last_recorded_assets: float
+    next_payment_due: Optional[str] = None  # Formatted date string
+
+
+class QuarterlySummary(BaseModel):
+    """Quarterly payment summary for dashboard"""
+    quarter: int
+    year: int
+    total_payments: float
+    payment_count: int
+    avg_payment: float
+    expected_total: float
+
+
+class DashboardResponse(BaseModel):
+    """Complete dashboard response"""
+    client: DashboardClient
+    contract: DashboardContract
+    payment_status: DashboardPaymentStatus
+    compliance: DashboardCompliance
+    recent_payments: list[DashboardPayment]
+    metrics: DashboardMetrics
+    quarterly_summaries: list[QuarterlySummary] = []
