@@ -1,0 +1,8 @@
+# backend/requirements.txt
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pyodbc==5.2.0
+pydantic==2.10.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.17
+azure-identity==1.19.0
