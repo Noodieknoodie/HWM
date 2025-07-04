@@ -1,7 +1,7 @@
 # backend/app/api/contracts.py
 """Contract endpoints for managing client contracts"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 import pyodbc
 
@@ -9,12 +9,13 @@ from app.database import db, create_error_response
 from app.models import (
     Contract, ContractCreate, ContractUpdate, ErrorResponse
 )
+from app.auth import require_auth, TokenUser
 
 router = APIRouter()
 
 
 @router.get("/client/{client_id}", response_model=List[Contract])
-async def get_client_contracts(client_id: int):
+async def get_client_contracts(client_id: int, user: TokenUser = Depends(require_auth)):
     """Get all contracts for a specific client"""
     try:
         with db.get_cursor() as cursor:
@@ -44,7 +45,7 @@ async def get_client_contracts(client_id: int):
 
 
 @router.post("/", response_model=Contract)
-async def create_contract(contract_data: ContractCreate):
+async def create_contract(contract_data: ContractCreate, user: TokenUser = Depends(require_auth)):
     """Create new contract"""
     try:
         # Validate fee type and rates
@@ -121,7 +122,7 @@ async def create_contract(contract_data: ContractCreate):
 
 
 @router.put("/{contract_id}", response_model=Contract)
-async def update_contract(contract_id: int, contract_data: ContractUpdate):
+async def update_contract(contract_id: int, contract_data: ContractUpdate, user: TokenUser = Depends(require_auth)):
     """Update existing contract"""
     try:
         # Build dynamic update query

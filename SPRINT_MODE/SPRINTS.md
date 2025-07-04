@@ -1,5 +1,17 @@
 # SPRINT MODE - 401k Payment Tracker Migration Sprints
 
+# Check /OLD_CODE_INSPO for the existing app code (two monolithic combo files). The new implementation needs identical UI/UX - same layout, same style, verbatim - but adapted for the updated architecture. The Azure SQL DB simplifications make this migration cleaner, but you're not building from scratch. You're refactoring FRONTEND_COMPLEX.txt to fit the new requirements, with backend adjustments to match. Read every line of the old code before starting - understand what exists, then bridge to what's needed. LEARN WHAT THIS NEW APP CHANGES ARE BY READING CLAUDE_README.md 
+
+
+# ALL SUBAGENTS MUST READ THE FOLLOWING FILES, IN THIS ORDER, PRIOR TO WRITING ANY CODE OR LOGGING ANY JOURNAL ENTRIES:
+1. SPRINT_MODE\subagent_welcome.md
+2. SPRINT_MODE\SPRINTS.md
+3. CLAUDE_README.md
+4. OLD_CODE_INSPO\BACKEND_COMPLEX.txt
+5. OLD_CODE_INSPO\FRONTEND_COMPLEX.txt
+6. CLAUDE_JOURNAL.md
+
+
 ## 🚨 CRITICAL: DATABASE IS ALREADY CONFIGURED 🚨
 **THE AZURE SQL DATABASE HAS BEEN FULLY UPDATED WITH ALL MODIFICATIONS.**
 - ✅ All new tables (payment_periods, etc.) are ALREADY CREATED

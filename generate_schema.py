@@ -1,6 +1,5 @@
 import pyodbc
 from datetime import datetime
-import os
 
 class DatabaseSchemaExtractor:
     def __init__(self, connection_string):
