@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
   "manifestVersion": "1.16",
   "version": "1.0.0",
-  "id": "00000000-0000-0000-0000-000000000000",
+  "id": "{APP_ID}",
   "packageName": "com.hohimer.401ktracker",
   "developer": {
     "name": "Hohimer Wealth Management",
@@ -27,8 +27,9 @@
     {
       "entityId": "401k-tracker-tab",
       "name": "401k Tracker",
-      "contentUrl": "https://your-frontend-url.azurestaticapps.net",
-      "scopes": ["personal"]
+      "contentUrl": "{FRONTEND_URL}",
+      "websiteUrl": "{FRONTEND_URL}",
+      "scopes": ["personal", "team"]
     }
   ],
   "permissions": [
@@ -36,11 +37,11 @@
     "messageTeamMembers"
   ],
   "validDomains": [
-    "your-frontend-url.azurestaticapps.net",
-    "your-api-url.azurewebsites.net"
+    "{FRONTEND_DOMAIN}",
+    "{API_DOMAIN}"
   ],
   "webApplicationInfo": {
-    "id": "00000000-0000-0000-0000-000000000000",
-    "resource": "api://your-api-url.azurewebsites.net/00000000-0000-0000-0000-000000000000"
+    "id": "{AZURE_CLIENT_ID}",
+    "resource": "api://{API_DOMAIN}/{AZURE_CLIENT_ID}"
   }
 }

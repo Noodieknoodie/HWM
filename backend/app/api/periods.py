@@ -2,16 +2,18 @@
 """Smart periods endpoint using payment_periods table"""
 
 from typing import List
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from ..database import db, create_error_response
 from ..models import PaymentPeriod
+from ..auth import require_auth, TokenUser
 
 router = APIRouter()
 
 @router.get("/", response_model=List[PaymentPeriod])
 async def get_available_periods(
     client_id: int = Query(..., description="Client ID to get periods for"),
-    payment_schedule: str = Query(..., description="Payment schedule (monthly/quarterly)")
+    payment_schedule: str = Query(..., description="Payment schedule (monthly/quarterly)"),
+    user: TokenUser = Depends(require_auth)
 ):
     """Get unpaid periods from payment_periods table - no dynamic generation"""
     try:

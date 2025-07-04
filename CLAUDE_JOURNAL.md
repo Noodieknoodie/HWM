@@ -92,3 +92,34 @@ Critical for Future Sprints:
 - Recent payments include variance_amount, variance_percent, variance_status
 - Frontend can display all dashboard cards with single API call
 ===============================
+
+# Sprint 5 PRE-CODE - Authentication & Teams Integration | 2025-07-04
+Description: Implement Azure AD JWT validation and Teams SSO
+Reason: Secure all API endpoints and enable Teams authentication
+Observations:
+- API endpoints unprotected despite Azure AD database auth
+- MSAL packages pre-installed but no auth implementation
+- Teams manifest needs Azure AD app IDs
+Plan:
+- Backend: JWT validation middleware with Depends(require_auth)
+- Frontend: AuthProvider with silent SSO, useAuth hook, ApiClient
+- Manifest: Simple static tab, no Teams Toolkit complexity
+===============================
+
+# Sprint 5 - Authentication & Teams Integration | 2025-07-04
+Description: Implemented Azure AD authentication and Teams SSO
+Reason: Secure API endpoints with JWT validation, enable seamless Teams auth
+Files Touched: backend/app/auth.py, backend/app/api/*.py (all endpoints), frontend/src/auth/*, frontend/src/api/client.ts, teams-manifest/manifest.json
+Result: Complete auth system - JWT validation backend, MSAL SSO frontend
+Key Implementation:
+- auth.py validates JWTs using Azure AD public keys
+- All endpoints protected with user: TokenUser = Depends(require_auth)
+- GET /auth/config provides dynamic auth configuration
+- AuthProvider handles Teams SSO automatically
+- ApiClient includes bearer token in all requests
+Critical for Future Sprints:
+- Use useApiClient() hook for all API calls (auth handled automatically)
+- Access user via useAuth() hook: {id, email, name, tenantId}
+- Teams SSO works automatically - no manual login needed
+- Environment vars: AZURE_TENANT_ID, AZURE_CLIENT_ID (backend), VITE_API_URL (frontend)
+===============================

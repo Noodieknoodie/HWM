@@ -35,17 +35,20 @@ Welcome to the team. You're brilliant. Use it.
 ========
 
 # YOU WILL BE GIVEN A NUMBER BY THE USER - THIS NUMBER IS YOUR AGENT NUMBER / SPRINT NUMBER THAT YOU ARE DESIGNATED.
-# ONCE YOU RECIEVE THIS NUMBER, INITIATE THIS WORKFLOW:
+# ONCE YOU RECEIVE THIS NUMBER, INITIATE THIS WORKFLOW:
 
-1. Read CLAUDE_README.md
-2. Read SPRINTS.md - read your sprint as WELL as all other sprints to know where you live in the chain
-3. Read CLAUDE_JOURNAL.md to see all other agents task completions, learn from them, their past mistakes, etc. 
-4. Grep the codebase - cast your net wide - confirm everything - measure thrice, cut once. 
-5. Add a LOG to CLAUDE_JOURNAL PRIOR to making code modifications - record a PRE-CODE EVAL log entry patterns you see, record any specifications that your task has that might be finnicky, discuss the before and after, files and function names that will be touched, anything you want to hold yourself accountable to, anything you witnessed in your code deep dive that contradicts your given sprint instructions that you need to make note of, any ripple effects or things that need to be mentioned.
-6. Impliment the code changes.
-7. return back to CLAUDE_JOURNAL, record a POST CODE COMPLETION entry
-8. revise and rewrite BOTH the PRECODE and POST CODE entries - cut out the fat - make them consise, important, and compact. Now that your sprint is over, there is likely alot of bullshit in your log, so basically just turn it into the log you actually want to retain for other agents to read. Yes, fully rewrite both your Pre and Post entires. 
-9. IF NEEDED (extremly rare) - if there was discovery made by yourself that is substantial and affects the course of future agents, then update any FUTURE SPRINTS, Code Documentation files, anything that future agents will rely on. if this discovery affects PRIOR, already accomplished sprints, then modify the code correctly and fix it! (dont forget to fit the prior sprint + log entry, too - we dont want ANYTHING to give conflicting or legacy insight into anything. everything ALWAYS current.)
+1. Read SPRINT_MODE\subagent_welcome.md
+2. Read SPRINT_MODE\SPRINTS.md - study your assigned sprint AND all other sprints to understand your position in the chain
+3. Read CLAUDE_README.md
+4. Read OLD_CODE_INSPO\BACKEND_COMPLEX.txt
+5. Read OLD_CODE_INSPO\FRONTEND_COMPLEX.txt
+6. Read CLAUDE_JOURNAL.md to review previous agents' completions, learnings, and mistakes
+7. Grep the codebase thoroughly - verify assumptions, confirm dependencies, measure thrice cut once
+8. Add PRE-CODE EVAL entry to CLAUDE_JOURNAL before touching any code - document patterns observed, tricky specifications, planned changes, affected files/functions, accountability checkpoints, contradictions with sprint instructions, potential ripple effects
+9. Implement the code changes
+10. Add POST-CODE COMPLETION entry to CLAUDE_JOURNAL
+11. Rewrite BOTH entries for clarity - strip unnecessary detail, keep only essential information other agents need. Must maintain separate PRE and POST entries after revision
+12. IF NEEDED (rare) - Update future sprints/documentation if discoveries impact upcoming work. Fix prior sprint code/logs if discoveries invalidate completed work. Keep everything current - no conflicting or legacy information allowed
 
 =======
 

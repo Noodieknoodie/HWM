@@ -3,14 +3,15 @@
 
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from ..database import db, create_error_response
 from ..models import PaymentCreate, PaymentUpdate, PaymentWithVariance
+from ..auth import require_auth, TokenUser
 
 router = APIRouter()
 
 @router.get("/", response_model=List[PaymentWithVariance])
-async def get_payments(client_id: int = Query(..., description="Client ID to get payments for")):
+async def get_payments(client_id: int = Query(..., description="Client ID to get payments for"), user: TokenUser = Depends(require_auth)):
     """Get all payments for a client with variance from payment_variance_view"""
     try:
         with db.get_cursor() as cursor:
@@ -69,7 +70,7 @@ async def get_payments(client_id: int = Query(..., description="Client ID to get
         )
 
 @router.post("/", response_model=PaymentWithVariance)
-async def create_payment(payment: PaymentCreate):
+async def create_payment(payment: PaymentCreate, user: TokenUser = Depends(require_auth)):
     """Create a new payment - applies to single period only"""
     try:
         with db.get_cursor() as cursor:
@@ -165,7 +166,7 @@ async def create_payment(payment: PaymentCreate):
         )
 
 @router.put("/{payment_id}", response_model=PaymentWithVariance)
-async def update_payment(payment_id: int, payment: PaymentUpdate):
+async def update_payment(payment_id: int, payment: PaymentUpdate, user: TokenUser = Depends(require_auth)):
     """Update an existing payment"""
     try:
         with db.get_cursor() as cursor:
@@ -267,7 +268,7 @@ async def update_payment(payment_id: int, payment: PaymentUpdate):
         )
 
 @router.delete("/{payment_id}")
-async def delete_payment(payment_id: int):
+async def delete_payment(payment_id: int, user: TokenUser = Depends(require_auth)):
     """Soft delete a payment"""
     try:
         with db.get_cursor() as cursor:

@@ -74,13 +74,38 @@ async def general_exception_handler(request, exc):
     )
 
 
-# Root endpoint
+# Root endpoint (public)
 @app.get("/")
 async def root():
     return {
         "message": "HWM 401k Payment Tracker API",
         "version": "1.0.0",
-        "status": "operational"
+        "status": "operational",
+        "authentication": "Azure AD JWT required for API endpoints"
+    }
+
+
+# Auth configuration endpoint (public)
+@app.get("/auth/config")
+async def auth_config():
+    """Get authentication configuration for frontend"""
+    tenant_id = os.getenv("AZURE_TENANT_ID")
+    client_id = os.getenv("AZURE_CLIENT_ID")
+    
+    if not tenant_id or not client_id:
+        return JSONResponse(
+            status_code=503,
+            content=create_error_response(
+                code="AUTH_NOT_CONFIGURED",
+                message="Authentication configuration missing"
+            )
+        )
+    
+    return {
+        "authority": f"https://login.microsoftonline.com/{tenant_id}",
+        "clientId": client_id,
+        "redirectUri": os.getenv("FRONTEND_URL", "http://localhost:5173"),
+        "scopes": [f"api://{client_id}/.default"]
     }
 
 

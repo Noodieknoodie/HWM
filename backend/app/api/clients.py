@@ -1,7 +1,7 @@
 # backend/app/api/clients.py
 """Client endpoints using clients_by_provider_view for simplified queries"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from datetime import datetime
 import pyodbc
@@ -10,12 +10,13 @@ from app.database import db, create_error_response
 from app.models import (
     Client, ClientCreate, ClientUpdate, ClientWithStatus, ErrorResponse
 )
+from app.auth import require_auth, TokenUser
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[ClientWithStatus])
-async def get_clients():
+async def get_clients(user: TokenUser = Depends(require_auth)):
     """Get all clients with their status from clients_by_provider_view"""
     try:
         with db.get_cursor() as cursor:
@@ -57,7 +58,7 @@ async def get_clients():
 
 
 @router.get("/{client_id}", response_model=ClientWithStatus)
-async def get_client(client_id: int):
+async def get_client(client_id: int, user: TokenUser = Depends(require_auth)):
     """Get single client with contract info"""
     try:
         with db.get_cursor() as cursor:
@@ -102,7 +103,7 @@ async def get_client(client_id: int):
 
 
 @router.post("/", response_model=Client)
-async def create_client(client_data: ClientCreate):
+async def create_client(client_data: ClientCreate, user: TokenUser = Depends(require_auth)):
     """Create new client"""
     try:
         with db.get_cursor() as cursor:
@@ -141,7 +142,7 @@ async def create_client(client_data: ClientCreate):
 
 
 @router.put("/{client_id}", response_model=Client)
-async def update_client(client_id: int, client_data: ClientUpdate):
+async def update_client(client_id: int, client_data: ClientUpdate, user: TokenUser = Depends(require_auth)):
     """Update existing client"""
     try:
         # Build dynamic update query based on provided fields
@@ -204,7 +205,7 @@ async def update_client(client_id: int, client_data: ClientUpdate):
 
 
 @router.delete("/{client_id}")
-async def delete_client(client_id: int):
+async def delete_client(client_id: int, user: TokenUser = Depends(require_auth)):
     """Soft delete client by setting valid_to timestamp"""
     try:
         with db.get_cursor() as cursor:
