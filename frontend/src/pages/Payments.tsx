@@ -1,9 +1,15 @@
 // frontend/src/pages/Payments.tsx
 import React from 'react';
 import useAppStore from '@/stores/useAppStore';
+import { useClientDashboard } from '@/hooks/useClientDashboard';
+import ContractCard from '@/components/dashboard/ContractCard';
+import PaymentInfoCard from '@/components/dashboard/PaymentInfoCard';
+import ComplianceCard from '@/components/dashboard/ComplianceCard';
 
 const Payments: React.FC = () => {
   const selectedClient = useAppStore((state) => state.selectedClient);
+  const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
+  const { data: dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);
   
   return (
     <div className="space-y-6">
@@ -15,11 +21,72 @@ const Payments: React.FC = () => {
       </div>
       
       {selectedClient ? (
-        <div className="bg-white shadow rounded-lg p-6">
-          <p className="text-gray-600">
-            Payments dashboard for <span className="font-semibold">{selectedClient.display_name}</span> will be implemented in Sprint 7-9.
-          </p>
-        </div>
+        <>
+          {/* Client name header */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-gray-900">
+              {selectedClient.display_name}
+            </h3>
+            <button
+              onClick={() => useAppStore.getState().toggleDocumentViewer()}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {documentViewerOpen ? 'Hide' : 'View'} Documents
+            </button>
+          </div>
+
+          {/* Error state */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Dashboard cards */}
+          <div className={`grid gap-6 ${
+            documentViewerOpen 
+              ? 'lg:grid-cols-2' 
+              : 'lg:grid-cols-3'
+          } grid-cols-1`}>
+            <ContractCard 
+              contract={dashboardData?.contract || null} 
+              loading={loading}
+            />
+            <PaymentInfoCard 
+              paymentStatus={dashboardData?.payment_status || null}
+              metrics={dashboardData?.metrics || null}
+              loading={loading}
+            />
+            <ComplianceCard 
+              compliance={dashboardData?.compliance || null}
+              paymentStatus={dashboardData?.payment_status || null}
+              contract={dashboardData?.contract || null}
+              loading={loading}
+            />
+          </div>
+
+          {/* Payment form and history will be added in Sprint 9 */}
+          <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-600 text-center">
+              Payment form and history table will be implemented in Sprint 9
+            </p>
+          </div>
+        </>
       ) : (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <div className="flex">
