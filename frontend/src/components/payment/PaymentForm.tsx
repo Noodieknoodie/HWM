@@ -96,10 +96,22 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       return;
     }
     
-    const [period, year] = formData.period_selection.split('-').map(Number);
+    const periodParts = formData.period_selection.split('-').map(Number);
+    const [period, year] = periodParts.length === 2 ? periodParts : [0, 0];
+    
+    if (!period || !year) {
+      setError('Invalid period selection format');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
+      
+      // Prevent form submission during periods loading
+      if (periodsLoading) {
+        setError('Please wait for periods to load');
+        return;
+      }
       
       const data: PaymentCreateData | PaymentUpdateData = editingPayment ? {
         received_date: formData.received_date,
@@ -112,7 +124,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         applied_period: period,
         applied_year: year,
       } : {
-        contract_id: contractId!,
+        contract_id: contractId || 0,
         client_id: clientId,
         received_date: formData.received_date,
         total_assets: formData.total_assets ? parseFloat(formData.total_assets) : null,

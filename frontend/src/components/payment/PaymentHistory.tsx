@@ -43,7 +43,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     } else if (payment.applied_period_type === 'monthly') {
       const months = ['January', 'February', 'March', 'April', 'May', 'June',
                      'July', 'August', 'September', 'October', 'November', 'December'];
-      return `${months[payment.applied_period - 1]} ${payment.applied_year}`;
+      const monthIndex = Math.min(Math.max(payment.applied_period - 1, 0), 11);
+      return `${months[monthIndex]} ${payment.applied_year}`;
     }
     return 'N/A';
   };
