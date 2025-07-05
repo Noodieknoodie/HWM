@@ -8,6 +8,7 @@ import PaymentInfoCard from '@/components/dashboard/PaymentInfoCard';
 import ComplianceCard from '@/components/dashboard/ComplianceCard';
 import PaymentForm from '@/components/payment/PaymentForm';
 import PaymentHistory from '@/components/payment/PaymentHistory';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Payments: React.FC = () => {
   const selectedClient = useAppStore((state) => state.selectedClient);
@@ -80,49 +81,59 @@ const Payments: React.FC = () => {
               ? 'lg:grid-cols-2' 
               : 'lg:grid-cols-3'
           } grid-cols-1`}>
-            <ContractCard 
-              contract={dashboardData?.contract || null} 
-              loading={loading}
-            />
-            <PaymentInfoCard 
-              paymentStatus={dashboardData?.payment_status || null}
-              metrics={dashboardData?.metrics || null}
-              loading={loading}
-            />
-            <ComplianceCard 
-              compliance={dashboardData?.compliance || null}
-              paymentStatus={dashboardData?.payment_status || null}
-              contract={dashboardData?.contract || null}
-              loading={loading}
-            />
+            <ErrorBoundary>
+              <ContractCard 
+                contract={dashboardData?.contract || null} 
+                loading={loading}
+              />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <PaymentInfoCard 
+                paymentStatus={dashboardData?.payment_status || null}
+                metrics={dashboardData?.metrics || null}
+                loading={loading}
+              />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <ComplianceCard 
+                compliance={dashboardData?.compliance || null}
+                paymentStatus={dashboardData?.payment_status || null}
+                contract={dashboardData?.contract || null}
+                loading={loading}
+              />
+            </ErrorBoundary>
           </div>
 
           {/* Payment Form and History */}
           <div className="space-y-6">
-            <PaymentForm
-              clientId={selectedClient.client_id}
-              contractId={dashboardData?.contract?.contract_id || null}
-              editingPayment={editingPayment}
-              onSubmit={async (data) => {
-                if (editingPayment) {
-                  await updatePayment(editingPayment.payment_id, data);
-                } else {
-                  await createPayment(data);
-                }
-                setEditingPayment(null);
-              }}
-              onCancel={() => setEditingPayment(null)}
-            />
+            <ErrorBoundary>
+              <PaymentForm
+                clientId={selectedClient.client_id}
+                contractId={dashboardData?.contract?.contract_id || null}
+                editingPayment={editingPayment}
+                onSubmit={async (data) => {
+                  if (editingPayment) {
+                    await updatePayment(editingPayment.payment_id, data);
+                  } else {
+                    await createPayment(data);
+                  }
+                  setEditingPayment(null);
+                }}
+                onCancel={() => setEditingPayment(null)}
+              />
+            </ErrorBoundary>
             
-            <PaymentHistory
-              payments={payments}
-              loading={paymentsLoading}
-              error={paymentsError}
-              onEdit={setEditingPayment}
-              onDelete={deletePayment}
-              selectedYear={selectedYear}
-              onYearChange={setSelectedYear}
-            />
+            <ErrorBoundary>
+              <PaymentHistory
+                payments={payments}
+                loading={paymentsLoading}
+                error={paymentsError}
+                onEdit={setEditingPayment}
+                onDelete={deletePayment}
+                selectedYear={selectedYear}
+                onYearChange={setSelectedYear}
+              />
+            </ErrorBoundary>
           </div>
         </>
       ) : (

@@ -72,6 +72,8 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
   useEffect(() => {
     if (!clientId) return;
     
+    let cancelled = false;
+    
     const fetchPayments = async () => {
       setLoading(true);
       setError(null);
@@ -90,15 +92,26 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
         const response = await apiClient.request<Payment[]>(
           `/api/payments?${queryParams.toString()}`
         );
-        setPayments(response);
+        
+        if (!cancelled) {
+          setPayments(response);
+        }
       } catch (err: any) {
-        setError(err?.error?.message || 'Failed to fetch payments');
+        if (!cancelled) {
+          setError(err?.error?.message || 'Failed to fetch payments');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     
     fetchPayments();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [clientId, page, limit, year]);
   
   const createPayment = async (data: PaymentCreateData) => {
