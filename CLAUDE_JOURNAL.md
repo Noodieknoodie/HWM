@@ -260,3 +260,55 @@ Critical for Future Sprints:
 - All types match backend exactly for type safety
 - Fee reference in ComplianceCard handles both percentage and flat fees
 ===============================
+
+# Sprint 9 PRE-CODE - Payment Form & History | 2025-07-05  
+EVAL: Ready to implement payment recording and history display
+Reason: Dashboard cards complete, need payment management UI
+Key Observations:
+- Sprint 8 completed dashboard cards with all client info display
+- Sprint 3 created /api/payments and /api/periods endpoints
+- Old code shows PaymentForm with single period dropdown (no split payment UI)
+- Old code shows PaymentHistory table with variance from API (not calculated)
+- payment_variance_view provides variance data directly - no frontend math
+- Periods endpoint returns unpaid periods from payment_periods table
+Plan:
+- Create hooks/usePayments.ts for payment list/create/update/delete
+- Create hooks/usePeriods.ts for available periods
+- Create components/payment/PaymentForm.tsx with single period dropdown
+- Create components/payment/PaymentHistory.tsx with year filter and pagination
+- Update Payments page to show form and history below dashboard
+- Form validation and dirty state detection
+- Edit mode populates form from existing payment
+Critical Details:
+- NO split payment UI or logic - single period only
+- NO variance calculations - display from payment_variance_view
+- Period dropdown from /api/periods - instant loading
+- Expected fee comes from dashboard data or API response
+- Delete with confirmation dialog
+- Pagination and year filter for history
+===============================
+
+# Sprint 9 - Payment Form & History | 2025-07-05
+Description: Implemented payment recording form and history table with edit/delete functionality
+Reason: Enable users to record and manage client payment records
+Files Touched: frontend/src/hooks/{usePayments.ts,usePeriods.ts}, frontend/src/components/payment/{PaymentForm.tsx,PaymentHistory.tsx}, frontend/src/pages/Payments.tsx, frontend/src/api/client.ts
+Result: Complete payment management UI with form validation and history display
+Key Implementation Details:
+- usePayments hook handles list/create/update/delete with automatic refresh
+- usePeriods hook fetches available periods from /api/periods endpoint
+- PaymentForm supports both create and edit modes with dirty state detection
+- Single period selection only - no split payment UI or logic
+- Expected fee calculated from contract data (percentage or flat)
+- PaymentHistory displays variance data directly from API - no calculations
+- Year filter for history with "All Years" option
+- Edit populates form, delete requires confirmation
+- Form validation ensures required fields (date, amount, period)
+- Loading states and error handling throughout
+Critical for Future Sprints:
+- All variance data comes from payment_variance_view - never calculated
+- Period dropdown loads instantly from payment_periods table
+- Expected fee uses dashboard contract data or API response
+- Binary status indicators maintained (green/yellow only)
+- Document viewer file icon shown but non-functional (placeholder)
+- Sprint 10 will focus on cleanup and final integration
+===============================
