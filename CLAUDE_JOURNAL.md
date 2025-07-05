@@ -211,3 +211,52 @@ Critical for Future Sprints:
 - Responsive design foundation (mobile needs more work)
 - All status display is binary - no calculations needed
 ===============================
+
+# Sprint 8 PRE-CODE - Dashboard Cards Implementation | 2025-07-05
+EVAL: Ready to implement dashboard cards for client payment tracking
+Reason: Client selection works, need to display contract/payment/compliance info
+Key Observations:
+- Sprint 7 completed sidebar with client selection
+- Sprint 4 created /api/dashboard/{client_id} endpoint returning all data
+- Dashboard endpoint provides: client info, contract details, payment metrics, compliance status, recent payments
+- Old code shows 3 cards: ContractCard, PaymentInfoCard, ComplianceCard
+- Document viewer toggle adjusts card layout (3 cols → 2 cols)
+- All calculations done in SQL views - frontend just displays
+Plan:
+- Create hooks/useClientDashboard.ts for API integration
+- Create components/dashboard/ContractCard.tsx
+- Create components/dashboard/PaymentInfoCard.tsx  
+- Create components/dashboard/ComplianceCard.tsx
+- Update Payments page to show dashboard when client selected
+- Responsive grid layout that adjusts with document viewer
+- Loading skeletons for each card
+Critical Details:
+- NO calculations in frontend - display API data as-is
+- Binary status only: green (Paid) or yellow (Due)
+- Single API call for all cards via useClientDashboard hook
+- Variance data comes pre-calculated from payment_variance_view
+- Expected fees from client_payment_status view
+===============================
+
+# Sprint 8 - Dashboard Cards Implementation | 2025-07-05
+Description: Implemented dashboard cards showing contract, payment, and compliance information
+Reason: Display comprehensive client payment tracking data with responsive layout
+Files Touched: frontend/src/hooks/useClientDashboard.ts, frontend/src/components/dashboard/{ContractCard,PaymentInfoCard,ComplianceCard}.tsx, frontend/src/pages/Payments.tsx
+Result: Working dashboard with three information cards that adapt to document viewer state
+Key Implementation Details:
+- Created useClientDashboard hook with all dashboard types matching backend models
+- ContractCard displays contract details with formatted fee amounts
+- PaymentInfoCard shows payment metrics with icons and status highlighting
+- ComplianceCard shows binary status (green/yellow) with fee reference table
+- Payments page integrates all cards with responsive grid (3 cols → 2 cols when doc viewer open)
+- All data comes from single /api/dashboard/{client_id} call
+- Zero calculations in frontend - all variance/fees from SQL views
+- Loading skeletons for each card during data fetch
+- Error handling with user-friendly messages
+Critical for Future Sprints:
+- Sprint 9 will add payment form and history table below cards
+- Dashboard cards complete - no additional work needed
+- Document viewer toggle works and adjusts layout
+- All types match backend exactly for type safety
+- Fee reference in ComplianceCard handles both percentage and flat fees
+===============================
