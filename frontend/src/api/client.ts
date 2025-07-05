@@ -17,7 +17,7 @@ export class ApiClient {
     this.getAccessToken = getAccessToken;
   }
 
-  private async request<T>(
+  async request<T>(
     path: string,
     options: RequestInit = {}
   ): Promise<T> {
@@ -133,8 +133,8 @@ export class ApiClient {
   }
 
   // Period methods
-  async getAvailablePeriods(clientId: number, paymentSchedule: string) {
-    return this.request(`/api/periods?client_id=${clientId}&payment_schedule=${paymentSchedule}`);
+  async getAvailablePeriods(clientId: number, contractId: number) {
+    return this.request(`/api/periods?client_id=${clientId}&contract_id=${contractId}`);
   }
 
   // Dashboard methods
