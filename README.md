@@ -127,15 +127,70 @@ The application connects to an existing Azure SQL Database with the following ke
 ## Sprint Progress
 
 - [x] Sprint 1: Foundation & Project Setup
-- [ ] Sprint 2: Core API Endpoints - Clients & Contracts
-- [ ] Sprint 3: Payment Management & Smart Periods
-- [ ] Sprint 4: Dashboard & Payment Status
-- [ ] Sprint 5: Authentication & Teams Integration
-- [ ] Sprint 6: Frontend Foundation & Routing
-- [ ] Sprint 7: Client Management UI
-- [ ] Sprint 8: Dashboard Cards Implementation
-- [ ] Sprint 9: Payment Form & History
-- [ ] Sprint 10: Final Integration & Cleanup
+- [x] Sprint 2: Core API Endpoints - Clients & Contracts
+- [x] Sprint 3: Payment Management & Smart Periods
+- [x] Sprint 4: Dashboard & Payment Status
+- [x] Sprint 5: Authentication & Teams Integration
+- [x] Sprint 6: Frontend Foundation & Routing
+- [x] Sprint 7: Client Management UI
+- [x] Sprint 8: Dashboard Cards Implementation
+- [x] Sprint 9: Payment Form & History
+- [x] Sprint 10: Final Integration & Cleanup
+
+## Deployment
+
+### Backend Deployment (Azure App Service)
+
+1. Build the application:
+   ```bash
+   cd backend
+   pip freeze > requirements.txt
+   ```
+
+2. Deploy to Azure App Service:
+   - Configure App Service with Python 3.12 runtime
+   - Set environment variables in Configuration:
+     - `AZURE_SQL_CONNECTION_STRING`
+     - `AZURE_TENANT_ID`
+     - `AZURE_CLIENT_ID`
+     - `CORS_ORIGINS` (include your frontend URL)
+   - Enable system-assigned managed identity for database auth
+   - Deploy code via ZIP deploy or Git integration
+
+### Frontend Deployment (Azure Static Web Apps)
+
+1. Build the application:
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+2. Deploy to Azure Static Web Apps:
+   - Create Static Web App resource
+   - Set build configuration:
+     - App location: `/frontend`
+     - Output location: `dist`
+   - Configure environment variable:
+     - `VITE_API_URL` = your backend API URL
+   - Deploy via GitHub Actions or Azure CLI
+
+### Teams App Deployment
+
+1. Update manifest with production URLs:
+   - Set `contentUrl` to your frontend URL
+   - Update `validDomains` with frontend and API domains
+   - Generate unique app ID if needed
+
+2. Package the manifest:
+   ```bash
+   cd teams-manifest
+   zip -r app.zip manifest.json color.png outline.png
+   ```
+
+3. Deploy to Teams:
+   - Upload to Teams Admin Center
+   - Publish to your organization's app catalog
+   - Grant necessary permissions
 
 ## Notes
 
