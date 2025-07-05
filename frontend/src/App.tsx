@@ -6,6 +6,7 @@ import PageLayout from './components/PageLayout'
 import Home from './pages/Home'
 import Payments from './pages/Payments'
 import Documents from './pages/Documents'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
   const { user } = useAuth();
@@ -39,11 +40,13 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 
