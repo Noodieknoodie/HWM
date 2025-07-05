@@ -1,15 +1,32 @@
 // frontend/src/pages/Payments.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import useAppStore from '@/stores/useAppStore';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
+import { usePayments, Payment } from '@/hooks/usePayments';
 import ContractCard from '@/components/dashboard/ContractCard';
 import PaymentInfoCard from '@/components/dashboard/PaymentInfoCard';
 import ComplianceCard from '@/components/dashboard/ComplianceCard';
+import PaymentForm from '@/components/payment/PaymentForm';
+import PaymentHistory from '@/components/payment/PaymentHistory';
 
 const Payments: React.FC = () => {
   const selectedClient = useAppStore((state) => state.selectedClient);
   const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
   const { data: dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);
+  
+  // Payment form and history state
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  
+  // Payment hooks
+  const {
+    payments,
+    loading: paymentsLoading,
+    error: paymentsError,
+    createPayment,
+    updatePayment,
+    deletePayment,
+  } = usePayments(selectedClient?.client_id || null, { year: selectedYear });
   
   return (
     <div className="space-y-6">
@@ -80,11 +97,32 @@ const Payments: React.FC = () => {
             />
           </div>
 
-          {/* Payment form and history will be added in Sprint 9 */}
-          <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-            <p className="text-gray-600 text-center">
-              Payment form and history table will be implemented in Sprint 9
-            </p>
+          {/* Payment Form and History */}
+          <div className="space-y-6">
+            <PaymentForm
+              clientId={selectedClient.client_id}
+              contractId={dashboardData?.contract?.contract_id || null}
+              editingPayment={editingPayment}
+              onSubmit={async (data) => {
+                if (editingPayment) {
+                  await updatePayment(editingPayment.payment_id, data);
+                } else {
+                  await createPayment(data);
+                }
+                setEditingPayment(null);
+              }}
+              onCancel={() => setEditingPayment(null)}
+            />
+            
+            <PaymentHistory
+              payments={payments}
+              loading={paymentsLoading}
+              error={paymentsError}
+              onEdit={setEditingPayment}
+              onDelete={deletePayment}
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+            />
           </div>
         </>
       ) : (
