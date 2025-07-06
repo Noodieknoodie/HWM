@@ -1,5 +1,5 @@
 ## HWM 401k Payment Tracker 
-This is a 401(k) payment management system built for Hohimer Wealth Management that runs as a Microsoft Teams tab, enabling internal staff to track client fee payments, monitor compliance status, and manage payment schedules. The architecture follows a clean three-tier design: a React frontend handles the user interface and authentication via Azure AD, a FastAPI backend manages all business logic including payment calculations and compliance tracking, and an Azure SQL database stores client contracts, payment history, and fee structures, etc. The app is designed for internal use only, leveraging Teams as the delivery platform while maintaining a straightforward deployment model with the frontend hosted on Azure Static Web Apps and the API on Azure App Service, ensuring both security through token-based authentication and ease of maintenance through clear separation of concerns. This is a small scale app for my company to use - not hyper enterprise app. Automatic identity for our company via Teams SSO / Entra ID
+This is a 401(k) payment management system built for Hohimer Wealth Management that runs as a Microsoft Teams tab, enabling internal staff to track client fee payments, monitor compliance status, and manage payment schedules. The architecture follows a clean three-tier design: a React frontend handles the user interface with authentication via Azure Static Web Apps' built-in auth (seamless Teams SSO), a FastAPI backend manages all business logic including payment calculations and compliance tracking, and an Azure SQL database stores client contracts, payment history, and fee structures, etc. The app is designed for internal use only, leveraging Teams as the delivery platform while maintaining a straightforward deployment model with the frontend hosted on Azure Static Web Apps and the API on Azure App Service, ensuring both security through platform-level authentication and ease of maintenance through clear separation of concerns. This is a small scale app for my company to use - not hyper enterprise app. Automatic identity for our company via Teams SSO handled by Azure Static Web Apps
 
 ## This app has gone through refactoring hell. This time, we are doing it the normal clean way. See the chaos here from the most recent old version (there have been many prior itterations as well but this one is decent reference): 
 * OLD_CODE_INSPO\BACKEND_COMPLEX.txt 
@@ -39,12 +39,11 @@ Remember: The complexity wasn't necessary — it was accumulated. Your job is to
 **Styling & UI**
 - Tailwind CSS 3.5
 **Authentication**
-- @azure/msal-browser
+- Azure Static Web Apps built-in auth (no additional packages needed)
 **Backend Dependencies**
 - uvicorn[standard]
 - pyodbc
 - pydantic
-- python-jose (JWT token validation)
 **Build & Deployment**
 - Frontend: Azure Static Web App (Vite build → dist/)
 - Backend: Azure App Service
@@ -56,7 +55,7 @@ Remember: The complexity wasn't necessary — it was accumulated. Your job is to
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
-│   │   ├── auth/
+│   │   ├── auth/         # Simple auth hook
 │   │   └── api/
 │   └── vite.config.ts
 ├── backend/

@@ -1,0 +1,28 @@
+{
+    "navigationFallback": {
+      "rewrite": "/index.html"
+    },
+    "routes": [
+      {
+        "route": "/*",
+        "allowedRoles": ["authenticated"]
+      }
+    ],
+    "responseOverrides": {
+      "401": {
+        "statusCode": 302,
+        "redirect": "/.auth/login/aad"
+      }
+    },
+    "auth": {
+      "identityProviders": {
+        "azureActiveDirectory": {
+          "registration": {
+            "openIdIssuer": "https://login.microsoftonline.com/e621abc4-3baa-4b93-badc-3b99e8609963/v2.0",
+            "clientIdSettingName": "AAD_CLIENT_ID",
+            "clientSecretSettingName": "AAD_CLIENT_SECRET"
+          }
+        }
+      }
+    }
+  }

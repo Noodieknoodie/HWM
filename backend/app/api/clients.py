@@ -1,7 +1,7 @@
 # backend/app/api/clients.py
 """Client endpoints using clients_by_provider_view for simplified queries"""
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Optional
 from datetime import datetime
 import pyodbc
@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[ClientWithStatus])
-async def get_clients(user: TokenUser = Depends(require_auth)):
+async def get_clients(request: Request, user: TokenUser = Depends(require_auth)):
     """Get all clients with their status from clients_by_provider_view"""
     try:
         with db.get_cursor() as cursor:

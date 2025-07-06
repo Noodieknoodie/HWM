@@ -9,6 +9,21 @@ Files Touched: blah.poo, pee.ha
 Result: blah blah blah
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 
 # Sprint 1 - Foundation & Project Setup | 2025-07-04
 Description: Created clean project structure for 401k tracker (React/FastAPI/Teams)
@@ -21,6 +36,21 @@ Key Notes:
 - Placeholder routers prevent import errors for future sprints
 - Standardized error format: {"error": {"code": "X", "message": "Y"}}
 - All dates are proper DATE columns - no string manipulation needed
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 2 - Core API Endpoints | 2025-07-04
@@ -38,6 +68,21 @@ Critical for Future Sprints:
 - ClientWithStatus model includes compliance_status from view - use this, don't calculate
 - Provider grouping happens in SQL ORDER BY - frontend just displays pre-sorted data
 - Contract validation ensures either percent_rate OR flat_rate is set based on fee_type
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 3 - Payment Management & Smart Periods | 2025-07-04
@@ -59,6 +104,21 @@ Critical for Future Sprints:
 - Dashboard endpoint (Sprint 4) can leverage payment_variance_view for summary data
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Sprint 4 PRE-CODE - Dashboard & Payment Status | 2025-07-04
 EVAL: Ready to implement unified dashboard endpoint
 Reason: All views in place, need single-query dashboard data aggregation
@@ -72,6 +132,21 @@ Plan:
 - Use SQL views for ALL data (no Python calculations)
 - Binary status only: "Paid" (green) or "Due" (yellow)
 - Include recent payments, current period info, compliance status
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 4 - Dashboard & Payment Status | 2025-07-04
@@ -94,6 +169,21 @@ Critical for Future Sprints:
 - Frontend can display all dashboard cards with single API call
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Sprint 5 PRE-CODE - Authentication & Teams Integration | 2025-07-04
 Description: Implement Azure AD JWT validation and Teams SSO
 Reason: Secure all API endpoints and enable Teams authentication
@@ -105,6 +195,21 @@ Plan:
 - Backend: JWT validation middleware with Depends(require_auth)
 - Frontend: AuthProvider with silent SSO, useAuth hook, ApiClient
 - Manifest: Simple static tab, no Teams Toolkit complexity
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 5 - Authentication & Teams Integration | 2025-07-04
@@ -125,6 +230,21 @@ Critical for Future Sprints:
 - Environment vars: AZURE_TENANT_ID, AZURE_CLIENT_ID (backend), VITE_API_URL (frontend)
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Sprint 6 PRE-CODE - Frontend Foundation & Routing | 2025-01-04
 EVAL: Ready to build React app structure on existing foundation
 Reason: Auth complete, need UI structure for client management
@@ -141,6 +261,21 @@ Plan:
 - LaunchMenu with only Payments module enabled
 - Zustand store: selectedClient, documentViewerOpen, apiBase
 - Responsive design matching old UI patterns
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 6 - Frontend Foundation & Routing | 2025-01-04
@@ -161,6 +296,21 @@ Critical for Future Sprints:
 - Payments page checks for selectedClient - shows warning if none
 - All components use Tailwind classes from old UI patterns
 - Navigation highlights active route with blue underline
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 7 PRE-CODE - Client Management UI | 2025-07-04
@@ -188,6 +338,21 @@ Critical Details:
 - Selected client highlighting with Zustand state
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Sprint 7 - Client Management UI | 2025-07-04
 Description: Implemented sidebar component with client list and search functionality
 Reason: Enable client selection for payment tracking interface
@@ -210,6 +375,21 @@ Critical for Future Sprints:
 - API integration pattern established with auth
 - Responsive design foundation (mobile needs more work)
 - All status display is binary - no calculations needed
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 8 PRE-CODE - Dashboard Cards Implementation | 2025-07-05
@@ -238,6 +418,21 @@ Critical Details:
 - Expected fees from client_payment_status view
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Sprint 8 - Dashboard Cards Implementation | 2025-07-05
 Description: Implemented dashboard cards showing contract, payment, and compliance information
 Reason: Display comprehensive client payment tracking data with responsive layout
@@ -259,6 +454,21 @@ Critical for Future Sprints:
 - Document viewer toggle works and adjusts layout
 - All types match backend exactly for type safety
 - Fee reference in ComplianceCard handles both percentage and flat fees
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 9 PRE-CODE - Payment Form & History | 2025-07-05  
@@ -288,6 +498,21 @@ Critical Details:
 - Pagination and year filter for history
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Sprint 9 - Payment Form & History | 2025-07-05
 Description: Implemented payment recording form and history table with edit/delete functionality
 Reason: Enable users to record and manage client payment records
@@ -311,6 +536,21 @@ Critical for Future Sprints:
 - Binary status indicators maintained (green/yellow only)
 - Document viewer file icon shown but non-functional (placeholder)
 - Sprint 10 will focus on cleanup and final integration
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 10 PRE-CODE - Final Integration & Cleanup | 2025-07-05
@@ -337,6 +577,21 @@ Critical Details:
 - Focus on deployment preparation and documentation
 - Ensure all dates handled as DATE type (no string manipulation)
 - Verify all variance/calculations come from SQL views
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
 ===============================
 
 # Sprint 10 - Final Integration & Cleanup | 2025-07-05
@@ -369,6 +624,21 @@ Critical for Production:
 - Clean architecture maintained throughout
 ===============================
 
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
 # Runtime Error Fixes & Defensive Programming | 2025-07-05
 Description: Fixed critical runtime errors and added defensive programming measures
 Reason: Prevent application crashes and improve reliability for production deployment
@@ -393,4 +663,33 @@ Items Needing User Input:
 - Azure configuration values in backend/.env (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_SQL_CONNECTION_STRING)
 - These are documented in .env.example files with format examples
 - Without these values, auth endpoints return 503 and database connection fails
+===============================
+
+# Authentication Simplification - Remove MSAL for Static Web Apps Auth | 2025-01-06
+Description: Ripped out complex MSAL authentication and replaced with Azure Static Web Apps built-in auth
+Reason: User requested simplification - app is Teams-only for work computers, Static Web Apps provides seamless SSO
+Files Touched: frontend/src/auth/useAuth.ts (replaced), frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/Header.tsx, frontend/package.json, README.md, CLAUDE_README.md
+Files Deleted: frontend/src/auth/authConfig.ts, frontend/src/auth/AuthProvider.tsx
+Result: Dead simple authentication - platform handles everything, no token management needed
+Key Changes:
+- Removed all MSAL packages (@azure/msal-browser, @azure/msal-react)
+- New useAuth hook fetches user from /.auth/me endpoint
+- API client uses credentials: 'include' instead of Authorization headers
+- App.tsx no longer wrapped in AuthProvider
+- Backend auth endpoints no longer needed (platform handles it)
+- Users auto-authenticate via existing Teams/Microsoft session
+===============================
+
+# Fix Local Development Auth & 403 Errors  < /dev/null |  2025-01-06
+Description: Fixed backend authentication to work with Static Web Apps headers and local development
+Reason: Backend was still expecting JWT tokens causing 403 errors, needed proper dev/prod detection
+Files Touched: backend/app/auth.py (rewritten), backend/app/main.py, backend/.env, backend/.env.example, backend/requirements.txt, LOCAL_DEVELOPMENT.md (created)
+Result: Local development now works smoothly without authentication popups or 403 errors
+Key Changes:
+- Rewrote auth.py to handle Static Web Apps X-MS-CLIENT-PRINCIPAL header in production
+- Added ENVIRONMENT=development detection for local dev (mocks user automatically)
+- Fixed corrupted requirements.txt and removed python-jose (no JWT needed)
+- Added dotenv loading to main.py
+- Created LOCAL_DEVELOPMENT.md with setup instructions
+- Both frontend and backend now mock users in development mode
 ===============================

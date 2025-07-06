@@ -6,7 +6,7 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 
 - **Frontend**: React 19.1 with Vite, TypeScript, Tailwind CSS
 - **Backend**: FastAPI (Python 3.12) with Azure SQL Database
-- **Authentication**: Azure AD via Teams SSO
+- **Authentication**: Azure Static Web Apps built-in auth (seamless Teams SSO)
 - **Deployment**: 
   - Frontend: Azure Static Web Apps
   - Backend: Azure App Service
@@ -20,7 +20,7 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
 │   │   ├── pages/        # Page components
-│   │   ├── auth/         # Authentication logic
+│   │   ├── auth/         # Simple auth hook for Static Web Apps
 │   │   └── api/          # API client code
 │   └── vite.config.ts
 ├── backend/               # FastAPI backend application
@@ -41,7 +41,7 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 - Python 3.12+
 - Node.js 20+
 - Azure SQL Database access
-- Azure AD app registration
+- Azure Static Web App configured with authentication
 
 ### Backend Setup
 
@@ -64,8 +64,6 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 4. Create `.env` file from `.env.example` and configure:
    ```
    AZURE_SQL_CONNECTION_STRING=your-connection-string
-   AZURE_TENANT_ID=your-tenant-id
-   AZURE_CLIENT_ID=your-client-id
    ```
 
 5. Run the development server:
@@ -121,7 +119,7 @@ The application connects to an existing Azure SQL Database with the following ke
 
 - **Minimalist**: Simple, maintainable code without unnecessary abstractions
 - **Performance**: Leverage database views and indexes
-- **Security**: Azure AD authentication, no hardcoded secrets
+- **Security**: Azure Static Web Apps authentication (automatic Teams SSO), no hardcoded secrets
 - **Clarity**: Self-documenting code for AI-assisted maintenance
 
 ## Sprint Progress
@@ -151,8 +149,6 @@ The application connects to an existing Azure SQL Database with the following ke
    - Configure App Service with Python 3.12 runtime
    - Set environment variables in Configuration:
      - `AZURE_SQL_CONNECTION_STRING`
-     - `AZURE_TENANT_ID`
-     - `AZURE_CLIENT_ID`
      - `CORS_ORIGINS` (include your frontend URL)
    - Enable system-assigned managed identity for database auth
    - Deploy code via ZIP deploy or Git integration
@@ -170,8 +166,10 @@ The application connects to an existing Azure SQL Database with the following ke
    - Set build configuration:
      - App location: `/frontend`
      - Output location: `dist`
-   - Configure environment variable:
-     - `VITE_API_URL` = your backend API URL
+   - Configure environment variables:
+     - `AAD_CLIENT_ID` = your Azure AD app client ID
+     - `AAD_CLIENT_SECRET` = your Azure AD app client secret
+   - Authentication is handled automatically by the platform
    - Deploy via GitHub Actions or Azure CLI
 
 ### Teams App Deployment
