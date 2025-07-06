@@ -1,6 +1,5 @@
 // frontend/src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './auth/AuthProvider'
 import { useAuth } from './auth/useAuth'
 import PageLayout from './components/PageLayout'
 import Home from './pages/Home'
@@ -9,17 +8,32 @@ import Documents from './pages/Documents'
 import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Loading...
+          </h1>
+          <p className="text-gray-600">
+            Verifying authentication
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            Authenticating...
+            Authentication Required
           </h1>
           <p className="text-gray-600">
-            Signing in with Microsoft Teams
+            Please sign in with your Microsoft account
           </p>
         </div>
       </div>
@@ -42,9 +56,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
+        <AppContent />
       </BrowserRouter>
     </ErrorBoundary>
   )

@@ -1,7 +1,6 @@
 // frontend/src/api/client.ts
-import { useAuth } from '../auth/useAuth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface ApiError {
   error: {
@@ -11,27 +10,15 @@ export interface ApiError {
 }
 
 export class ApiClient {
-  private getAccessToken: () => Promise<string | null>;
-
-  constructor(getAccessToken: () => Promise<string | null>) {
-    this.getAccessToken = getAccessToken;
-  }
-
   async request<T>(
     path: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = await this.getAccessToken();
-    
-    if (!token) {
-      throw new Error('No access token available');
-    }
-
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
+      credentials: 'include', // Include auth cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
         ...options.headers,
       },
     });
@@ -61,47 +48,47 @@ export class ApiClient {
 
   // Client methods
   async getClients() {
-    return this.request('/api/clients');
+    return this.request('/clients');
   }
 
   async getClient(id: number) {
-    return this.request(`/api/clients/${id}`);
+    return this.request(`/clients/${id}`);
   }
 
   async createClient(data: any) {
-    return this.request('/api/clients', {
+    return this.request('/clients', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateClient(id: number, data: any) {
-    return this.request(`/api/clients/${id}`, {
+    return this.request(`/clients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteClient(id: number) {
-    return this.request(`/api/clients/${id}`, {
+    return this.request(`/clients/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Contract methods
   async getClientContracts(clientId: number) {
-    return this.request(`/api/contracts/client/${clientId}`);
+    return this.request(`/contracts/client/${clientId}`);
   }
 
   async createContract(data: any) {
-    return this.request('/api/contracts', {
+    return this.request('/contracts', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateContract(id: number, data: any) {
-    return this.request(`/api/contracts/${id}`, {
+    return this.request(`/contracts/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -109,42 +96,44 @@ export class ApiClient {
 
   // Payment methods
   async getPayments(clientId: number) {
-    return this.request(`/api/payments?client_id=${clientId}`);
+    return this.request(`/payments?client_id=${clientId}`);
   }
 
   async createPayment(data: any) {
-    return this.request('/api/payments', {
+    return this.request('/payments', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updatePayment(id: number, data: any) {
-    return this.request(`/api/payments/${id}`, {
+    return this.request(`/payments/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deletePayment(id: number) {
-    return this.request(`/api/payments/${id}`, {
+    return this.request(`/payments/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Period methods
   async getAvailablePeriods(clientId: number, contractId: number) {
-    return this.request(`/api/periods?client_id=${clientId}&contract_id=${contractId}`);
+    return this.request(`/periods?client_id=${clientId}&contract_id=${contractId}`);
   }
 
   // Dashboard methods
   async getDashboard(clientId: number) {
-    return this.request(`/api/dashboard/${clientId}`);
+    return this.request(`/dashboard/${clientId}`);
   }
 }
 
-// Hook to get an authenticated API client instance
+// Create a singleton instance
+export const apiClient = new ApiClient();
+
+// Hook to get the API client instance
 export function useApiClient() {
-  const { getAccessToken } = useAuth();
-  return new ApiClient(getAccessToken);
+  return apiClient;
 }

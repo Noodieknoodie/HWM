@@ -170,7 +170,7 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
 ---
 
 ## SPRINT 5: Authentication & Teams Integration
-**Objective:** Implement Azure AD authentication and Teams SSO
+**Objective:** Implement Azure Static Web Apps authentication (automatic Teams SSO)
 
 ### Context from Old Code:
 - Complex Teams Toolkit auth wrappers
@@ -178,14 +178,14 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
 
 ### Tasks:
 1. Backend authentication:
-   - JWT validation middleware
-   - Azure AD token verification
-   - Extract user context from Teams
+   - Remove JWT validation (handled by Static Web Apps)
+   - Trust headers from Static Web Apps proxy
+   - Extract user context from headers
 
 2. Frontend authentication:
-   - MSAL.js for Teams SSO
-   - Silent token acquisition
-   - Auth context/hooks
+   - Simple useAuth hook for /.auth/me
+   - No token management needed
+   - Platform handles all auth
 
 3. Simple Teams manifest:
    - Static tab configuration
@@ -216,9 +216,9 @@ This document contains the comprehensive sprint plan for migrating the 401k Paym
      ```
 
 ### Validation:
-- SSO works within Teams
-- API endpoints require valid tokens
-- User context available in requests
+- SSO works automatically within Teams
+- Static Web Apps handles all authentication
+- User context available via /.auth/me
 - Clean manifest without toolkit noise
 
 ---

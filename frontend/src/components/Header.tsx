@@ -1,12 +1,12 @@
 // frontend/src/components/Header.tsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/auth/useAuth';
-import useAppStore from '@/stores/useAppStore';
+import { useAuth } from '../auth/useAuth';
+import useAppStore from '../stores/useAppStore';
 
 const Header: React.FC = () => {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { selectedClient, toggleDocumentViewer } = useAppStore();
   
   const isActive = (path: string) => location.pathname === path;
@@ -71,9 +71,9 @@ const Header: React.FC = () => {
             )}
             
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-700">{user?.name}</span>
+              <span className="text-sm text-gray-700">{user?.userDetails}</span>
               <button
-                onClick={signOut}
+                onClick={logout}
                 className="text-sm text-gray-500 hover:text-gray-700"
               >
                 Sign Out

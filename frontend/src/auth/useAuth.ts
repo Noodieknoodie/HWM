@@ -1,73 +1,88 @@
 // frontend/src/auth/useAuth.ts
-import { useMsal, useAccount } from '@azure/msal-react';
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { getApiRequestScopes } from './authConfig';
+import { useState, useEffect } from 'react';
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  tenantId: string;
+interface User {
+  userId: string;
+  userDetails: string; // email
+  userRoles: string[];
+  identityProvider: string;
+}
+
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+  error: Error | null;
 }
 
 export function useAuth() {
-  const { instance, accounts } = useMsal();
-  const account = useAccount(accounts[0] || null);
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    loading: true,
+    error: null
+  });
 
-  const getAccessToken = async (): Promise<string | null> => {
-    if (!account) {
-      console.error('No active account');
-      return null;
+  useEffect(() => {
+    // Check if we're in development mode
+    if (import.meta.env.DEV) {
+      // For local development, mock a user
+      setAuthState({
+        user: {
+          userId: 'dev-user',
+          userDetails: 'developer@hohimerwealthmanagement.com',
+          userRoles: ['authenticated'],
+          identityProvider: 'development'
+        },
+        loading: false,
+        error: null
+      });
+      return;
     }
 
-    try {
-      const apiScopes = await getApiRequestScopes();
-      const response = await instance.acquireTokenSilent({
-        ...apiScopes,
-        account,
-      });
-      return response.accessToken;
-    } catch (error) {
-      if (error instanceof InteractionRequiredAuthError) {
-        try {
-          const apiScopes = await getApiRequestScopes();
-          const response = await instance.acquireTokenRedirect({
-            ...apiScopes,
-            account,
+    // Production: Fetch user info from Static Web App auth endpoint
+    fetch('/.auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.clientPrincipal) {
+          setAuthState({
+            user: {
+              userId: data.clientPrincipal.userId,
+              userDetails: data.clientPrincipal.userDetails,
+              userRoles: data.clientPrincipal.userRoles || [],
+              identityProvider: data.clientPrincipal.identityProvider
+            },
+            loading: false,
+            error: null
           });
-          return response?.accessToken || null;
-        } catch (interactiveError) {
-          console.error('Interactive token acquisition failed:', interactiveError);
-          return null;
+        } else {
+          setAuthState({
+            user: null,
+            loading: false,
+            error: null
+          });
         }
-      } else {
-        console.error('Token acquisition failed:', error);
-        return null;
-      }
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await instance.logoutRedirect({
-        postLogoutRedirectUri: window.location.origin,
+      })
+      .catch(error => {
+        setAuthState({
+          user: null,
+          loading: false,
+          error
+        });
       });
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  }, []);
 
-  const user: AuthUser | null = account ? {
-    id: account.localAccountId,
-    email: account.username,
-    name: account.name || '',
-    tenantId: account.tenantId || '',
-  } : null;
+  const logout = () => {
+    if (import.meta.env.DEV) {
+      console.log('Logout in development mode');
+      return;
+    }
+    window.location.href = '/.auth/logout';
+  };
 
   return {
-    user,
-    isAuthenticated: !!account,
-    getAccessToken,
-    signOut,
+    user: authState.user,
+    loading: authState.loading,
+    error: authState.error,
+    isAuthenticated: !!authState.user,
+    logout
   };
 }
