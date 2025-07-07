@@ -90,7 +90,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
         }
         
         const response = await apiClient.request<Payment[]>(
-          `/api/payments?${queryParams.toString()}`
+          `/payments?${queryParams.toString()}`
         );
         
         if (!cancelled) {
@@ -128,7 +128,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
           queryParams.append('year', year.toString());
         }
         const updatedPayments = await apiClient.request<Payment[]>(
-          `/api/payments?${queryParams.toString()}`
+          `/payments?${queryParams.toString()}`
         );
         setPayments(updatedPayments);
       }
@@ -152,7 +152,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
           queryParams.append('year', year.toString());
         }
         const updatedPayments = await apiClient.request<Payment[]>(
-          `/api/payments?${queryParams.toString()}`
+          `/payments?${queryParams.toString()}`
         );
         setPayments(updatedPayments);
       }
@@ -176,7 +176,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
           queryParams.append('year', year.toString());
         }
         const updatedPayments = await apiClient.request<Payment[]>(
-          `/api/payments?${queryParams.toString()}`
+          `/payments?${queryParams.toString()}`
         );
         setPayments(updatedPayments);
       }

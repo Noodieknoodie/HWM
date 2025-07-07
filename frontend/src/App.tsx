@@ -2,9 +2,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './auth/useAuth'
 import PageLayout from './components/PageLayout'
-import Home from './pages/Home'
 import Payments from './pages/Payments'
 import Documents from './pages/Documents'
+import Summary from './pages/Summary'
+import Contacts from './pages/Contacts'
+import Contracts from './pages/Contracts'
+import Export from './pages/Export'
 import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
@@ -43,10 +46,14 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<PageLayout />}>
-        <Route index element={<Home />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="documents" element={<Documents />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route index element={<Navigate to="/Payments" replace />} />
+        <Route path="Payments" element={<Payments />} />
+        <Route path="Summary" element={<Summary />} />
+        <Route path="Contacts" element={<Contacts />} />
+        <Route path="Contracts" element={<Contracts />} />
+        <Route path="Export" element={<Export />} />
+        <Route path="Documents" element={<Documents />} />
+        <Route path="*" element={<Navigate to="/Payments" replace />} />
       </Route>
     </Routes>
   )
@@ -55,7 +62,10 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      <BrowserRouter future={{ 
+        v7_startTransition: true,
+        v7_relativeSplatPath: true 
+      }}>
         <AppContent />
       </BrowserRouter>
     </ErrorBoundary>

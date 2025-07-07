@@ -1,14 +1,13 @@
 # backend/app/api/clients.py
 """Client endpoints using clients_by_provider_view for simplified queries"""
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List, Optional
-from datetime import datetime
-import pyodbc
+from fastapi import APIRouter, HTTPException, Depends, Request # type: ignore
+from typing import List
+import pyodbc # type: ignore
 
-from app.database import db, create_error_response
+from app.database import db
 from app.models import (
-    Client, ClientCreate, ClientUpdate, ClientWithStatus, ErrorResponse
+    Client, ClientCreate, ClientUpdate, ClientWithStatus
 )
 from app.auth import require_auth, TokenUser
 
@@ -32,8 +31,7 @@ async def get_clients(request: Request, user: TokenUser = Depends(require_auth))
                     provider_name,
                     payment_schedule,
                     compliance_status,
-                    last_payment_date,
-                    next_payment_due
+                    last_payment_date
                 FROM clients_by_provider_view
                 ORDER BY provider_name, display_name
             """
@@ -125,7 +123,7 @@ async def create_client(client_data: ClientCreate, user: TokenUser = Depends(req
             
             return Client(**client_dict)
             
-    except pyodbc.IntegrityError as e:
+    except pyodbc.IntegrityError:
         raise HTTPException(
             status_code=400,
             detail="Client with this name may already exist"

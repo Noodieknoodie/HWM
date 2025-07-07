@@ -3,7 +3,7 @@
 
 from datetime import date, datetime
 from typing import Optional, Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict # type: ignore
 
 
 # Client Models

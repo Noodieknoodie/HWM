@@ -2,8 +2,7 @@
 """Dashboard endpoints for unified client data access"""
 
 from datetime import datetime
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Path, Depends
+from fastapi import APIRouter, HTTPException, Path, Depends  # type: ignore
 from app.database import Database, create_error_response
 from app.models import (
     DashboardResponse, DashboardClient, DashboardContract, 
@@ -57,8 +56,7 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                     ps.current_year,
                     ps.expected_fee,
                     ps.payment_status,
-                    cm.avg_quarterly_payment,
-                    cm.next_payment_due
+                    cm.avg_quarterly_payment
                 FROM clients_by_provider_view c
                 LEFT JOIN client_payment_status ps ON c.client_id = ps.client_id
                 LEFT JOIN client_metrics cm ON c.client_id = cm.client_id
@@ -165,7 +163,7 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                 total_ytd_payments=row.total_ytd_payments or 0.0,
                 avg_quarterly_payment=row.avg_quarterly_payment or 0.0,
                 last_recorded_assets=row.last_recorded_assets or 0.0,
-                next_payment_due=row.next_payment_due.strftime("%B %d, %Y") if row.next_payment_due else None
+                next_payment_due=None
             )
             
             # Get quarterly summaries for current year
@@ -208,6 +206,7 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ DASHBOARD ERROR: {str(e)}")  # Add this debug line
         raise HTTPException(
             status_code=500,
             detail=create_error_response("INTERNAL_ERROR", str(e))

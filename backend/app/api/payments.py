@@ -3,7 +3,7 @@
 
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends  # type: ignore
 from ..database import db, create_error_response
 from ..models import PaymentCreate, PaymentUpdate, PaymentWithVariance
 from ..auth import require_auth, TokenUser

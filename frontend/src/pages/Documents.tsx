@@ -26,4 +26,4 @@ const Documents: React.FC = () => {
   );
 };
 
-export default Documents;
+export default Documents; 

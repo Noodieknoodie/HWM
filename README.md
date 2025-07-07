@@ -1,4 +1,17 @@
 # HWM 401k Payment Tracker
+● I see the issue now. Your old code used Next.js with a completely different structure, while your new code uses Vite + React. The "spaghetti horror" is likely due to:
+
+  1. Missing CSS normalization - Your old code had Next.js built-in CSS resets
+  2. Tailwind class conflicts - Your index.css has hardcoded styles that override Tailwind utilities
+  3. Component structure differences - Next.js uses page-based routing vs your React Router setup
+
+  Here's what's wrong:
+
+● Read(frontend/postcss.config.js)
+  ⎿  Read 6 lines (ctrl+r to expand)
+
+● The issue is your index.css has massive CSS overrides starting at line 329 that are screwing with Tailwind's utility classes. Those !important declarations are fighting with your component styles.
+
 
 A Microsoft Teams application for Hohimer Wealth Management to track 401k client fee payments, monitor compliance status, and manage payment schedules.
 

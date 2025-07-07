@@ -1,0 +1,31 @@
+{
+  "name": "hwm",
+  "version": "1.0.0",
+  "description": "A Microsoft Teams application for Hohimer Wealth Management to track 401k client fee payments, monitor compliance status, and manage payment schedules.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+      "dev:frontend": "npm run dev --prefix frontend",
+      "dev:backend": "cd backend && ./.venv-linux/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+      "dev": "concurrently --kill-others-on-fail \"npm:dev:backend\" \"npm:dev:frontend\""
+  },
+
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Noodieknoodie/HWM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Noodieknoodie/HWM/issues"
+  },
+  "homepage": "https://github.com/Noodieknoodie/HWM#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,9 +1,9 @@
 # backend/app/api/contracts.py
 """Contract endpoints for managing client contracts"""
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends  # type: ignore
 from typing import List
-import pyodbc
+import pyodbc  # type: ignore
 
 from app.database import db, create_error_response
 from app.models import (

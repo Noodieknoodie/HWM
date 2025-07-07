@@ -1,0 +1,7 @@
+@echo off
+echo Starting Backend...
+start cmd /k "cd backend && .venv\Scripts\activate && python -m uvicorn app.main:app --reload"
+
+echo Starting Frontend...
+cd frontend
+npm run dev
