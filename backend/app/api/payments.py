@@ -32,8 +32,11 @@ async def get_payments(client_id: int = Query(..., description="Client ID to get
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status
+                    pv.variance_status,
+                    p.valid_from,
+                    p.valid_to
                 FROM payment_variance_view pv
+                INNER JOIN payments p ON pv.payment_id = p.payment_id
                 WHERE pv.client_id = ?
                 ORDER BY pv.received_date DESC, pv.payment_id DESC
             """, client_id)
@@ -55,7 +58,9 @@ async def get_payments(client_id: int = Query(..., description="Client ID to get
                     applied_year=row.applied_year,
                     variance_amount=row.variance_amount,
                     variance_percent=row.variance_percent,
-                    variance_status=row.variance_status
+                    variance_status=row.variance_status,
+                    valid_from=row.valid_from,
+                    valid_to=row.valid_to
                 )
                 payments.append(payment)
             

@@ -14,11 +14,31 @@ export class ApiClient {
     path: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Get authentication headers from Azure Static Web Apps
+    const authHeaders: HeadersInit = {};
+    
+    // In production, Azure Static Web Apps provides user info via /.auth/me endpoint
+    if (import.meta.env.PROD) {
+      try {
+        const authResponse = await fetch('/.auth/me');
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          if (authData.clientPrincipal) {
+            // Convert the client principal to base64 for the header
+            authHeaders['X-MS-CLIENT-PRINCIPAL'] = btoa(JSON.stringify(authData.clientPrincipal));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch auth info:', error);
+      }
+    }
+    
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       credentials: 'include', // Include auth cookies
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options.headers,
       },
     });

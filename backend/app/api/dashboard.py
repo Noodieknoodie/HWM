@@ -3,7 +3,7 @@
 
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Path, Depends  # type: ignore
-from app.database import Database, create_error_response
+from app.database import db, create_error_response
 from app.models import (
     DashboardResponse, DashboardClient, DashboardContract, 
     DashboardPaymentStatus, DashboardCompliance, DashboardPayment,
@@ -29,8 +29,6 @@ def format_period_display(period_type: str, period: int, year: int) -> str:
 @router.get("/{client_id}", response_model=DashboardResponse)
 async def get_dashboard(client_id: int = Path(..., description="Client ID"), user: TokenUser = Depends(require_auth)):
     """Get unified dashboard data for a client"""
-    
-    db = Database()
     
     try:
         with db.get_cursor() as cursor:

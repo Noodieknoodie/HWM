@@ -43,7 +43,7 @@ export function usePeriods(clientId: number | null, contractId: number | null) {
     };
     
     fetchPeriods();
-  }, [clientId, contractId]);
+  }, [clientId, contractId, apiClient]);
   
   return {
     periods,

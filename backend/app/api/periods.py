@@ -12,33 +12,35 @@ router = APIRouter()
 @router.get("/", response_model=List[PaymentPeriod])
 async def get_available_periods(
     client_id: int = Query(..., description="Client ID to get periods for"),
-    payment_schedule: str = Query(..., description="Payment schedule (monthly/quarterly)"),
+    contract_id: int = Query(..., description="Contract ID to get periods for"),
     user: TokenUser = Depends(require_auth)
 ):
     """Get unpaid periods from payment_periods table - no dynamic generation"""
     try:
         with db.get_cursor() as cursor:
             
-            # Get client's contract to validate schedule type
+            # Get contract details to get payment schedule
             cursor.execute("""
-                SELECT contract_id, payment_schedule 
+                SELECT contract_id, payment_schedule, client_id
                 FROM contracts 
-                WHERE client_id = ? AND valid_to IS NULL
-            """, client_id)
+                WHERE contract_id = ? AND valid_to IS NULL
+            """, contract_id)
             
             contract = cursor.fetchone()
             if not contract:
                 raise HTTPException(
                     status_code=404,
-                    detail=create_error_response("CONTRACT_NOT_FOUND", f"No active contract found for client {client_id}")
+                    detail=create_error_response("CONTRACT_NOT_FOUND", f"Contract {contract_id} not found or inactive")
                 )
             
-            # Validate payment schedule matches contract
-            if contract.payment_schedule.lower() != payment_schedule.lower():
+            # Validate client_id matches contract
+            if contract.client_id != client_id:
                 raise HTTPException(
                     status_code=400,
-                    detail=create_error_response("SCHEDULE_MISMATCH", f"Payment schedule '{payment_schedule}' does not match contract schedule '{contract.payment_schedule}'")
+                    detail=create_error_response("CLIENT_MISMATCH", f"Contract {contract_id} does not belong to client {client_id}")
                 )
+            
+            payment_schedule = contract.payment_schedule
             
             # Get the earliest payment year or current year
             cursor.execute("""

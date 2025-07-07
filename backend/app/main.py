@@ -138,8 +138,8 @@ async def health_check():
 # For now, creating the structure for Sprint 2+
 from app.api import clients, contracts, payments, periods, dashboard
 
-app.include_router(clients.router, prefix="/api/clients", tags=["clients"])
-app.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
-app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
-app.include_router(periods.router, prefix="/api/periods", tags=["periods"])
-app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(clients.router, prefix="/clients", tags=["clients"])
+app.include_router(contracts.router, prefix="/contracts", tags=["contracts"])
+app.include_router(payments.router, prefix="/payments", tags=["payments"])
+app.include_router(periods.router, prefix="/periods", tags=["periods"])
+app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])

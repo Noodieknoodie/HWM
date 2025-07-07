@@ -116,7 +116,7 @@ export function useClientDashboard(clientId: number | null) {
     return () => {
       cancelled = true;
     };
-  }, [clientId]);
+  }, [clientId, apiClient]);
 
   return { data, loading, error };
 }
