@@ -22,6 +22,7 @@ async def get_payments(
     try:
         with db.get_cursor() as cursor:
             # Build query with optional year filter
+            # Join with contracts to get provider_name
             query = """
                 SELECT 
                     pv.payment_id,
@@ -38,8 +39,10 @@ async def get_payments(
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status
+                    pv.variance_status,
+                    c.provider_name
                 FROM payment_variance_view pv
+                INNER JOIN contracts c ON pv.contract_id = c.contract_id AND c.valid_to IS NULL
                 WHERE pv.client_id = ?
             """
             params = [client_id]
@@ -73,7 +76,8 @@ async def get_payments(
                     applied_year=row.applied_year,
                     variance_amount=row.variance_amount,
                     variance_percent=row.variance_percent,
-                    variance_status=row.variance_status
+                    variance_status=row.variance_status,
+                    provider_name=row.provider_name
                 )
                 payments.append(payment)
             
@@ -131,6 +135,7 @@ async def create_payment(payment: PaymentCreate, user: TokenUser = Depends(requi
             payment_id = cursor.execute("SELECT SCOPE_IDENTITY()").fetchval()
             
             # Return the created payment with variance from view
+            # Join with contracts to get provider_name
             cursor.execute("""
                 SELECT 
                     pv.payment_id,
@@ -147,8 +152,10 @@ async def create_payment(payment: PaymentCreate, user: TokenUser = Depends(requi
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status
+                    pv.variance_status,
+                    c.provider_name
                 FROM payment_variance_view pv
+                INNER JOIN contracts c ON pv.contract_id = c.contract_id AND c.valid_to IS NULL
                 WHERE pv.payment_id = ?
             """, payment_id)
             
@@ -168,7 +175,8 @@ async def create_payment(payment: PaymentCreate, user: TokenUser = Depends(requi
                 applied_year=row.applied_year,
                 variance_amount=row.variance_amount,
                 variance_percent=row.variance_percent,
-                variance_status=row.variance_status
+                variance_status=row.variance_status,
+                provider_name=row.provider_name
             )
             
     except HTTPException:
@@ -231,6 +239,7 @@ async def update_payment(payment_id: int, payment: PaymentUpdate, user: TokenUse
                 cursor.execute(query, params)
             
             # Return updated payment with variance from view
+            # Join with contracts to get provider_name
             cursor.execute("""
                 SELECT 
                     pv.payment_id,
@@ -247,8 +256,10 @@ async def update_payment(payment_id: int, payment: PaymentUpdate, user: TokenUse
                     pv.applied_year,
                     pv.variance_amount,
                     pv.variance_percent,
-                    pv.variance_status
+                    pv.variance_status,
+                    c.provider_name
                 FROM payment_variance_view pv
+                INNER JOIN contracts c ON pv.contract_id = c.contract_id AND c.valid_to IS NULL
                 WHERE pv.payment_id = ?
             """, payment_id)
             
@@ -268,7 +279,8 @@ async def update_payment(payment_id: int, payment: PaymentUpdate, user: TokenUse
                 applied_year=row.applied_year,
                 variance_amount=row.variance_amount,
                 variance_percent=row.variance_percent,
-                variance_status=row.variance_status
+                variance_status=row.variance_status,
+                provider_name=row.provider_name
             )
             
     except HTTPException:

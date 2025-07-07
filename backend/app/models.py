@@ -149,6 +149,7 @@ class PaymentWithVariance(Payment):
     variance_amount: Optional[float] = None
     variance_percent: Optional[float] = None
     variance_status: Literal["unknown", "exact", "acceptable", "warning", "alert"]
+    provider_name: Optional[str] = None
 
 
 class PaymentPeriod(BaseModel):
