@@ -47,6 +47,7 @@ async def get_available_periods(
             
             # Query payment_periods table for unpaid periods
             # Join with payments to find which periods are already paid
+            # Modified to show periods starting from one period prior to current date
             query = """
                 SELECT DISTINCT
                     pp.period_type,
@@ -66,18 +67,30 @@ async def get_available_periods(
                 WHERE 
                     pp.period_type = ? AND
                     p.payment_id IS NULL AND
-                    pp.end_date < GETDATE()
+                    -- Show periods starting from one period prior to current date
+                    (
+                        -- For monthly: show periods from previous month onwards
+                        (pp.period_type = 'monthly' AND 
+                         (pp.year < YEAR(GETDATE()) OR 
+                          (pp.year = YEAR(GETDATE()) AND pp.period <= MONTH(GETDATE()))))
+                        OR
+                        -- For quarterly: show periods from previous quarter onwards  
+                        (pp.period_type = 'quarterly' AND
+                         (pp.year < YEAR(GETDATE()) OR
+                          (pp.year = YEAR(GETDATE()) AND pp.period <= CEILING(MONTH(GETDATE()) / 3.0))))
+                    )
             """
             
             params = [client_id, payment_schedule]
             
             # If there's payment history, start from earliest payment year
-            # Otherwise, start from current year
+            # Otherwise, look back up to 5 years for comprehensive list
             if earliest_year:
                 query += " AND pp.year >= ?"
                 params.append(earliest_year)
             else:
-                query += " AND pp.year = YEAR(GETDATE())"
+                # Show periods going back 5 years if no payment history
+                query += " AND pp.year >= YEAR(GETDATE()) - 5"
             
             query += " ORDER BY pp.year DESC, pp.period DESC"
             
