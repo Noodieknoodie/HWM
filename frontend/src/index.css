@@ -1,4 +1,100 @@
 /* frontend/src/index.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Minimal base styles */
+@layer base {
+  body {
+    @apply text-gray-700 bg-gray-50 antialiased;
+  }
+}
+
+/* Component styles using Tailwind */
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+  
+  .navbar-dark {
+    @apply bg-dark-bg text-light-300;
+  }
+  
+  .hover\:bg-dark-accent:hover {
+    @apply bg-dark-accent;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(10px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+/* Form focus effect */
+.form-focus {
+  position: relative;
+  z-index: 50;
+}
+
+.form-focus::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.form-focus > * {
+  position: relative;
+  z-index: 50;
+  transform: translateY(0);
+  transition: transform 0.2s ease-out;
+  animation: cardRaise 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes cardRaise {
+  from { transform: translateY(10px); }
+  to { transform: translateY(0); }
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-light-300 rounded;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-light-500 rounded transition-colors duration-200;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-dark-400;
+}

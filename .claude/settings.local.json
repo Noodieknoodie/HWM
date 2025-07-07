@@ -8,7 +8,14 @@
       "Bash(ls:*)",
       "Bash(.venv/Scripts/pip.exe install:*)",
       "Bash(.venv/Scripts/python.exe test_backend.py:*)",
-      "Bash(az account:*)"
+      "Bash(az account:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(rg:*)",
+      "Bash(python:*)",
+      "Bash(diff:*)"
     ],
     "deny": []
   }

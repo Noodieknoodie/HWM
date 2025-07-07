@@ -31,7 +31,7 @@ export function usePeriods(clientId: number | null, contractId: number | null) {
       
       try {
         const response = await apiClient.request<PeriodsResponse>(
-          `/api/periods?client_id=${clientId}&contract_id=${contractId}`
+          `/periods?client_id=${clientId}&contract_id=${contractId}`
         );
         setPeriods(response.periods);
         setPaymentSchedule(response.payment_schedule);

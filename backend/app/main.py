@@ -2,10 +2,10 @@
 """Main FastAPI application for HWM 401k Payment Tracker"""
 
 import os
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from dotenv import load_dotenv  # type: ignore
+from fastapi import FastAPI, HTTPException  # type: ignore
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+from fastapi.responses import JSONResponse  # type: ignore
 from contextlib import asynccontextmanager
 
 # Load environment variables

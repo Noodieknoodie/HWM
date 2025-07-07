@@ -22,23 +22,22 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Check if we're in development mode
-    if (import.meta.env.DEV) {
-      // For local development, mock a user
+    // Mock auth for local development
+    if (window.location.hostname === 'localhost') {
       setAuthState({
         user: {
-          userId: 'dev-user',
-          userDetails: 'developer@hohimerwealthmanagement.com',
+          userId: 'local-dev-user',
+          userDetails: 'dev@localhost',
           userRoles: ['authenticated'],
-          identityProvider: 'development'
+          identityProvider: 'aad'
         },
         loading: false,
         error: null
       });
       return;
     }
-
-    // Production: Fetch user info from Static Web App auth endpoint
+    
+    // Fetch user info from Static Web App auth endpoint
     fetch('/.auth/me')
       .then(res => res.json())
       .then(data => {
@@ -71,10 +70,6 @@ export function useAuth() {
   }, []);
 
   const logout = () => {
-    if (import.meta.env.DEV) {
-      console.log('Logout in development mode');
-      return;
-    }
     window.location.href = '/.auth/logout';
   };
 

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import useAppStore from '@/stores/useAppStore';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
-import { usePayments, Payment } from '@/hooks/usePayments';
+import { usePayments, Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
 import ContractCard from '@/components/dashboard/ContractCard';
 import PaymentInfoCard from '@/components/dashboard/PaymentInfoCard';
 import ComplianceCard from '@/components/dashboard/ComplianceCard';
@@ -31,28 +31,51 @@ const Payments: React.FC = () => {
   
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-5">
-        <h2 className="text-2xl font-bold text-gray-900">401k Payments</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Track and manage client payment records
-        </p>
-      </div>
-      
       {selectedClient ? (
         <>
-          {/* Client name header */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">
-              {selectedClient.display_name}
-            </h3>
+          {/* Client name header - Updated to match Version A */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div>
+                {selectedClient.full_name && (
+                  <div className="text-sm text-dark-400 mb-1 uppercase tracking-wider">
+                    {selectedClient.full_name}
+                  </div>
+                )}
+                <h1 className="text-3xl font-bold text-dark-700">
+                  {selectedClient.display_name}
+                </h1>
+                <div className="h-1 w-full mt-2 bg-gradient-to-r from-primary-600 to-primary-200 rounded-full"></div>
+              </div>
+            </div>
             <button
               onClick={() => useAppStore.getState().toggleDocumentViewer()}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className={`
+                flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-sm transition-all duration-200
+                ${documentViewerOpen
+                  ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
+                  : 'bg-white border border-light-400 text-dark-600 hover:bg-light-200 hover:border-primary-400'}
+              `}
             >
-              <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={documentViewerOpen ? 'text-white' : 'text-primary-500'}
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
-              {documentViewerOpen ? 'Hide' : 'View'} Documents
+              <span className="font-medium">{documentViewerOpen ? "Hide Documents" : "View Documents"}</span>
             </button>
           </div>
 
@@ -68,7 +91,7 @@ const Payments: React.FC = () => {
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
                   <div className="mt-2 text-sm text-red-700">
-                    <p>{error}</p>
+                    <p>{typeof error === 'string' ? error : error?.message || 'An error occurred'}</p>
                   </div>
                 </div>
               </div>
@@ -104,7 +127,7 @@ const Payments: React.FC = () => {
             </ErrorBoundary>
           </div>
 
-          {/* Payment Form and History */}
+          {/* Payment Form and History - Fixed TypeScript error */}
           <div className="space-y-6">
             <ErrorBoundary>
               <PaymentForm
@@ -113,9 +136,9 @@ const Payments: React.FC = () => {
                 editingPayment={editingPayment}
                 onSubmit={async (data) => {
                   if (editingPayment) {
-                    await updatePayment(editingPayment.payment_id, data);
+                    await updatePayment(editingPayment.payment_id, data as PaymentUpdateData);
                   } else {
-                    await createPayment(data);
+                    await createPayment(data as PaymentCreateData);
                   }
                   setEditingPayment(null);
                 }}

@@ -2,7 +2,7 @@
 """Smart periods endpoint using payment_periods table"""
 
 from typing import List
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends  # type: ignore
 from ..database import db, create_error_response
 from ..models import PaymentPeriod
 from ..auth import require_auth, TokenUser

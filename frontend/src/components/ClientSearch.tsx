@@ -48,7 +48,7 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
     <div className="relative mb-4">
       <div className="relative group">
         <svg
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200"
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-dark-400 group-hover:text-primary-500 transition-colors duration-200"
           xmlns="http://www.w3.org/2000/svg"
           width="24"
           height="24"
@@ -66,9 +66,9 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
         <input
           type="search"
           placeholder="Search clients..."
-          className="pl-10 pr-8 w-full p-2.5 rounded-lg border border-gray-300 bg-gray-50
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    shadow-sm hover:shadow transition-all duration-200 text-gray-900 placeholder-gray-400"
+          className="pl-10 pr-8 w-full p-2.5 rounded-lg border border-light-400 bg-light-200
+                    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                    shadow-sm hover:shadow transition-all duration-200 text-dark-600 placeholder-dark-400"
           value={searchTerm}
           onChange={handleSearchChange}
           disabled={isLoading}
@@ -76,7 +76,7 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
         
         {searchTerm && (
           <button
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-primary-600 transition-colors duration-200"
             onClick={handleClearSearch}
           >
             <svg
@@ -98,11 +98,11 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
       </div>
       
       {searchTerm && filteredClients.length > 0 && (
-        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+        <div className="absolute left-0 right-0 mt-1 bg-white border border-light-400 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto animate-fade-in">
           {filteredClients.map(client => (
             <button
               key={client.client_id}
-              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center first:rounded-t-lg last:rounded-b-lg border-b border-gray-200 last:border-b-0"
+              className="w-full text-left px-4 py-2.5 hover:bg-light-200 flex items-center first:rounded-t-lg last:rounded-b-lg border-b border-light-300 last:border-b-0"
               onClick={() => {
                 setSelectedClient(client);
                 setSearchTerm('');
@@ -132,7 +132,7 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
               <div className="flex-1">
                 <div className="font-medium">{client.display_name}</div>
                 {client.provider_name && (
-                  <div className="text-xs text-gray-500">{client.provider_name}</div>
+                  <div className="text-xs text-dark-500">{client.provider_name}</div>
                 )}
               </div>
             </button>
@@ -141,7 +141,7 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
       )}
       
       {searchTerm && filteredClients.length === 0 && (
-        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-4 text-center text-gray-500">
+        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-4 text-center text-dark-500">
           No clients found matching "{searchTerm}"
         </div>
       )}

@@ -2,11 +2,11 @@
 """Database connection and session management for Azure SQL Database"""
 
 import os
-import pyodbc
+import pyodbc  # type: ignore
 import struct
 from contextlib import contextmanager
 from typing import Generator
-from azure.identity import DefaultAzureCredential
+from azure.identity import DefaultAzureCredential, AzureCliCredential  # type: ignore
 
 # Get connection string from environment (without Authentication parameter)
 CONNECTION_STRING = os.getenv(
@@ -20,7 +20,11 @@ class Database:
     
     def __init__(self):
         self.connection_string = CONNECTION_STRING
-        self.credential = DefaultAzureCredential(exclude_interactive_browser_credential=False)
+        # Use AzureCliCredential for local dev, DefaultAzureCredential for production
+        if os.getenv("ENVIRONMENT", "development") == "development":
+            self.credential = AzureCliCredential()
+        else:
+            self.credential = DefaultAzureCredential(exclude_interactive_browser_credential=True)
         
     def get_connection(self) -> pyodbc.Connection:
         """Create and return a new database connection using Azure AD token"""

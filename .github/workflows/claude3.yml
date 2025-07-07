@@ -1,4 +1,3 @@
-# .github/workflows/claude.yml
 name: Claude PR Assistant
 
 on:
@@ -31,11 +30,15 @@ jobs:
           fetch-depth: 1
 
       - name: Run Claude PR Action
-        uses: grll/claude-code-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
-          use_oauth: true
-          claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
-          claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
-          claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
-          
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: "claude-opus-4-20250514"   # Added line to specify Opus 4
           timeout_minutes: "60"
+          direct_prompt: |
+            You've been mentioned in a GitHub discussion. Please analyze the context and provide helpful assistance.
+            
+            If this is a pull request, review the code changes and provide constructive feedback.
+            If this is an issue, help troubleshoot or provide guidance.
+            
+            Be specific, actionable, and helpful in your response.

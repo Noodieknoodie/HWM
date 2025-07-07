@@ -8,6 +8,8 @@ venv/
 env/
 ENV/
 .venv
+.venv-linux/
+.venv-windows/
 
 # Node
 node_modules/
@@ -50,3 +52,7 @@ coverage/
 # Azure
 *.azurewebsites.net
 *.scm.azurewebsites.net
+
+SECRET_NO_GITHUB.md
+SECRETNOGITHUB.md
+

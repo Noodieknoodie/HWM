@@ -43,7 +43,7 @@ const Sidebar: React.FC = () => {
   }, []);
   
   // Group clients by provider
-  const groupClientsByProvider = () => {
+  const groupClientsByProvider = (): [string, Client[]][] => {
     if (!showByProvider) {
       return [['All', clients]];
     }
@@ -107,9 +107,9 @@ const Sidebar: React.FC = () => {
     return (
       <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Clients</h2>
+          <h2 className="text-xl font-semibold text-dark-700 mb-4">Clients</h2>
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <p className="text-sm text-red-800">{error}</p>
+            <p className="text-sm text-red-800">{typeof error === 'string' ? error : 'Failed to load clients'}</p>
             <button
               onClick={() => window.location.reload()}
               className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
@@ -125,12 +125,12 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full lg:relative lg:translate-x-0 transition-transform duration-300">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Clients</h2>
+        <h2 className="text-xl font-semibold text-dark-700 mb-4">Clients</h2>
         <ClientSearch clients={clients} isLoading={isLoading} />
         <div className="flex items-center justify-between mt-3">
-          <span className="text-sm font-medium text-gray-700">View by Provider</span>
+          <span className="text-sm font-medium text-dark-600">View by Provider</span>
           <button 
-            className={`h-5 w-10 rounded-full relative transition-colors ${showByProvider ? 'bg-blue-600' : 'bg-gray-200'}`}
+            className={`h-5 w-10 rounded-full relative transition-colors ${showByProvider ? 'bg-primary-600' : 'bg-gray-200'}`}
             onClick={() => setShowByProvider(!showByProvider)}
             disabled={isLoading}
           >
@@ -157,7 +157,7 @@ const Sidebar: React.FC = () => {
             {groupedClients.map(([provider, providerClients]) => (
               <div key={provider} className="mb-2">
                 {showByProvider && (
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-600 bg-gray-50 rounded-md mb-1">
+                  <div className="px-3 py-2 text-xs font-semibold text-dark-500 bg-light-200 rounded-md mb-1">
                     {provider}
                   </div>
                 )}
@@ -166,8 +166,8 @@ const Sidebar: React.FC = () => {
                     key={client.client_id}
                     className={`w-full flex items-center py-2 px-3 mb-1 text-left rounded transition-colors ${
                       selectedClient?.client_id === client.client_id 
-                        ? 'bg-gray-100 border-l-4 border-blue-600 font-medium text-gray-900' 
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-gray-100 border-l-4 border-primary-600 font-medium text-dark-700' 
+                        : 'text-dark-600 hover:bg-light-200'
                     }`}
                     onClick={() => setSelectedClient(client)}
                   >
@@ -181,7 +181,7 @@ const Sidebar: React.FC = () => {
             ))}
             
             {clients.length === 0 && (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-dark-500">
                 No clients available
               </div>
             )}

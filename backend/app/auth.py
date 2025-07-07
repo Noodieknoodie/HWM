@@ -5,8 +5,8 @@ import os
 import json
 import base64
 from typing import Optional
-from fastapi import HTTPException, Request, Depends
-from pydantic import BaseModel
+from fastapi import HTTPException, Request # type: ignore
+from pydantic import BaseModel # type: ignore
 
 
 class TokenUser(BaseModel):
@@ -23,18 +23,30 @@ class TokenUser(BaseModel):
 
 
 async def get_current_user(request: Request) -> TokenUser:
-    """Extract user from Static Web Apps headers or mock for development"""
+    """Extract user from Static Web Apps headers"""
     
-    # In development, return a mock user
+    # DEBUG: Log every auth attempt
+    print("\n🔍 AUTH REQUEST:")
+    print(f"   Path: {request.url.path}")
+    print(f"   Method: {request.method}")
+    print(f"   Headers: {dict(request.headers)}")
+    print(f"   Environment: {os.getenv('ENVIRONMENT', 'not set')}")
+    
+    # Development mode - bypass auth
     if os.getenv("ENVIRONMENT", "development") == "development":
+        print("   ✅ Development mode - bypassing auth")
+        dev_user = request.headers.get("X-Dev-User", "dev@localhost")
         return TokenUser(
-            user_id="dev-user",
-            email="developer@hohimerwealthmanagement.com",
-            name="Developer",
-            roles=["authenticated"]
+            user_id="dev-" + dev_user.split("@")[0],
+            email=dev_user,
+            name=dev_user.split("@")[0].title(),
+            tenant_id="development",
+            roles=["authenticated", "developer"]
         )
     
-    # In production, Static Web Apps adds the X-MS-CLIENT-PRINCIPAL header
+    print("   ❌ Production mode - checking for auth header")
+    
+    # Production mode - require real auth
     principal_header = request.headers.get("X-MS-CLIENT-PRINCIPAL")
     
     if not principal_header:
