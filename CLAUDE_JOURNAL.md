@@ -214,6 +214,7 @@ Key Changes:
 - Maintained single-tab configuration for simplicity
 ===============================
 
+<<<<<<< HEAD
 # Fixed Period Dropdown and Fee Scaling | 2025-07-07
 Description: Simplified period dropdown logic and fixed fee display scaling
 Reason: Period dropdown was showing spotty/inconsistent list, fee scaling was potentially double-applying
@@ -237,4 +238,18 @@ Key Changes:
 - Added debug logging to track query parameters and results
 - Created test_periods.py for isolated testing of period logic
 - Main issue: payment_periods table needs to be populated with period data
+=======
+# Fixed Applied Period Dropdown & Provider Name Display | 2025-07-07
+Description: Fixed two issues - period dropdown showing wrong periods and provider name showing as NA in payment history
+Reason: Period dropdown was skipping years and only showing ended periods; Provider name wasn't included in payment queries
+Files Touched: backend/app/api/periods.py, backend/app/api/payments.py, backend/app/models.py
+Result: Period dropdown now shows comprehensive list starting from one period prior; Provider names display correctly
+Key Changes:
+- Modified periods SQL to show periods from one period prior to current (arrears billing system)
+- For monthly: shows from previous month onwards; quarterly: from previous quarter onwards
+- If no payment history, shows 5 years back (not just current year)
+- Added provider_name to PaymentWithVariance model
+- Updated all payment queries to JOIN with contracts table for provider_name
+- Critical SQL logic: uses MONTH(GETDATE()) and CEILING(MONTH(GETDATE()) / 3.0) for period calculations
+>>>>>>> 846e2b3c3af10e45c0fd2ae1f5931f349609e24f
 ===============================

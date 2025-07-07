@@ -48,6 +48,7 @@ async def get_available_periods(
             earliest_year = result.earliest_year
             earliest_period = result.earliest_period
             
+<<<<<<< HEAD
             # Get current period (one period back from today for arrears billing)
             cursor.execute("""
                 SELECT 
@@ -86,6 +87,13 @@ async def get_available_periods(
             # Simplified query to handle all cases
             cursor.execute("""
                 SELECT 
+=======
+            # Query payment_periods table for unpaid periods
+            # Join with payments to find which periods are already paid
+            # Modified to show periods starting from one period prior to current date
+            query = """
+                SELECT DISTINCT
+>>>>>>> 846e2b3c3af10e45c0fd2ae1f5931f349609e24f
                     pp.period_type,
                     pp.year,
                     pp.period,
@@ -95,6 +103,7 @@ async def get_available_periods(
                 FROM payment_periods pp
                 WHERE 
                     pp.period_type = ? AND
+<<<<<<< HEAD
                     (
                         (pp.year = ? AND pp.period >= ? AND pp.year = ? AND pp.period <= ?) OR  -- Same year
                         (pp.year = ? AND pp.period >= ? AND ? <> ?) OR  -- Earliest year (different from current)
@@ -107,6 +116,37 @@ async def get_available_periods(
                   earliest_year, earliest_period, earliest_year, current_year,  # Earliest year
                   current_year, current_period, earliest_year, current_year,  # Current year
                   earliest_year, current_year))  # Years in between
+=======
+                    p.payment_id IS NULL AND
+                    -- Show periods starting from one period prior to current date
+                    (
+                        -- For monthly: show periods from previous month onwards
+                        (pp.period_type = 'monthly' AND 
+                         (pp.year < YEAR(GETDATE()) OR 
+                          (pp.year = YEAR(GETDATE()) AND pp.period <= MONTH(GETDATE()))))
+                        OR
+                        -- For quarterly: show periods from previous quarter onwards  
+                        (pp.period_type = 'quarterly' AND
+                         (pp.year < YEAR(GETDATE()) OR
+                          (pp.year = YEAR(GETDATE()) AND pp.period <= CEILING(MONTH(GETDATE()) / 3.0))))
+                    )
+            """
+            
+            params = [client_id, payment_schedule]
+            
+            # If there's payment history, start from earliest payment year
+            # Otherwise, look back up to 5 years for comprehensive list
+            if earliest_year:
+                query += " AND pp.year >= ?"
+                params.append(earliest_year)
+            else:
+                # Show periods going back 5 years if no payment history
+                query += " AND pp.year >= YEAR(GETDATE()) - 5"
+            
+            query += " ORDER BY pp.year DESC, pp.period DESC"
+            
+            cursor.execute(query, params)
+>>>>>>> 846e2b3c3af10e45c0fd2ae1f5931f349609e24f
             
             period_options = []
             rows = cursor.fetchall()
