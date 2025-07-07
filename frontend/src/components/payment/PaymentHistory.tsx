@@ -187,10 +187,10 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                     {formatCurrency(payment.expected_fee)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {payment.variance_amount !== undefined ? (
+                    {payment.variance_amount !== undefined && payment.variance_amount !== null ? (
                       <span className={getVarianceColor(payment.variance_status)}>
                         {formatCurrency(payment.variance_amount)}
-                        {payment.variance_percent !== undefined && (
+                        {payment.variance_percent !== undefined && payment.variance_percent !== null && (
                           <span className="text-xs ml-1">
                             ({payment.variance_percent.toFixed(1)}%)
                           </span>

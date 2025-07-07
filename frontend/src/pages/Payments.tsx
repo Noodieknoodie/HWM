@@ -10,6 +10,13 @@ import PaymentForm from '@/components/payment/PaymentForm';
 import PaymentHistory from '@/components/payment/PaymentHistory';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
+const getErrorMessage = (error: any): string => {
+  if (typeof error === 'string') return error;
+  if (error?.error) return error.error;
+  if (error?.message) return error.message;
+  return 'An error occurred';
+};
+
 const Payments: React.FC = () => {
   const selectedClient = useAppStore((state) => state.selectedClient);
   const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
@@ -91,7 +98,7 @@ const Payments: React.FC = () => {
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
                   <div className="mt-2 text-sm text-red-700">
-                    <p>{typeof error === 'string' ? error : error?.message || 'An error occurred'}</p>
+                    <p>{getErrorMessage(error)}</p>
                   </div>
                 </div>
               </div>

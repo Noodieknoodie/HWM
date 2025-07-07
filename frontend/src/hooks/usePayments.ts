@@ -1,6 +1,7 @@
 // frontend/src/hooks/usePayments.ts
 import { useState, useEffect } from 'react';
 import { useApiClient } from '@/api/client';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface Payment {
   payment_id: number;
@@ -24,8 +25,8 @@ export interface Payment {
   payment_schedule?: string;
   has_files?: boolean;
   // From payment_variance_view
-  variance_amount?: number;
-  variance_percent?: number;
+  variance_amount?: number | null;
+  variance_percent?: number | null;
   variance_status?: string;
 }
 
@@ -98,7 +99,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
         }
       } catch (err: any) {
         if (!cancelled) {
-          setError(err?.error?.message || 'Failed to fetch payments');
+          setError(getErrorMessage(err, 'Failed to fetch payments'));
         }
       } finally {
         if (!cancelled) {
@@ -134,7 +135,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
       }
       return response;
     } catch (err: any) {
-      throw new Error(err?.error?.message || 'Failed to create payment');
+      throw new Error(getErrorMessage(err, 'Failed to create payment'));
     }
   };
   
@@ -158,7 +159,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
       }
       return response;
     } catch (err: any) {
-      throw new Error(err?.error?.message || 'Failed to update payment');
+      throw new Error(getErrorMessage(err, 'Failed to update payment'));
     }
   };
   
@@ -181,7 +182,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
         setPayments(updatedPayments);
       }
     } catch (err: any) {
-      throw new Error(err?.error?.message || 'Failed to delete payment');
+      throw new Error(getErrorMessage(err, 'Failed to delete payment'));
     }
   };
   

@@ -1,7 +1,3 @@
-Here is the full, final prompt, incorporating everything—including the agent breakdown, the strict post-refactor context, and the neutral, no-fluff tone of the audit mission:
-
----
-
 You’re reviewing a codebase that has **recently undergone a major refactor**.
 
 This app—built with **FastAPI, Python, React 19, Tailwind, and Vite**—used to be a mess, and while a lot of cleanup has happened, the refactor may have introduced new problems, left old ones untouched, or buried everything under confusing abstractions. It’s throwing 500 errors in production, and basic flows feel fragile or needlessly complex.

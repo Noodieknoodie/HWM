@@ -2,7 +2,7 @@
 """Pydantic models matching the Azure SQL database schema"""
 
 from datetime import date, datetime
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from pydantic import BaseModel, Field, ConfigDict # type: ignore
 
 
@@ -74,14 +74,25 @@ class PaymentBase(BaseModel):
     contract_id: int
     client_id: int
     received_date: date
-    total_assets: float
-    expected_fee: float
+    total_assets: Optional[float] = None
+    expected_fee: Optional[float] = None
     actual_fee: float
     method: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = None
     applied_period_type: Literal["monthly", "quarterly"] = Field(..., max_length=10)
     applied_period: int = Field(..., ge=1, le=12)  # 1-12 for monthly, 1-4 for quarterly
     applied_year: int
+    
+    # Custom validation to ensure period is valid for period_type
+    @property
+    def _validate_period(self) -> bool:
+        if self.applied_period_type == "quarterly" and self.applied_period > 4:
+            raise ValueError(f"Quarterly period must be 1-4, got {self.applied_period}")
+        return True
+    
+    def model_post_init(self, __context):
+        """Called after model initialization to run custom validations"""
+        self._validate_period
 
 
 class PaymentCreate(PaymentBase):
@@ -104,7 +115,7 @@ class Payment(PaymentBase):
     model_config = ConfigDict(from_attributes=True)
     
     payment_id: int
-    valid_from: datetime
+    valid_from: Optional[datetime] = None
     valid_to: Optional[datetime] = None
 
 
@@ -135,9 +146,9 @@ class ClientWithStatus(Client):
 
 class PaymentWithVariance(Payment):
     """Payment data from payment_variance_view"""
-    variance_amount: float
-    variance_percent: float
-    variance_status: Literal["exact", "acceptable", "warning", "alert"]
+    variance_amount: Optional[float] = None
+    variance_percent: Optional[float] = None
+    variance_status: Literal["unknown", "exact", "acceptable", "warning", "alert"]
 
 
 class PaymentPeriod(BaseModel):
@@ -151,6 +162,21 @@ class PaymentPeriod(BaseModel):
     start_date: date
     end_date: date
     is_current: bool = False
+
+
+class PeriodOption(BaseModel):
+    """Period option for frontend dropdown"""
+    value: str
+    label: str
+    period: int
+    year: int
+    period_type: str
+
+
+class PeriodsResponse(BaseModel):
+    """Response for periods endpoint"""
+    periods: List[PeriodOption]
+    payment_schedule: str
 
 
 # Error Response Model

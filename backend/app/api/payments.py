@@ -11,12 +11,18 @@ from ..auth import require_auth, TokenUser
 router = APIRouter()
 
 @router.get("/", response_model=List[PaymentWithVariance])
-async def get_payments(client_id: int = Query(..., description="Client ID to get payments for"), user: TokenUser = Depends(require_auth)):
+async def get_payments(
+    client_id: int = Query(..., description="Client ID to get payments for"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(50, ge=1, le=100, description="Items per page"),
+    year: Optional[int] = Query(None, description="Filter by year"),
+    user: TokenUser = Depends(require_auth)
+):
     """Get all payments for a client with variance from payment_variance_view"""
     try:
         with db.get_cursor() as cursor:
-            # Use payment_variance_view for variance calculations
-            cursor.execute("""
+            # Build query with optional year filter
+            query = """
                 SELECT 
                     pv.payment_id,
                     pv.contract_id,
@@ -35,8 +41,20 @@ async def get_payments(client_id: int = Query(..., description="Client ID to get
                     pv.variance_status
                 FROM payment_variance_view pv
                 WHERE pv.client_id = ?
+            """
+            params = [client_id]
+            
+            if year is not None:
+                query += " AND pv.applied_year = ?"
+                params.append(year)
+                
+            query += """ 
                 ORDER BY pv.received_date DESC, pv.payment_id DESC
-            """, client_id)
+                OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+            """
+            params.extend([(page - 1) * limit, limit])
+            
+            cursor.execute(query, params)
             
             payments = []
             for row in cursor.fetchall():
