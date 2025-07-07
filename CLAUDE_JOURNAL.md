@@ -213,3 +213,28 @@ Key Changes:
 - Kept all scopes and permissions for Teams integration
 - Maintained single-tab configuration for simplicity
 ===============================
+
+# Fixed Period Dropdown and Fee Scaling | 2025-07-07
+Description: Simplified period dropdown logic and fixed fee display scaling
+Reason: Period dropdown was showing spotty/inconsistent list, fee scaling was potentially double-applying
+Files Touched: backend/app/api/periods.py, frontend/src/components/dashboard/ComplianceCard.tsx
+Result: Period dropdown now shows simple range from current period back to first payment (or 2 years), fee display properly handles pre-scaled DB values
+Key Changes:
+- Rewrote periods endpoint to use simple date range logic instead of complex joins
+- Period list starts at current collection period (arrears) back to earliest payment
+- Fixed fee reference display to not double-scale already-scaled DB values
+- Percentage fees now show consistent rate across all time periods
+===============================
+
+# Debug Period Dropdown Empty Issue | 2025-07-07
+Description: Debugged "No available periods found" issue in payment period dropdown
+Reason: Period dropdown was returning empty despite having correct logic
+Files Touched: backend/app/api/periods.py, backend/populate_periods.py (new), backend/test_periods.py (new)
+Result: Identified root cause as empty payment_periods table and SQL WHERE clause logic issues
+Key Changes:
+- Created populate_periods.py script to fill payment_periods table with monthly/quarterly data
+- Fixed SQL WHERE clause to properly handle all edge cases (same year, spanning years)
+- Added debug logging to track query parameters and results
+- Created test_periods.py for isolated testing of period logic
+- Main issue: payment_periods table needs to be populated with period data
+===============================
