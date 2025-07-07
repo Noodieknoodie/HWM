@@ -49,21 +49,24 @@ export default function ComplianceCard({ compliance, paymentStatus, contract, lo
     let annualFee = 0;
 
     if (contract.fee_type === 'flat' && contract.flat_rate) {
+      // DB already stores fees at their payment frequency
       if (contract.payment_schedule === 'monthly') {
         monthlyFee = contract.flat_rate;
         quarterlyFee = contract.flat_rate * 3;
         annualFee = contract.flat_rate * 12;
       } else {
+        // Quarterly payment schedule
         quarterlyFee = contract.flat_rate;
         monthlyFee = contract.flat_rate / 3;
         annualFee = contract.flat_rate * 4;
       }
     } else if (contract.fee_type === 'percentage' && contract.percent_rate !== null && contract.percent_rate !== undefined) {
-      // For percentage fees, we show the rate, not calculated amounts
+      // For percentage fees, show the rate consistently
+      const percentString = `${contract.percent_rate.toFixed(4)}%`;
       return {
-        monthly: `${(contract.percent_rate * 100).toFixed(2)}%`,
-        quarterly: `${(contract.percent_rate * 100).toFixed(2)}%`,
-        annual: `${(contract.percent_rate * 100).toFixed(2)}%`
+        monthly: percentString,
+        quarterly: percentString,
+        annual: percentString
       };
     }
 
