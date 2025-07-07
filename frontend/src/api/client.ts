@@ -48,7 +48,7 @@ export class ApiClient {
 
   // Client methods
   async getClients() {
-    return this.request('/clients');
+    return this.request('/clients/');
   }
 
   async getClient(id: number) {
@@ -56,7 +56,7 @@ export class ApiClient {
   }
 
   async createClient(data: any) {
-    return this.request('/clients', {
+    return this.request('/clients/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -81,7 +81,7 @@ export class ApiClient {
   }
 
   async createContract(data: any) {
-    return this.request('/contracts', {
+    return this.request('/contracts/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -100,7 +100,7 @@ export class ApiClient {
   }
 
   async createPayment(data: any) {
-    return this.request('/payments', {
+    return this.request('/payments/', {
       method: 'POST',
       body: JSON.stringify(data),
     });

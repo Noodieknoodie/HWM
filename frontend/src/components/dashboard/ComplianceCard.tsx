@@ -58,7 +58,7 @@ export default function ComplianceCard({ compliance, paymentStatus, contract, lo
         monthlyFee = contract.flat_rate / 3;
         annualFee = contract.flat_rate * 4;
       }
-    } else if (contract.fee_type === 'percentage' && contract.percent_rate) {
+    } else if (contract.fee_type === 'percentage' && contract.percent_rate !== null && contract.percent_rate !== undefined) {
       // For percentage fees, we show the rate, not calculated amounts
       return {
         monthly: `${(contract.percent_rate * 100).toFixed(2)}%`,

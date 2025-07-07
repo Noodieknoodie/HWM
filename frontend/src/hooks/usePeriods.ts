@@ -1,6 +1,7 @@
 // frontend/src/hooks/usePeriods.ts
 import { useState, useEffect } from 'react';
 import { useApiClient } from '@/api/client';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface Period {
   value: string;
@@ -36,7 +37,7 @@ export function usePeriods(clientId: number | null, contractId: number | null) {
         setPeriods(response.periods);
         setPaymentSchedule(response.payment_schedule);
       } catch (err: any) {
-        setError(err?.error?.message || 'Failed to fetch periods');
+        setError(getErrorMessage(err, 'Failed to fetch periods'));
       } finally {
         setLoading(false);
       }

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import useAppStore from '@/stores/useAppStore';
 import ClientSearch from './ClientSearch';
 import { useApiClient } from '@/api/client';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 interface Client {
   client_id: number;
@@ -33,7 +34,7 @@ const Sidebar: React.FC = () => {
         setClients(data as Client[]);
       } catch (err: any) {
         console.error('Error loading clients:', err);
-        setError(err?.error?.message || 'Failed to load clients');
+        setError(getErrorMessage(err, 'Failed to load clients'));
       } finally {
         setIsLoading(false);
       }

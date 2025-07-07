@@ -15,7 +15,9 @@
       "Bash(cat:*)",
       "Bash(rg:*)",
       "Bash(python:*)",
-      "Bash(diff:*)"
+      "Bash(diff:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(.venv-linux/bin/python:*)"
     ],
     "deny": []
   }

@@ -144,18 +144,23 @@ async def get_dashboard(client_id: int = Path(..., description="Client ID"), use
                     payment_row.applied_year
                 )
                 
+                # Handle None values and validate variance_status
+                variance_status = payment_row.variance_status
+                if variance_status not in ["exact", "acceptable", "warning", "alert"]:
+                    variance_status = None  # Set to None if not a valid value
+                
                 recent_payments.append(DashboardPayment(
                     payment_id=payment_row.payment_id,
                     received_date=payment_row.received_date,
                     actual_fee=payment_row.actual_fee,
-                    total_assets=payment_row.total_assets,
+                    total_assets=payment_row.total_assets or 0.0,  # Default to 0.0 if None
                     applied_period=payment_row.applied_period,
                     applied_year=payment_row.applied_year,
                     applied_period_type=payment_row.applied_period_type,
                     period_display=period_display,
                     variance_amount=payment_row.variance_amount,
                     variance_percent=payment_row.variance_percent,
-                    variance_status=payment_row.variance_status
+                    variance_status=variance_status
                 ))
             
             # Build metrics

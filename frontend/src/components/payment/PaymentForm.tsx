@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { usePeriods } from '@/hooks/usePeriods';
 import { Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 interface PaymentFormProps {
   clientId: number;
@@ -152,7 +153,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         setIsDirty(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to save payment');
+      setError(getErrorMessage(err, 'Failed to save payment'));
     } finally {
       setIsSubmitting(false);
     }

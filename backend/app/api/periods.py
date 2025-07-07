@@ -4,41 +4,36 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Query, Depends  # type: ignore
 from ..database import db, create_error_response
-from ..models import PaymentPeriod
+from ..models import PaymentPeriod, PeriodOption, PeriodsResponse
 from ..auth import require_auth, TokenUser
 
 router = APIRouter()
 
-@router.get("/", response_model=List[PaymentPeriod])
+@router.get("/", response_model=PeriodsResponse)
 async def get_available_periods(
     client_id: int = Query(..., description="Client ID to get periods for"),
-    payment_schedule: str = Query(..., description="Payment schedule (monthly/quarterly)"),
+    contract_id: int = Query(..., description="Contract ID to get periods for"),
     user: TokenUser = Depends(require_auth)
 ):
     """Get unpaid periods from payment_periods table - no dynamic generation"""
     try:
         with db.get_cursor() as cursor:
             
-            # Get client's contract to validate schedule type
+            # Get contract's payment schedule
             cursor.execute("""
-                SELECT contract_id, payment_schedule 
+                SELECT payment_schedule 
                 FROM contracts 
-                WHERE client_id = ? AND valid_to IS NULL
-            """, client_id)
+                WHERE contract_id = ? AND client_id = ? AND valid_to IS NULL
+            """, (contract_id, client_id))
             
             contract = cursor.fetchone()
             if not contract:
                 raise HTTPException(
                     status_code=404,
-                    detail=create_error_response("CONTRACT_NOT_FOUND", f"No active contract found for client {client_id}")
+                    detail=create_error_response("CONTRACT_NOT_FOUND", f"Contract {contract_id} not found for client {client_id}")
                 )
             
-            # Validate payment schedule matches contract
-            if contract.payment_schedule.lower() != payment_schedule.lower():
-                raise HTTPException(
-                    status_code=400,
-                    detail=create_error_response("SCHEDULE_MISMATCH", f"Payment schedule '{payment_schedule}' does not match contract schedule '{contract.payment_schedule}'")
-                )
+            payment_schedule = contract.payment_schedule
             
             # Get the earliest payment year or current year
             cursor.execute("""
@@ -88,20 +83,26 @@ async def get_available_periods(
             
             cursor.execute(query, params)
             
-            periods = []
+            period_options = []
             for row in cursor.fetchall():
-                period = PaymentPeriod(
-                    period_type=row.period_type,
-                    year=row.year,
+                # Create value string for frontend
+                value = f"{row.year}-{row.period:02d}"
+                # period_name already includes the year, so just use it directly
+                label = row.period_name
+                
+                option = PeriodOption(
+                    value=value,
+                    label=label,
                     period=row.period,
-                    period_name=row.period_name,
-                    start_date=row.start_date,
-                    end_date=row.end_date,
-                    is_current=row.is_current
+                    year=row.year,
+                    period_type=row.period_type
                 )
-                periods.append(period)
+                period_options.append(option)
             
-            return periods
+            return PeriodsResponse(
+                periods=period_options,
+                payment_schedule=payment_schedule
+            )
             
     except HTTPException:
         raise
