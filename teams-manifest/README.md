@@ -10,9 +10,9 @@ This directory contains the Microsoft Teams app manifest for the HWM 401k Paymen
    - Configure API permissions for Microsoft Graph (User.Read)
    - Expose an API with scope (e.g., access_as_user)
 
-2. Deployed Applications
-   - Frontend deployed to Azure Static Web Apps
-   - Backend API deployed to Azure App Service
+2. Azure Static Web App
+   - Deployed with database connections configured
+   - Authentication enabled
 
 ## Configuration
 
@@ -21,9 +21,8 @@ Replace placeholder values in `manifest.json`:
 | Placeholder | Description | Example |
 |------------|-------------|---------|
 | `{APP_ID}` | Unique GUID for Teams app | Generate new GUID |
-| `{FRONTEND_URL}` | Full frontend URL | https://hwm401k.azurestaticapps.net |
-| `{FRONTEND_DOMAIN}` | Frontend domain only | hwm401k.azurestaticapps.net |
-| `{API_DOMAIN}` | API domain only | hwm401k-api.azurewebsites.net |
+| `{FRONTEND_URL}` | Full Static Web App URL | https://hwm401k.azurestaticapps.net |
+| `{FRONTEND_DOMAIN}` | Static Web App domain only | hwm401k.azurestaticapps.net |
 | `{AZURE_CLIENT_ID}` | Azure AD app client ID | Your app registration client ID |
 
 ## Icon Requirements

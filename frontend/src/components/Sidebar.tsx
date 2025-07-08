@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import useAppStore from '@/stores/useAppStore';
 import ClientSearch from './ClientSearch';
-import { useApiClient } from '@/api/client';
-import { getErrorMessage } from '@/utils/errorUtils';
+import { useDataApiClient } from '@/api/client';
 
 interface Client {
   client_id: number;
@@ -22,7 +21,7 @@ const Sidebar: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showByProvider, setShowByProvider] = useState(false);
   
-  const apiClient = useApiClient();
+  const dataApiClient = useDataApiClient();
   
   // Load clients on mount
   useEffect(() => {
@@ -30,11 +29,11 @@ const Sidebar: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await apiClient.getClients();
-        setClients(data as Client[]);
+        const data = await dataApiClient.getClients();
+        setClients(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error('Error loading clients:', err);
-        setError(getErrorMessage(err, 'Failed to load clients'));
+        setError(err.error?.message || 'Failed to load clients');
       } finally {
         setIsLoading(false);
       }

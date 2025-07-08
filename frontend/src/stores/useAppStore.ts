@@ -18,10 +18,6 @@ interface AppState {
   documentViewerOpen: boolean;
   toggleDocumentViewer: () => void;
   setDocumentViewerOpen: (open: boolean) => void;
-  
-  // API base configuration
-  apiBase: string;
-  setApiBase: (url: string) => void;
 }
 
 const useAppStore = create<AppState>((set) => ({
@@ -34,9 +30,7 @@ const useAppStore = create<AppState>((set) => ({
   toggleDocumentViewer: () => set((state) => ({ documentViewerOpen: !state.documentViewerOpen })),
   setDocumentViewerOpen: (open) => set({ documentViewerOpen: open }),
   
-  // API base configuration
-  apiBase: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-  setApiBase: (url) => set({ apiBase: url }),
+  // Removed - no longer needed with Azure data-api
 }));
 
 export default useAppStore;

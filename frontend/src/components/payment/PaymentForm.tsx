@@ -28,7 +28,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const { periods, paymentSchedule, loading: periodsLoading } = usePeriods(clientId, contractId);
+  const { periods, loading: periodsLoading } = usePeriods(clientId);
   const { data: dashboardData } = useClientDashboard(clientId);
   
   const [formData, setFormData] = useState({
@@ -121,7 +121,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         actual_fee: parseFloat(formData.actual_fee),
         method: formData.method,
         notes: formData.notes || null,
-        applied_period_type: paymentSchedule,
+        applied_period_type: dashboardData?.contract?.payment_schedule || 'monthly',
         applied_period: period,
         applied_year: year,
       } : {
@@ -133,7 +133,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         actual_fee: parseFloat(formData.actual_fee),
         method: formData.method,
         notes: formData.notes || null,
-        applied_period_type: paymentSchedule,
+        applied_period_type: dashboardData?.contract?.payment_schedule || 'monthly',
         applied_period: period,
         applied_year: year,
       };

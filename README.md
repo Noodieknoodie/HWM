@@ -1,29 +1,13 @@
 # HWM 401k Payment Tracker
-● I see the issue now. Your old code used Next.js with a completely different structure, while your new code uses Vite + React. The "spaghetti horror" is likely due to:
-
-  1. Missing CSS normalization - Your old code had Next.js built-in CSS resets
-  2. Tailwind class conflicts - Your index.css has hardcoded styles that override Tailwind utilities
-  3. Component structure differences - Next.js uses page-based routing vs your React Router setup
-
-  Here's what's wrong:
-
-● Read(frontend/postcss.config.js)
-  ⎿  Read 6 lines (ctrl+r to expand)
-
-● The issue is your index.css has massive CSS overrides starting at line 329 that are screwing with Tailwind's utility classes. Those !important declarations are fighting with your component styles.
-
 
 A Microsoft Teams application for Hohimer Wealth Management to track 401k client fee payments, monitor compliance status, and manage payment schedules.
 
 ## Architecture
 
 - **Frontend**: React 19.1 with Vite, TypeScript, Tailwind CSS
-- **Backend**: FastAPI (Python 3.12) with Azure SQL Database
+- **Database**: Azure SQL Database with automatic REST API via Azure Static Web Apps database connections
 - **Authentication**: Azure Static Web Apps built-in auth (seamless Teams SSO)
-- **Deployment**: 
-  - Frontend: Azure Static Web Apps
-  - Backend: Azure App Service
-  - Database: Azure SQL Database (existing)
+- **Deployment**: Azure Static Web Apps with integrated database connections
 
 ## Project Structure
 
@@ -33,178 +17,120 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
 │   │   ├── pages/        # Page components
-│   │   ├── auth/         # Simple auth hook for Static Web Apps
-│   │   └── api/          # API client code
+│   │   ├── hooks/        # Custom React hooks for data fetching
+│   │   ├── auth/         # Azure Static Web Apps auth integration
+│   │   └── api/          # Data API client for Azure database connections
 │   └── vite.config.ts
-├── backend/               # FastAPI backend application
-│   ├── app/
-│   │   ├── api/          # API endpoints
-│   │   ├── services/     # Business logic
-│   │   ├── models.py     # Pydantic models
-│   │   ├── database.py   # Database connection
-│   │   └── main.py       # FastAPI app
-│   └── requirements.txt
-└── teams-manifest/        # Microsoft Teams app manifest
+├── swa-db-connections/    # Azure database connection configuration
+│   └── staticwebapp.database.config.json
+├── teams-manifest/        # Microsoft Teams app manifest
+└── staticwebapp.config.json  # Azure Static Web Apps configuration
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.12+
 - Node.js 20+
 - Azure SQL Database access
-- Azure Static Web App configured with authentication
+- Azure subscription for Static Web Apps
+- Microsoft Teams admin access
 
-### Backend Setup
+### Local Development
 
-1. Navigate to the backend directory:
+1. Clone the repository:
    ```bash
-   cd backend
-   ```
-
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Create `.env` file from `.env.example` and configure:
-   ```
-   AZURE_SQL_CONNECTION_STRING=your-connection-string
-   ```
-
-5. Run the development server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
+   git clone https://github.com/Noodieknoodie/HWM.git
+   cd HWM
    ```
 
 2. Install dependencies:
    ```bash
    npm install
+   cd frontend && npm install
+   cd ..
    ```
 
-3. Run the development server:
+3. Create `.env` file from `.env.example`:
    ```bash
-   npm run dev
+   cp .env.example .env
    ```
 
-### Teams App Setup
+4. Add your database connection string to `.env`:
+   ```
+   DATABASE_CONNECTION_STRING="Server=tcp:your-server.database.windows.net,1433;Initial Catalog=your-database;..."
+   ```
 
-1. Update `teams-manifest/manifest.json` with your app IDs and URLs
-2. Add icon files (color.png and outline.png)
-3. Zip the manifest folder contents
-4. Upload to Teams Admin Center
+5. Start the development server:
+   ```bash
+   npm start
+   ```
 
-## Database
+   This runs the Static Web Apps CLI which emulates Azure's environment locally, including database connections.
 
-The application connects to an existing Azure SQL Database with the following key features:
+## Azure Deployment
 
-- Proper DATE columns (no string date manipulation)
-- Optimized views for common queries:
-  - `client_payment_status`: Current payment status
-  - `clients_by_provider_view`: Clients with provider grouping
-  - `payment_variance_view`: Payment variance calculations
-- Pre-populated `payment_periods` table (2015-2030)
-- Automated triggers for metrics updates
+1. Create an Azure Static Web App in the Azure Portal
+2. Connect it to your GitHub repository
+3. Configure the database connection in the Azure Portal under "Database connection"
+4. Add the following application settings:
+   - `AAD_CLIENT_ID`: Your Azure AD app registration client ID
+   - `AAD_CLIENT_SECRET`: Your Azure AD app registration client secret
+
+The GitHub Actions workflow will automatically deploy on push to main.
+
+## Teams App Setup
+
+1. Update `teams-manifest/manifest.json` with:
+   - Your Azure Static Web App URL
+   - Your Azure AD app registration ID
+   
+2. Zip the contents of the `teams-manifest` folder
+
+3. Upload to Teams Admin Center or sideload for testing
+
+## Database Schema
+
+The app uses an existing Azure SQL Database with optimized views:
+
+- `clients_by_provider_view` - Client list with compliance status
+- `client_payment_status` - Current payment status for each client
+- `client_metrics_view` - YTD totals and latest payment info
+- `payment_variance_view` - Payment history with variance calculations
+- `available_payment_periods` - Unpaid periods for dropdown selection
+- `client_fee_reference` - Fee calculations at different frequencies
 
 ## Key Features
 
-- **Client Management**: Track clients with payment status indicators
-- **Payment Recording**: Record payments with single period assignment
-- **Compliance Tracking**: Binary status (Paid/Due) for current period
-- **Dashboard Views**: Comprehensive client payment information
-- **Payment History**: View and manage historical payments
+- **Client Dashboard**: Real-time payment status and compliance tracking
+- **Payment Recording**: Record payments with automatic fee calculations
+- **Payment History**: View, edit, and delete payment records
+- **Provider Grouping**: Organize clients by their 401k provider
+- **Compliance Status**: Visual indicators (green/yellow) for payment status
+- **Period Management**: Automatic period detection and assignment
 
-## Development Principles
+## Development Notes
 
-- **Minimalist**: Simple, maintainable code without unnecessary abstractions
-- **Performance**: Leverage database views and indexes
-- **Security**: Azure Static Web Apps authentication (automatic Teams SSO), no hardcoded secrets
-- **Clarity**: Self-documenting code for AI-assisted maintenance
+- All data fetching uses Azure's `/data-api/rest/` endpoints
+- Authentication is handled automatically by Azure Static Web Apps
+- SQL views handle all business logic - the frontend just displays data
+- No manual data transformations or calculations in JavaScript
+- Uses React hooks for clean state management
 
-## Sprint Progress
+## Troubleshooting
 
-- [x] Sprint 1: Foundation & Project Setup
-- [x] Sprint 2: Core API Endpoints - Clients & Contracts
-- [x] Sprint 3: Payment Management & Smart Periods
-- [x] Sprint 4: Dashboard & Payment Status
-- [x] Sprint 5: Authentication & Teams Integration
-- [x] Sprint 6: Frontend Foundation & Routing
-- [x] Sprint 7: Client Management UI
-- [x] Sprint 8: Dashboard Cards Implementation
-- [x] Sprint 9: Payment Form & History
-- [x] Sprint 10: Final Integration & Cleanup
+### Local Development Issues
 
-## Deployment
+- Ensure you're using the SWA CLI (`npm start`), not `npm run dev`
+- Check that your connection string in `.env` is properly formatted
+- Verify your database firewall allows your local IP
 
-### Backend Deployment (Azure App Service)
+### Azure Deployment Issues
 
-1. Build the application:
-   ```bash
-   cd backend
-   pip freeze > requirements.txt
-   ```
+- Confirm database connection is configured in Azure Portal
+- Check that all required app settings are configured
+- Verify the GitHub Actions workflow has the correct API token
 
-2. Deploy to Azure App Service:
-   - Configure App Service with Python 3.12 runtime
-   - Set environment variables in Configuration:
-     - `AZURE_SQL_CONNECTION_STRING`
-     - `CORS_ORIGINS` (include your frontend URL)
-   - Enable system-assigned managed identity for database auth
-   - Deploy code via ZIP deploy or Git integration
+## License
 
-### Frontend Deployment (Azure Static Web Apps)
-
-1. Build the application:
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-2. Deploy to Azure Static Web Apps:
-   - Create Static Web App resource
-   - Set build configuration:
-     - App location: `/frontend`
-     - Output location: `dist`
-   - Configure environment variables:
-     - `AAD_CLIENT_ID` = your Azure AD app client ID
-     - `AAD_CLIENT_SECRET` = your Azure AD app client secret
-   - Authentication is handled automatically by the platform
-   - Deploy via GitHub Actions or Azure CLI
-
-### Teams App Deployment
-
-1. Update manifest with production URLs:
-   - Set `contentUrl` to your frontend URL
-   - Update `validDomains` with frontend and API domains
-   - Generate unique app ID if needed
-
-2. Package the manifest:
-   ```bash
-   cd teams-manifest
-   zip -r app.zip manifest.json color.png outline.png
-   ```
-
-3. Deploy to Teams:
-   - Upload to Teams Admin Center
-   - Publish to your organization's app catalog
-   - Grant necessary permissions
-
-## Notes
-
-- Document viewer functionality is UI-only (placeholder for future implementation)
-- No file upload/download capabilities in current version
-- Database structure is fixed - do not modify schemas or views
+ISC

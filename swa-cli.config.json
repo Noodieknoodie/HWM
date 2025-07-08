@@ -1,12 +1,12 @@
 {
   "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
   "configurations": {
-    "app": {
+    "HWM": {
       "appLocation": "frontend",
-      "apiLocation": "backend",
-      "appDevserverUrl": "http://localhost:5173",
-      "apiDevserverUrl": "http://127.0.0.1:8000",
-      "run": "npm run dev"
+      "outputLocation": "dist",
+      "appBuildCommand": "npm run build",
+      "run": "npm run dev",
+      "appDevserverUrl": "http://localhost:5173"
     }
   }
 }

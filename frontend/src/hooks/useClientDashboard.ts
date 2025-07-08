@@ -1,7 +1,6 @@
 // frontend/src/hooks/useClientDashboard.ts
 import { useEffect, useState } from 'react';
-import { useApiClient } from '../api/client';
-import { getErrorMessage } from '../utils/errorUtils';
+import { useDataApiClient } from '../api/client';
 
 // Dashboard Types (matching backend models)
 export interface DashboardClient {
@@ -51,9 +50,9 @@ export interface DashboardPayment {
 }
 
 export interface DashboardMetrics {
-  total_ytd_payments: number;
+  total_ytd_payments: number | null;
   avg_quarterly_payment: number;
-  last_recorded_assets: number;
+  last_recorded_assets: number | null;
   next_payment_due: string | null;
 }
 
@@ -66,25 +65,61 @@ export interface QuarterlySummary {
   expected_total: number;
 }
 
-export interface DashboardResponse {
-  client: DashboardClient;
-  contract: DashboardContract;
-  payment_status: DashboardPaymentStatus;
-  compliance: DashboardCompliance;
-  recent_payments: DashboardPayment[];
-  metrics: DashboardMetrics;
-  quarterly_summaries: QuarterlySummary[];
+// Data directly from SQL views - no aggregation needed
+export interface ClientData {
+  client_id: number;
+  display_name: string;
+  full_name: string;
+  ima_signed_date: string | null;
+}
+
+export interface PaymentStatusData {
+  client_id: number;
+  payment_schedule: string;
+  fee_type: string;
+  flat_rate: number | null;
+  percent_rate: number | null;
+  last_payment_date: string | null;
+  last_payment_amount: number | null;
+  current_period: number;
+  current_year: number;
+  last_recorded_assets: number | null;
+  expected_fee: number | null;
+  payment_status: 'Paid' | 'Due';
+}
+
+export interface MetricsData {
+  client_id: number;
+  last_payment_date: string | null;
+  last_payment_amount: number | null;
+  total_ytd_payments: number | null;
+  last_recorded_assets: number | null;
+}
+
+export interface FeeReferenceData {
+  client_id: number;
+  monthly_fee: number | null;
+  quarterly_fee: number | null;
+  annual_fee: number | null;
 }
 
 export function useClientDashboard(clientId: number | null) {
-  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [client, setClient] = useState<ClientData | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatusData | null>(null);
+  const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  const [feeReference, setFeeReference] = useState<FeeReferenceData | null>(null);
+  const [recentPayments, setRecentPayments] = useState<DashboardPayment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const apiClient = useApiClient();
+  const dataApiClient = useDataApiClient();
 
   useEffect(() => {
     if (!clientId) {
-      setData(null);
+      setClient(null);
+      setPaymentStatus(null);
+      setMetrics(null);
+      setFeeReference(null);
+      setRecentPayments([]);
       setLoading(false);
       setError(null);
       return;
@@ -97,13 +132,17 @@ export function useClientDashboard(clientId: number | null) {
       setError(null);
 
       try {
-        const response = await apiClient.getDashboard(clientId);
+        const data = await dataApiClient.getDashboardData(clientId);
         if (!cancelled) {
-          setData(response as DashboardResponse);
+          setClient(data.client);
+          setPaymentStatus(data.paymentStatus);
+          setMetrics(data.metrics);
+          setFeeReference(data.feeReference);
+          setRecentPayments(data.recentPayments);
         }
       } catch (err: any) {
         if (!cancelled) {
-          setError(getErrorMessage(err, 'Failed to load dashboard data'));
+          setError(err.error?.message || 'Failed to load dashboard data');
         }
       } finally {
         if (!cancelled) {
@@ -118,6 +157,46 @@ export function useClientDashboard(clientId: number | null) {
       cancelled = true;
     };
   }, [clientId]);
+
+  // Return data in a structure that matches the old interface for compatibility
+  const data = client && paymentStatus ? {
+    client,
+    contract: {
+      contract_id: 0, // These fields come from paymentStatus now
+      provider_name: '',
+      fee_type: paymentStatus.fee_type as 'percentage' | 'flat',
+      percent_rate: paymentStatus.percent_rate,
+      flat_rate: paymentStatus.flat_rate,
+      payment_schedule: paymentStatus.payment_schedule as 'monthly' | 'quarterly'
+    },
+    payment_status: {
+      status: paymentStatus.payment_status,
+      current_period: `${paymentStatus.current_period}`,
+      current_period_number: paymentStatus.current_period,
+      current_year: paymentStatus.current_year,
+      last_payment_date: paymentStatus.last_payment_date,
+      last_payment_amount: paymentStatus.last_payment_amount,
+      expected_fee: paymentStatus.expected_fee || 0
+    },
+    compliance: {
+      status: 'compliant' as const,
+      color: paymentStatus.payment_status === 'Paid' ? 'green' : 'yellow' as 'green' | 'yellow',
+      reason: paymentStatus.payment_status === 'Paid' ? 'All payments up to date' : 'Payment due'
+    },
+    recent_payments: recentPayments,
+    metrics: metrics ? {
+      ...metrics,
+      avg_quarterly_payment: 0,
+      next_payment_due: null
+    } : {
+      total_ytd_payments: null,
+      avg_quarterly_payment: 0,
+      last_recorded_assets: null,
+      next_payment_due: null
+    },
+    quarterly_summaries: [],
+    feeReference
+  } : null;
 
   return { data, loading, error };
 }
