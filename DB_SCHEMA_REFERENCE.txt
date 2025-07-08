@@ -1,6 +1,12 @@
 -- =====================================================
 -- Generated: 2025-07-04 13:54:07
+-- Updated: 2025-07-08 - Added critical note about soft deletes
 -- =====================================================
+
+-- CRITICAL NOTE: TODO.md claims soft deletes were eliminated but 
+-- ALL tables still have valid_to columns and ALL views still filter
+-- WHERE valid_to IS NULL. This MUST be resolved in migration.
+-- Either truly eliminate soft deletes OR update TODO.md to reflect reality.
 -- =====================================================
 -- TABLES
 -- =====================================================
