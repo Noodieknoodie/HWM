@@ -1,13 +1,14 @@
 import pyodbc # type: ignore
 from datetime import datetime
+import math
 
 class DatabaseSchemaExtractor:
     def __init__(self, connection_string):
         self.conn = pyodbc.connect(connection_string)
         self.schema_text = []
         
-    def extract_all(self, output_file='database_schema.txt'):
-        print("📋 Extracting database schema...")
+    def extract_all(self, output_file='database_schema_ai_enhanced.txt'):
+        print("📋 Extracting enhanced database schema for AI analysis...")
         
         self.add_header()
         self.extract_tables()
@@ -15,31 +16,30 @@ class DatabaseSchemaExtractor:
         self.extract_indexes()
         self.extract_triggers()
         
-        # Remove blank lines
-        final_text = '\n'.join(line for line in self.schema_text if line.strip())
+        # Remove excessive blank lines
+        cleaned_lines = []
+        for i, line in enumerate(self.schema_text):
+            if line.strip() or (i > 0 and self.schema_text[i-1].strip()):
+                cleaned_lines.append(line)
+        final_text = '\n'.join(cleaned_lines)
         
         # Write to file
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(final_text)
             
-        print(f"✅ Schema saved to: {output_file}")
+        print(f"✅ Enhanced schema saved to: {output_file}")
         
     def add_header(self):
         self.schema_text.extend([
             "-- =====================================================",
+            f"-- AI-Enhanced Database Schema",
             f"-- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "-- Purpose: Provide comprehensive schema + data insights for AI coding assistants",
             "-- =====================================================",
             ""
         ])
         
     def extract_tables(self):
-        self.schema_text.extend([
-            "-- =====================================================",
-            "-- TABLES",
-            "-- =====================================================",
-            ""
-        ])
-        
         cursor = self.conn.cursor()
         
         # Get all user tables with schema
@@ -54,10 +54,20 @@ class DatabaseSchemaExtractor:
         
         for schema_name, table_name in tables:
             print(f"  Extracting table: {table_name}")
-            self.schema_text.append(f"-- Table: {table_name}")
+            
+            # Get row count
+            cursor.execute(f"SELECT COUNT(*) FROM [{schema_name}].[{table_name}]")
+            row_count = cursor.fetchone()[0]
+            
+            self.schema_text.append(f"-- === Table: {table_name} === --")
+            self.schema_text.append(f"-- Schema: {schema_name}")
+            self.schema_text.append(f"-- Total Rows: {row_count:,}")
+            self.schema_text.append("")
+            
+            # Table structure
             self.schema_text.append(f"CREATE TABLE [{schema_name}].[{table_name}] (")
             
-            # Get columns separately (no JOIN with constraints to avoid duplicates)
+            # Get columns and null stats
             cursor.execute(f"""
                 SELECT 
                     c.name AS column_name,
@@ -77,9 +87,11 @@ class DatabaseSchemaExtractor:
             
             columns = cursor.fetchall()
             column_defs = []
+            column_names = []
             
             for col in columns:
                 col_def = f"    [{col[0]}] {self._format_data_type(col[1], col[2], col[3], col[4])}"
+                column_names.append(col[0])
                 
                 if col[7]:  # is_identity
                     col_def += " IDENTITY(1,1)"
@@ -92,7 +104,7 @@ class DatabaseSchemaExtractor:
                     
                 column_defs.append(col_def)
             
-            # Get primary key as separate constraint
+            # Get primary key
             cursor.execute(f"""
                 SELECT 
                     kc.name AS constraint_name,
@@ -108,20 +120,11 @@ class DatabaseSchemaExtractor:
             if pk:
                 column_defs.append(f"    CONSTRAINT [{pk[0]}] PRIMARY KEY ({pk[1]})")
             
-            # Get check constraints
-            cursor.execute(f"""
-                SELECT cc.name, cc.definition
-                FROM sys.check_constraints cc
-                WHERE cc.parent_object_id = OBJECT_ID('{schema_name}.{table_name}')
-            """)
-            
-            for check in cursor.fetchall():
-                column_defs.append(f"    CONSTRAINT [{check[0]}] CHECK {check[1]}")
-            
             self.schema_text.append(',\n'.join(column_defs))
             self.schema_text.append(");")
+            self.schema_text.append("")
             
-            # Get foreign keys with proper grouping
+            # Get foreign keys
             cursor.execute(f"""
                 SELECT 
                     fk.name AS fk_name,
@@ -138,21 +141,117 @@ class DatabaseSchemaExtractor:
                 GROUP BY fk.name, tr.schema_id, tr.name
             """)
             
-            for fk in cursor.fetchall():
-                self.schema_text.append(f"ALTER TABLE [{schema_name}].[{table_name}] ADD CONSTRAINT [{fk[0]}]")
-                self.schema_text.append(f"    FOREIGN KEY ({fk[1]}) REFERENCES [{fk[2]}].[{fk[3]}] ({fk[4]});")
+            fks = cursor.fetchall()
+            if fks:
+                self.schema_text.append("-- Foreign Keys:")
+                for fk in fks:
+                    self.schema_text.append(f"-- FK: {fk[0]} ({fk[1]}) -> {fk[3]} ({fk[4]})")
+                self.schema_text.append("")
+            
+            # Get null statistics
+            if row_count > 0:
+                self.schema_text.append("-- Column Statistics:")
+                for col_name in column_names:
+                    try:
+                        cursor.execute(f"""
+                            SELECT 
+                                COUNT(*) - COUNT([{col_name}]) as null_count,
+                                COUNT(DISTINCT [{col_name}]) as distinct_count
+                            FROM [{schema_name}].[{table_name}]
+                        """)
+                        null_count, distinct_count = cursor.fetchone()
+                        null_pct = (null_count / row_count * 100) if row_count > 0 else 0
+                        self.schema_text.append(f"--   {col_name}: {distinct_count:,} distinct values, {null_count:,} nulls ({null_pct:.1f}%)")
+                    except:
+                        # Skip columns that can't be counted (e.g., binary)
+                        pass
+                self.schema_text.append("")
+            
+            # Extract sample data
+            if row_count > 0:
+                self.schema_text.append("** -- SAMPLE DATA -- **")
+                self._extract_sample_data(cursor, schema_name, table_name, column_names, row_count)
+                self.schema_text.append("")
             
             self.schema_text.append("")
         
-    def extract_views(self):
-        self.schema_text.extend([
-            "",
-            "-- =====================================================",
-            "-- VIEWS",
-            "-- =====================================================",
-            ""
-        ])
+    def _extract_sample_data(self, cursor, schema_name, table_name, column_names, row_count):
+        # Calculate samples needed
+        if row_count < 50:
+            samples = [(0, min(10, row_count))]
+        elif row_count <= 100:
+            samples = [(0, 3), (row_count - 3, row_count)]
+        else:
+            # For every 100 rows, add 3 samples
+            num_groups = math.ceil(row_count / 100)
+            samples = []
+            rows_per_group = 3
+            
+            for i in range(num_groups):
+                if i == 0:
+                    samples.append((0, rows_per_group))
+                else:
+                    # Distribute samples evenly
+                    start = int(i * row_count / num_groups)
+                    samples.append((start, start + rows_per_group))
         
+        # Build column list (escape column names)
+        col_list = ', '.join([f'[{col}]' for col in column_names])
+        
+        # Execute samples
+        all_rows = []
+        for start, end in samples:
+            try:
+                # Use OFFSET/FETCH for consistent sampling
+                query = f"""
+                    SELECT {col_list}
+                    FROM [{schema_name}].[{table_name}]
+                    ORDER BY (SELECT NULL)
+                    OFFSET {start} ROWS
+                    FETCH NEXT {end - start} ROWS ONLY
+                """
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                
+                if rows:
+                    all_rows.append((start, rows))
+            except Exception as e:
+                # If OFFSET/FETCH fails, try TOP
+                try:
+                    query = f"SELECT TOP {min(5, row_count)} {col_list} FROM [{schema_name}].[{table_name}]"
+                    cursor.execute(query)
+                    rows = cursor.fetchall()
+                    if rows:
+                        all_rows = [(0, rows)]
+                        break
+                except:
+                    self.schema_text.append("-- Unable to retrieve sample data")
+                    return
+        
+        # Format output
+        if all_rows:
+            # Header
+            header = " | ".join([f"{col[:20]:<20}" for col in column_names])
+            self.schema_text.append(f"-- {header}")
+            self.schema_text.append("-- " + "-" * len(header))
+            
+            for idx, (start_idx, rows) in enumerate(all_rows):
+                if idx > 0:
+                    self.schema_text.append("-- ...")
+                    
+                for row in rows:
+                    formatted_row = []
+                    for val in row:
+                        if val is None:
+                            formatted_row.append("NULL")
+                        else:
+                            str_val = str(val)[:20]
+                            formatted_row.append(str_val)
+                    
+                    row_str = " | ".join([f"{val:<20}" for val in formatted_row])
+                    self.schema_text.append(f"-- {row_str}")
+    
+    def extract_views(self):
         cursor = self.conn.cursor()
         cursor.execute("""
             SELECT 
@@ -165,24 +264,46 @@ class DatabaseSchemaExtractor:
             ORDER BY schema_name, view_name
         """)
         
-        for schema_name, view_name, definition in cursor.fetchall():
+        views = cursor.fetchall()
+        if not views:
+            return
+            
+        for schema_name, view_name, definition in views:
             print(f"  Extracting view: {view_name}")
-            self.schema_text.append(f"-- View: {view_name}")
+            
+            # Try to get row count
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM [{schema_name}].[{view_name}]")
+                row_count = cursor.fetchone()[0]
+            except:
+                row_count = "Unknown"
+            
+            self.schema_text.append(f"-- === View: {view_name} === --")
+            self.schema_text.append(f"-- Schema: {schema_name}")
+            self.schema_text.append(f"-- Row Count: {row_count:,}" if isinstance(row_count, int) else f"-- Row Count: {row_count}")
+            self.schema_text.append("")
             self.schema_text.append(definition.strip())
             self.schema_text.append("")
             
+            # Try to get sample data if possible
+            if isinstance(row_count, int) and row_count > 0:
+                try:
+                    # Get column names
+                    cursor.execute(f"""
+                        SELECT TOP 1 * FROM [{schema_name}].[{view_name}]
+                    """)
+                    column_names = [desc[0] for desc in cursor.description]
+                    
+                    self.schema_text.append("** -- SAMPLE DATA -- **")
+                    self._extract_sample_data(cursor, schema_name, view_name, column_names, row_count)
+                except:
+                    self.schema_text.append("-- Unable to retrieve sample data")
+                
+            self.schema_text.append("")
+            
     def extract_indexes(self):
-        self.schema_text.extend([
-            "",
-            "-- =====================================================",
-            "-- INDEXES",
-            "-- =====================================================",
-            ""
-        ])
-        
         cursor = self.conn.cursor()
         
-        # Get all indexes first
         cursor.execute("""
             SELECT DISTINCT
                 i.name AS index_name,
@@ -199,10 +320,18 @@ class DatabaseSchemaExtractor:
         """)
         
         indexes = cursor.fetchall()
+        if not indexes:
+            return
+            
+        self.schema_text.append("-- === INDEXES === --")
+        self.schema_text.append("")
         
+        current_table = None
         for idx in indexes:
             if idx[0]:  # Skip unnamed indexes
-                print(f"  Extracting index: {idx[0]}")
+                if current_table != f"{idx[1]}.{idx[2]}":
+                    current_table = f"{idx[1]}.{idx[2]}"
+                    self.schema_text.append(f"-- Table: {current_table}")
                 
                 # Get index columns
                 cursor.execute(f"""
@@ -214,37 +343,16 @@ class DatabaseSchemaExtractor:
                 """)
                 index_cols = [row[0] for row in cursor.fetchall()]
                 
-                # Get included columns
-                cursor.execute(f"""
-                    SELECT c.name
-                    FROM sys.index_columns ic
-                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                    WHERE ic.object_id = {idx[5]} AND ic.index_id = {idx[6]} AND ic.is_included_column = 1
-                    ORDER BY ic.index_column_id
-                """)
-                included_cols = [row[0] for row in cursor.fetchall()]
+                stmt = f"--   {idx[0]}: {idx[3]}"
+                if idx[4]:
+                    stmt += " UNIQUE"
+                stmt += f" ({', '.join(index_cols)})"
                 
-                stmt = "CREATE "
-                if idx[4]:  # is_unique
-                    stmt += "UNIQUE "
-                stmt += f"{idx[3]} INDEX [{idx[0]}] ON [{idx[1]}].[{idx[2]}] ({', '.join(index_cols)})"
-                
-                if included_cols:
-                    stmt += f" INCLUDE ({', '.join(included_cols)})"
-                    
-                stmt += ";"
                 self.schema_text.append(stmt)
-                self.schema_text.append("")
+        
+        self.schema_text.append("")
                 
     def extract_triggers(self):
-        self.schema_text.extend([
-            "",
-            "-- =====================================================",
-            "-- TRIGGERS",
-            "-- =====================================================",
-            ""
-        ])
-        
         cursor = self.conn.cursor()
         cursor.execute("""
             SELECT 
@@ -259,7 +367,14 @@ class DatabaseSchemaExtractor:
             ORDER BY schema_name, table_name, trigger_name
         """)
         
-        for trigger_name, schema_name, table_name, definition in cursor.fetchall():
+        triggers = cursor.fetchall()
+        if not triggers:
+            return
+            
+        self.schema_text.append("-- === TRIGGERS === --")
+        self.schema_text.append("")
+        
+        for trigger_name, schema_name, table_name, definition in triggers:
             print(f"  Extracting trigger: {trigger_name}")
             self.schema_text.append(f"-- Trigger: {trigger_name} on {table_name}")
             self.schema_text.append(definition.strip())
@@ -300,7 +415,7 @@ if __name__ == "__main__":
     )
     
     extractor = DatabaseSchemaExtractor(connection_string)
-    extractor.extract_all('HohimerPro_401k_Schema.txt')
+    extractor.extract_all('database_schema_ai_enhanced.txt')
     extractor.close()
     
-    print("\n📄 Schema extraction complete!")
+    print("\n📄 AI-enhanced schema extraction complete!")
