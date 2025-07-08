@@ -17,7 +17,11 @@
       "Bash(python:*)",
       "Bash(diff:*)",
       "Bash(.venv/bin/python:*)",
-      "Bash(.venv-linux/bin/python:*)"
+      "Bash(.venv-linux/bin/python:*)",
+      "Bash(pip3 list:*)",
+      "Bash(az sql db query:*)",
+      "Bash(az sql db:*)",
+      "Bash(sqlcmd:*)"
     ],
     "deny": []
   }
