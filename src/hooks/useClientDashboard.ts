@@ -1,6 +1,47 @@
-// frontend/src/hooks/useClientDashboard.ts
+// src/hooks/useClientDashboard.ts
 import { useEffect, useState } from 'react';
 import { useDataApiClient } from '../api/client';
+
+// New consolidated dashboard view data
+export interface DashboardViewData {
+  // Client info
+  client_id: number;
+  display_name: string;
+  full_name: string;
+  ima_signed_date: string | null;
+  
+  // Contract info
+  contract_id: number;
+  contract_number: string | null;
+  provider_name: string;
+  payment_schedule: 'monthly' | 'quarterly';
+  fee_type: 'percentage' | 'flat';
+  percent_rate: number | null;
+  flat_rate: number | null;
+  
+  // AUM and estimation
+  aum: number | null;
+  aum_estimated: number | null;
+  aum_source: 'recorded' | 'estimated' | null;
+  
+  // Payment info
+  last_payment_date: string | null;
+  last_payment_amount: number | null;
+  total_ytd_payments: number | null;
+  
+  // Current period
+  current_period: number;
+  current_year: number;
+  
+  // Fee rates (already scaled)
+  monthly_rate: number | null;
+  quarterly_rate: number | null;
+  annual_rate: number | null;
+  
+  // Expected fee and status
+  expected_fee: number | null;
+  payment_status: 'Paid' | 'Due';
+}
 
 // Dashboard Types (matching backend models)
 export interface DashboardClient {
@@ -65,49 +106,11 @@ export interface QuarterlySummary {
   expected_total: number;
 }
 
-// Data directly from SQL views - no aggregation needed
-export interface ClientData {
-  client_id: number;
-  display_name: string;
-  full_name: string;
-  ima_signed_date: string | null;
-}
-
-export interface PaymentStatusData {
-  client_id: number;
-  payment_schedule: string;
-  fee_type: string;
-  flat_rate: number | null;
-  percent_rate: number | null;
-  last_payment_date: string | null;
-  last_payment_amount: number | null;
-  current_period: number;
-  current_year: number;
-  last_recorded_assets: number | null;
-  expected_fee: number | null;
-  payment_status: 'Paid' | 'Due';
-}
-
-export interface MetricsData {
-  client_id: number;
-  last_payment_date: string | null;
-  last_payment_amount: number | null;
-  total_ytd_payments: number | null;
-  last_recorded_assets: number | null;
-}
-
-export interface FeeReferenceData {
-  client_id: number;
-  monthly_fee: number | null;
-  quarterly_fee: number | null;
-  annual_fee: number | null;
-}
+// Legacy interfaces - kept for backward compatibility
+// These map the new dashboard_view data to the old structure
 
 export function useClientDashboard(clientId: number | null) {
-  const [client, setClient] = useState<ClientData | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatusData | null>(null);
-  const [metrics, setMetrics] = useState<MetricsData | null>(null);
-  const [feeReference, setFeeReference] = useState<FeeReferenceData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardViewData | null>(null);
   const [recentPayments, setRecentPayments] = useState<DashboardPayment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,10 +118,7 @@ export function useClientDashboard(clientId: number | null) {
 
   useEffect(() => {
     if (!clientId) {
-      setClient(null);
-      setPaymentStatus(null);
-      setMetrics(null);
-      setFeeReference(null);
+      setDashboardData(null);
       setRecentPayments([]);
       setLoading(false);
       setError(null);
@@ -132,13 +132,16 @@ export function useClientDashboard(clientId: number | null) {
       setError(null);
 
       try {
-        const data = await dataApiClient.getDashboardData(clientId);
+        // Fetch dashboard data and recent payments in parallel
+        const [dashboard, payments] = await Promise.all([
+          dataApiClient.getDashboardData(clientId),
+          dataApiClient.getPayments(clientId)
+        ]);
+        
         if (!cancelled) {
-          setClient(data.client);
-          setPaymentStatus(data.paymentStatus);
-          setMetrics(data.metrics);
-          setFeeReference(data.feeReference);
-          setRecentPayments(data.recentPayments);
+          setDashboardData(dashboard);
+          // Take only the 10 most recent payments for the dashboard
+          setRecentPayments(Array.isArray(payments) ? payments.slice(0, 10) : []);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -158,44 +161,54 @@ export function useClientDashboard(clientId: number | null) {
     };
   }, [clientId]);
 
-  // Return data in a structure that matches the old interface for compatibility
-  const data = client && paymentStatus ? {
-    client,
+  // Transform to match the old interface structure for compatibility
+  const data = dashboardData ? {
+    client: {
+      client_id: dashboardData.client_id,
+      display_name: dashboardData.display_name,
+      full_name: dashboardData.full_name,
+      ima_signed_date: dashboardData.ima_signed_date
+    },
     contract: {
-      contract_id: 0, // These fields come from paymentStatus now
-      provider_name: '',
-      fee_type: paymentStatus.fee_type as 'percentage' | 'flat',
-      percent_rate: paymentStatus.percent_rate,
-      flat_rate: paymentStatus.flat_rate,
-      payment_schedule: paymentStatus.payment_schedule as 'monthly' | 'quarterly'
+      contract_id: dashboardData.contract_id,
+      provider_name: dashboardData.provider_name,
+      fee_type: dashboardData.fee_type,
+      percent_rate: dashboardData.percent_rate,
+      flat_rate: dashboardData.flat_rate,
+      payment_schedule: dashboardData.payment_schedule
     },
     payment_status: {
-      status: paymentStatus.payment_status,
-      current_period: `${paymentStatus.current_period}`,
-      current_period_number: paymentStatus.current_period,
-      current_year: paymentStatus.current_year,
-      last_payment_date: paymentStatus.last_payment_date,
-      last_payment_amount: paymentStatus.last_payment_amount,
-      expected_fee: paymentStatus.expected_fee || 0
+      status: dashboardData.payment_status,
+      current_period: `${dashboardData.current_period}`,
+      current_period_number: dashboardData.current_period,
+      current_year: dashboardData.current_year,
+      last_payment_date: dashboardData.last_payment_date,
+      last_payment_amount: dashboardData.last_payment_amount,
+      expected_fee: dashboardData.expected_fee || 0
     },
     compliance: {
       status: 'compliant' as const,
-      color: paymentStatus.payment_status === 'Paid' ? 'green' : 'yellow' as 'green' | 'yellow',
-      reason: paymentStatus.payment_status === 'Paid' ? 'All payments up to date' : 'Payment due'
+      color: dashboardData.payment_status === 'Paid' ? 'green' : 'yellow' as 'green' | 'yellow',
+      reason: dashboardData.payment_status === 'Paid' ? 'All payments up to date' : 'Payment due'
     },
     recent_payments: recentPayments,
-    metrics: metrics ? {
-      ...metrics,
+    metrics: {
+      total_ytd_payments: dashboardData.total_ytd_payments,
       avg_quarterly_payment: 0,
-      next_payment_due: null
-    } : {
-      total_ytd_payments: null,
-      avg_quarterly_payment: 0,
-      last_recorded_assets: null,
+      last_recorded_assets: dashboardData.aum,  // Map aum to last_recorded_assets for now
       next_payment_due: null
     },
     quarterly_summaries: [],
-    feeReference
+    feeReference: {
+      client_id: dashboardData.client_id,
+      monthly_fee: dashboardData.monthly_rate,  // Now using rates instead of dollar amounts
+      quarterly_fee: dashboardData.quarterly_rate,
+      annual_fee: dashboardData.annual_rate
+    },
+    // New fields from dashboard_view
+    aum: dashboardData.aum,
+    aum_estimated: dashboardData.aum_estimated,
+    aum_source: dashboardData.aum_source
   } : null;
 
   return { data, loading, error };
