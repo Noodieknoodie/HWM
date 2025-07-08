@@ -282,3 +282,354 @@ If you want to proceed:
 4. Celebrate massive simplification
 
 Your instinct was correct - this backend is unnecessary complexity.
+
+## MIGRATION GAMEPLAN - FOR AI EXECUTION
+
+### CURRENT TECH STACK (BEFORE)
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Zustand
+- **Backend**: Python 3.x, FastAPI, uvicorn, pyodbc
+- **Database**: Azure SQL (Tables + Views)
+- **Hosting**: Azure Static Web Apps (frontend) + Unknown (backend)
+- **Auth**: Custom token-based (very basic)
+
+### TARGET TECH STACK (AFTER)
+- **Frontend**: UNCHANGED - React 19, TypeScript, Vite, Tailwind CSS, Zustand
+- **Database**: UNCHANGED - Azure SQL (Tables + Views) 
+- **Hosting**: Azure Static Web Apps (frontend + Data API)
+- **Auth**: Azure Static Web Apps built-in authentication
+- **Backend**: ELIMINATED - Replaced by SWA Database Connection REST API
+
+### PART 1: SCORCHED EARTH - DELETE PYTHON BACKEND
+**Objective**: Remove all Python code and dependencies. Test that frontend breaks as expected.
+
+#### Files to DELETE:
+```
+backend/
+├── activate-linux-venv.sh          DELETE
+├── app/
+│   ├── __init__.py                DELETE
+│   ├── api/
+│   │   ├── __init__.py            DELETE
+│   │   ├── clients.py             DELETE
+│   │   ├── contracts.py           DELETE
+│   │   ├── dashboard.py           DELETE
+│   │   ├── payments.py            DELETE
+│   │   └── periods.py             DELETE
+│   ├── auth.py                    DELETE
+│   ├── database.py                DELETE
+│   ├── main.py                    DELETE
+│   └── models.py                  DELETE
+├── backend_start.sh               DELETE
+├── populate_periods.py            DELETE
+├── requirements.txt               DELETE
+├── test_backend.py                DELETE
+└── test_periods.py                DELETE
+
+Root files:
+├── start-all.bat                  DELETE (launches both frontend+backend)
+├── start.bat                      DELETE (launches both frontend+backend)
+└── generate_schema.py             DELETE (Python script)
+```
+
+#### CHECKPOINT 1.1: Verify Backend is Gone
+```bash
+ls backend/  # Should error - directory not found
+npm run dev  # Frontend should start but API calls should fail with 404
+```
+
+### PART 2: FRONTEND SURGERY - GUT API DEPENDENCIES
+**Objective**: Remove all Python API dependencies from frontend. App should render but have no data.
+
+#### Files to DELETE:
+```
+frontend/src/api/
+└── client.ts                      DELETE (contains Python API calls)
+```
+
+#### Files to MODIFY:
+
+**frontend/src/hooks/useClientDashboard.ts**
+- Remove: import of apiClient
+- Remove: fetchDashboardData function
+- Replace with: Empty return `{ dashboardData: null, loading: false, error: null }`
+
+**frontend/src/hooks/usePayments.ts**
+- Remove: import of apiClient  
+- Remove: All fetch functions
+- Replace with: Empty returns for all hooks
+
+**frontend/src/hooks/usePeriods.ts**
+- Remove: import of apiClient
+- Remove: fetchPeriods function
+- Replace with: Empty return `{ periods: [], loading: false }`
+
+**frontend/src/stores/useAppStore.ts**
+- Remove: fetchClients function body (keep function signature)
+- Remove: createPayment function body (keep function signature)
+- Remove: updatePayment function body (keep function signature)
+- Remove: deletePayment function body (keep function signature)
+- Replace all with: console.log stubs
+
+**frontend/src/auth/useAuth.ts**
+- Remove: Everything except interface
+- Replace with: `isAuthenticated: true, user: { name: 'Test User' }`
+
+#### Files to CREATE:
+```
+frontend/src/api/
+└── swa-client.ts                  NEW (stub for now)
+```
+
+#### CHECKPOINT 2.1: Frontend Renders Without Data
+```bash
+cd frontend && npm run dev
+# App should load, show UI, but no data
+# No console errors about missing imports
+# All API calls should be gone
+```
+
+### PART 3: RESURRECTION - AZURE STATIC WEB APPS DATA API
+**Objective**: Connect frontend directly to database via SWA Database Connection
+
+#### Files to CREATE:
+
+**swa-db-connections/staticwebapp.database.config.json**
+```json
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "@env('DATABASE_CONNECTION_STRING')"
+  },
+  "runtime": {
+    "rest": {
+      "enabled": true,
+      "path": "/data-api"
+    },
+    "graphql": {
+      "enabled": false
+    }
+  },
+  "entities": {
+    "Client": {
+      "source": "dbo.clients_by_provider_view",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    },
+    "Payment": {
+      "source": "dbo.payments",
+      "permissions": [{
+        "actions": ["*"],
+        "role": "authenticated"
+      }]
+    },
+    "PaymentView": {
+      "source": "dbo.payment_variance_view",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    },
+    "DashboardStatus": {
+      "source": "dbo.client_payment_status",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    },
+    "PaymentPeriod": {
+      "source": "dbo.payment_periods",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    },
+    "Contract": {
+      "source": "dbo.contracts",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    },
+    "QuarterlySummary": {
+      "source": "dbo.quarterly_summaries",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    },
+    "YearlySummary": {
+      "source": "dbo.yearly_summaries",
+      "permissions": [{
+        "actions": ["read"],
+        "role": "authenticated"
+      }]
+    }
+  }
+}
+```
+
+**frontend/src/api/swa-client.ts**
+```typescript
+// frontend/src/api/swa-client.ts
+
+export class SWADataClient {
+  private baseUrl = '/data-api/rest';
+
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Client operations
+  async getClients() {
+    return this.request<any[]>('/Client');
+  }
+
+  // Dashboard operations  
+  async getDashboard(clientId: number) {
+    return this.request<any>(`/DashboardStatus?$filter=client_id eq ${clientId}`);
+  }
+
+  // Payment operations
+  async getPayments(clientId: number) {
+    return this.request<any[]>(`/PaymentView?$filter=client_id eq ${clientId}&$orderby=received_date desc`);
+  }
+
+  async createPayment(payment: any) {
+    return this.request('/Payment', {
+      method: 'POST',
+      body: JSON.stringify(payment),
+    });
+  }
+
+  async updatePayment(id: number, payment: any) {
+    return this.request(`/Payment/payment_id/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payment),
+    });
+  }
+
+  async deletePayment(id: number) {
+    return this.request(`/Payment/payment_id/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Period operations
+  async getPeriods(type: string) {
+    return this.request<any[]>(`/PaymentPeriod?$filter=period_type eq '${type}'&$orderby=year desc,period desc`);
+  }
+
+  // Summary operations
+  async getQuarterlySummaries(clientId: number) {
+    return this.request<any[]>(`/QuarterlySummary?$filter=client_id eq ${clientId}`);
+  }
+
+  async getYearlySummaries(clientId: number) {
+    return this.request<any[]>(`/YearlySummary?$filter=client_id eq ${clientId}`);
+  }
+}
+
+export const swaClient = new SWADataClient();
+```
+
+#### Files to MODIFY (Reconnect to Data API):
+
+**All hooks files** - Replace empty stubs with swaClient calls
+**useAppStore.ts** - Replace console.log stubs with swaClient calls
+**frontend/staticwebapp.config.json** - Add database connection config reference
+
+#### CHECKPOINT 3.1: Test Single Endpoint
+```bash
+# Deploy to SWA with database config
+# Test: curl https://[your-app].azurestaticapps.net/data-api/rest/Client
+# Should return client list
+```
+
+#### CHECKPOINT 3.2: Full App Test
+```bash
+# Frontend should show data again
+# Test each feature:
+# - Client list loads
+# - Dashboard shows payment status
+# - Payment form works
+# - Payment history displays
+```
+
+### FINAL FILE HIERARCHY (AFTER MIGRATION)
+
+```
+HWM/
+├── frontend/                      KEPT
+│   ├── src/
+│   │   ├── api/
+│   │   │   └── swa-client.ts     NEW - Replaces client.ts
+│   │   ├── auth/
+│   │   │   └── useAuth.ts        MODIFIED - Uses SWA auth
+│   │   ├── components/           UNCHANGED
+│   │   ├── hooks/                MODIFIED - All use swaClient
+│   │   ├── pages/                UNCHANGED
+│   │   ├── stores/
+│   │   │   └── useAppStore.ts    MODIFIED - Uses swaClient
+│   │   └── utils/                UNCHANGED
+│   ├── staticwebapp.config.json  MODIFIED - Added DB config
+│   └── [other config files]      UNCHANGED
+├── swa-db-connections/           NEW DIRECTORY
+│   └── staticwebapp.database.config.json
+├── teams-manifest/               UNCHANGED
+├── OFFICIAL_DOCS/                UNCHANGED  
+├── OLD_CODE_A/                   UNCHANGED
+├── SPRINT_MODE/                  UNCHANGED
+├── [documentation files]         UPDATED AS NEEDED
+└── package.json                  MODIFIED - Remove backend scripts
+
+DELETED:
+- entire backend/ directory
+- generate_schema.py
+- start-all.bat
+- start.bat
+```
+
+### KEY MIGRATION NOTES FOR AI
+
+1. **Soft Delete Issue**: Database still has valid_to columns everywhere. Views filter by `WHERE valid_to IS NULL`. Either:
+   - Keep soft deletes and document properly
+   - OR run migration to drop all valid_to columns and remove WHERE clauses
+
+2. **Period Calculation**: `client_payment_status` view already calculates current period. No backend needed.
+
+3. **Expected Fee Calculation**: Already in views. Frontend also calculates for display.
+
+4. **Auth Migration**: Remove custom token auth, use SWA's built-in auth with roles.
+
+5. **Testing Strategy**: After each part, verify specific functionality breaks/works as expected before proceeding.
+
+6. **No Backwards Compatibility**: Delete aggressively. User has branches saved.
+
+### ERROR PREVENTION CHECKLIST
+- [ ] Ensure all frontend imports updated from client.ts to swa-client.ts
+- [ ] Update all API endpoints to match Data API REST conventions
+- [ ] Remove ALL Python file references from package.json scripts
+- [ ] Test CORS is not needed (SWA handles same-origin)
+- [ ] Verify all SQL views work without parameters (Data API limitation)
+- [ ] Check payment unique constraint works with Data API POST
+
+### POST-MIGRATION CLEANUP
+1. Update README.md - Remove all Python setup instructions
+2. Update CLAUDE_JOURNAL.md - Log this major architectural change
+3. Delete DOCS_FASTAPI.md - No longer relevant
+4. Create MIGRATION_COMPLETE.md - Track what was done
