@@ -11,21 +11,67 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 
 ## Project Structure
 
-```
-/
-├── frontend/               # React frontend application
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── hooks/        # Custom React hooks for data fetching
-│   │   ├── auth/         # Azure Static Web Apps auth integration
-│   │   └── api/          # Data API client for Azure database connections
-│   └── vite.config.ts
-├── swa-db-connections/    # Azure database connection configuration
-│   └── staticwebapp.database.config.json
-├── teams-manifest/        # Microsoft Teams app manifest
-└── staticwebapp.config.json  # Azure Static Web Apps configuration
-```
+docs
+│  ├─ CLAUDE_JOURNAL.md
+│  └─ FRONTEND-DB-GUIDE.md
+src
+│  ├─ api
+│  │    └─ client.ts
+│  ├─ auth
+│  │    └─ useAuth.ts
+│  ├─ components
+│  │    ├─ dashboard
+│  │    │     ├─ ComplianceCard.tsx
+│  │    │     ├─ ContractCard.tsx
+│  │    │     └─ PaymentInfoCard.tsx
+│  │    ├─ payment
+│  │    ├─ ClientSearch.tsx
+│  │    ├─ ErrorBoundary.tsx
+│  │    ├─ Header.tsx
+│  │    ├─ PageLayout.tsx
+│  │    └─ Sidebar.tsx
+│  ├─ hooks
+│  │    ├─ useClientDashboard.ts
+│  │    ├─ usePayments.ts
+│  │    └─ usePeriods.ts
+│  ├─ pages
+│  │    ├─ Contacts.tsx
+│  │    ├─ Contracts.tsx
+│  │    ├─ Documents.tsx
+│  │    ├─ Export.tsx
+│  │    ├─ Payments.tsx
+│  │    └─ Summary.tsx
+│  ├─ stores
+│  │    └─ useAppStore.ts
+│  ├─ utils
+│  │    └─ errorUtils.ts
+│  ├─ App.tsx
+│  ├─ index.css
+│  └─ main.tsx
+swa-db-connections
+│    └─ staticwebapp.database.config.json
+teams-manifest
+│    ├─ manifest.json
+│    └─ README.md
+.env
+.env.example
+.gitignore
+generate_schema.py
+HohimerPro_401k_Schema.txt
+index.html
+launch-dev.bat
+launch-dev.sh
+package-lock.json
+package.json
+postcss.config.js
+README.md
+staticwebapp.config.json
+swa-cli.config.json
+tailwind.config.js
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+
 
 ## Getting Started
 
@@ -91,14 +137,7 @@ The GitHub Actions workflow will automatically deploy on push to main.
 
 ## Database Schema
 
-The app uses an existing Azure SQL Database with optimized views:
-
-- `clients_by_provider_view` - Client list with compliance status
-- `client_payment_status` - Current payment status for each client
-- `client_metrics_view` - YTD totals and latest payment info
-- `payment_variance_view` - Payment history with variance calculations
-- `available_payment_periods` - Unpaid periods for dropdown selection
-- `client_fee_reference` - Fee calculations at different frequencies
+SEE # docs\FRONTEND-DB-GUIDE.md
 
 ## Key Features
 

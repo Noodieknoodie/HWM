@@ -1,5 +1,4 @@
-// frontend/src/components/dashboard/ComplianceCard.tsx
-import React from 'react';
+// src/components/dashboard/ComplianceCard.tsx
 import { DashboardCompliance, DashboardPaymentStatus, DashboardContract } from '../../hooks/useClientDashboard';
 
 interface ComplianceCardProps {

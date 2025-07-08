@@ -1,5 +1,4 @@
-// frontend/src/components/dashboard/ContractCard.tsx
-import React from 'react';
+// src/components/dashboard/ContractCard.tsx
 import { DashboardContract } from '../../hooks/useClientDashboard';
 
 interface ContractCardProps {

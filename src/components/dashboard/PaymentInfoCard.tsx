@@ -1,5 +1,4 @@
-// frontend/src/components/dashboard/PaymentInfoCard.tsx
-import React from 'react';
+// src/components/dashboard/PaymentInfoCard.tsx
 import { DashboardPaymentStatus, DashboardMetrics } from '../../hooks/useClientDashboard';
 
 interface PaymentInfoCardProps {
