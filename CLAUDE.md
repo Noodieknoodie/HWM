@@ -56,3 +56,20 @@ Add to this VERY RARELY and usually only after you have to apologize to the user
 
 PS. IF THE USER GIVES THE COMMAND "/SPRINT" + gives you a SubAgent / Sprint Number, then access the directory "SPRINT_MODE" and read SPRINT_MODE\subagent_welcome.md. This is a special mode that is user-directed. Don't access this folder unless this mode is triggered by the user. 
 
+
+
+PS USE THE MCP SERVERS = 
+github-server ✔                                                                                                                                                                           │
+azure-mcp-server ✔                                                                                                                                                                        │
+perplexity-mcp ✔  (find out how to do things correctly if stuck. huuuuuge)
+
+
+
+##### ALWAYS READ THESE FILES BEFORE ANY NEW TASK : 
+docs\FRONTEND-DB-GUIDE.md
+docs\CLAUDE_JOURNAL.md
+README.md
+
+
+
+##### FUCKING UP CODE BECAUSE YOUR KNOWLEGE CUTOFF TELLS YOU SOME DEPRECIATED SHIT? Use perplexity MCP server to figure out whatsup. 

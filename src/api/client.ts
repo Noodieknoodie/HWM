@@ -16,7 +16,10 @@ export class DataApiClient {
     entity: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const response = await fetch(`${DATA_API_BASE}/${entity}`, {
+    const url = `${DATA_API_BASE}/${entity}`;
+    console.log(`[DataApiClient] Requesting: ${url}`);
+    
+    const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -26,15 +29,32 @@ export class DataApiClient {
 
     if (!response.ok) {
       let error: AzureApiError;
-      try {
-        error = await response.json();
-      } catch {
+      const contentType = response.headers.get('content-type');
+      
+      // Check if we're getting HTML instead of JSON (common with 404s or auth redirects)
+      if (contentType && contentType.includes('text/html')) {
+        const htmlContent = await response.text();
+        console.error(`[DataApiClient] Received HTML response instead of JSON from ${url}`);
+        console.error(`[DataApiClient] Status: ${response.status} ${response.statusText}`);
+        console.error(`[DataApiClient] First 500 chars of HTML:`, htmlContent.substring(0, 500));
+        
         error = {
           error: {
-            code: 'REQUEST_FAILED',
-            message: `Request failed with status ${response.status}`,
+            code: 'HTML_RESPONSE',
+            message: `Expected JSON but received HTML. Status: ${response.status}. This usually means the data-api endpoint is not running or the URL is incorrect.`,
           },
         };
+      } else {
+        try {
+          error = await response.json();
+        } catch {
+          error = {
+            error: {
+              code: 'REQUEST_FAILED',
+              message: `Request failed with status ${response.status}`,
+            },
+          };
+        }
       }
       throw error;
     }
@@ -44,9 +64,20 @@ export class DataApiClient {
       return {} as T;
     }
 
-    const data = await response.json();
-    // Azure data-api returns results in a value array
-    return data.value || data;
+    try {
+      const data = await response.json();
+      console.log(`[DataApiClient] Response from ${url}:`, data);
+      // Azure data-api returns results in a value array
+      return data.value || data;
+    } catch (e) {
+      console.error(`[DataApiClient] Failed to parse JSON response from ${url}:`, e);
+      throw {
+        error: {
+          code: 'JSON_PARSE_ERROR',
+          message: 'Failed to parse response as JSON',
+        },
+      };
+    }
   }
 
   // Client entity methods

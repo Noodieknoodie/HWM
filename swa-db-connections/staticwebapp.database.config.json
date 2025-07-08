@@ -10,7 +10,7 @@
   "runtime": {
     "rest": {
       "enabled": true,
-      "path": "/data-api"
+      "path": "/data-api/rest"
     },
     "graphql": {
       "enabled": false
@@ -69,7 +69,11 @@
       ]
     },
     "clients_by_provider": {
-      "source": "dbo.clients_by_provider_view",
+      "source": {
+        "object": "dbo.clients_by_provider_view",
+        "type": "view",
+        "key-fields": ["client_id"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -78,7 +82,11 @@
       ]
     },
     "client_metrics": {
-      "source": "dbo.client_metrics_view",
+      "source": {
+        "object": "dbo.client_metrics_view",
+        "type": "view",
+        "key-fields": ["client_id"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -87,7 +95,11 @@
       ]
     },
     "client_payment_status": {
-      "source": "dbo.client_payment_status",
+      "source": {
+        "object": "dbo.client_payment_status",
+        "type": "view",
+        "key-fields": ["client_id"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -96,7 +108,11 @@
       ]
     },
     "payment_variance": {
-      "source": "dbo.payment_variance_view",
+      "source": {
+        "object": "dbo.payment_variance_view",
+        "type": "view",
+        "key-fields": ["payment_id"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -105,7 +121,11 @@
       ]
     },
     "available_payment_periods": {
-      "source": "dbo.available_payment_periods",
+      "source": {
+        "object": "dbo.available_payment_periods",
+        "type": "view",
+        "key-fields": ["client_id", "year", "period"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -114,7 +134,11 @@
       ]
     },
     "client_fee_reference": {
-      "source": "dbo.client_fee_reference",
+      "source": {
+        "object": "dbo.client_fee_reference",
+        "type": "view",
+        "key-fields": ["client_id"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -123,7 +147,11 @@
       ]
     },
     "quarterly_totals": {
-      "source": "dbo.quarterly_totals",
+      "source": {
+        "object": "dbo.quarterly_totals",
+        "type": "view",
+        "key-fields": ["client_id", "year", "quarter"]
+      },
       "permissions": [
         {
           "role": "authenticated",
@@ -132,7 +160,11 @@
       ]
     },
     "yearly_summaries": {
-      "source": "dbo.yearly_summaries",
+      "source": {
+        "object": "dbo.yearly_summaries",
+        "type": "view",
+        "key-fields": ["client_id", "year"]
+      },
       "permissions": [
         {
           "role": "authenticated",

@@ -2,11 +2,12 @@
   "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
   "configurations": {
     "HWM": {
-      "appLocation": "frontend",
+      "appLocation": ".",
       "outputLocation": "dist",
       "appBuildCommand": "npm run build",
       "run": "npm run dev",
-      "appDevserverUrl": "http://localhost:5173"
+      "appDevserverUrl": "http://localhost:5173",
+      "dataApiLocation": "swa-db-connections"
     }
   }
 }

@@ -1,30 +1,30 @@
 {
-  "name": "hwm",
+  "name": "hwm-401k-tracker",
+  "private": true,
   "version": "1.0.0",
-  "description": "A Microsoft Teams application for Hohimer Wealth Management to track 401k client fee payments, monitor compliance status, and manage payment schedules.",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
+  "type": "module",
   "scripts": {
-      "start": "swa start",
-      "build": "npm run build --prefix frontend"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "start": "swa start http://localhost:5173 --data-api-location swa-db-connections"
   },
-
-
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Noodieknoodie/HWM.git"
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.1",
+    "zustand": "^5.0.2"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Noodieknoodie/HWM/issues"
-  },
-  "homepage": "https://github.com/Noodieknoodie/HWM#readme",
   "devDependencies": {
-    "@azure/static-web-apps-cli": "^2.0.1"
+    "@types/node": "^24.0.10",
+    "@types/react": "^19.1.5",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.6"
   }
 }
