@@ -1,8 +1,9 @@
-// frontend/src/components/payment/PaymentForm.tsx
+// src/components/payment/PaymentForm.tsx
 import React, { useState, useEffect } from 'react';
 import { usePeriods } from '@/hooks/usePeriods';
 import { Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
+import { usePaymentDefaults } from '@/hooks/usePaymentDefaults';
 import { getErrorMessage } from '@/utils/errorUtils';
 
 interface PaymentFormProps {
@@ -30,6 +31,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 }) => {
   const { periods, loading: periodsLoading } = usePeriods(clientId);
   const { data: dashboardData } = useClientDashboard(clientId);
+  const { defaults: paymentDefaults } = usePaymentDefaults(clientId);
   
   const [formData, setFormData] = useState({
     received_date: new Date().toISOString().split('T')[0],
@@ -43,6 +45,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  
+  // Pre-fill AUM with suggested value when defaults are loaded
+  useEffect(() => {
+    if (!editingPayment && paymentDefaults?.suggested_aum && !formData.total_assets && !isDirty) {
+      setFormData(prev => ({
+        ...prev,
+        total_assets: paymentDefaults.suggested_aum?.toString() || ''
+      }));
+    }
+  }, [paymentDefaults, editingPayment, isDirty]);
   
   // Populate form when editing
   useEffect(() => {
@@ -66,7 +78,9 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     const assets = parseFloat(formData.total_assets);
     
     if (contract.fee_type === 'percentage' && contract.percent_rate) {
-      return assets * contract.percent_rate;
+      // percent_rate is already scaled (e.g., 0.0007 for 0.07% monthly)
+      // So just multiply by AUM, then divide by 100 to get dollar amount
+      return assets * (contract.percent_rate / 100.0);
     } else if (contract.fee_type === 'flat' && contract.flat_rate) {
       return contract.flat_rate;
     }

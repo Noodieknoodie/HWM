@@ -82,7 +82,7 @@ export class DataApiClient {
 
   // Client entity methods
   async getClients() {
-    return this.request('clients_by_provider');
+    return this.request('sidebar_clients_view');
   }
 
   async getClient(id: number) {
@@ -128,13 +128,13 @@ export class DataApiClient {
     });
   }
 
-  // Payment entity methods - using payment_variance view for rich data
+  // Payment entity methods - using payment_history_view for rich data
   async getPayments(clientId: number, year?: number) {
     let filter = `client_id eq ${clientId}`;
     if (year) {
       filter += ` and applied_year eq ${year}`;
     }
-    return this.request(`payment_variance?$filter=${filter}&$orderby=received_date desc`);
+    return this.request(`payment_history_view?$filter=${filter}&$orderby=received_date desc`);
   }
 
   async createPayment(data: any) {
@@ -157,29 +157,21 @@ export class DataApiClient {
     });
   }
 
-  // Period methods - using available_payment_periods view
+  // Period methods - using payment_form_periods_view
   async getAvailablePeriods(clientId: number) {
-    return this.request(`available_payment_periods?$filter=client_id eq ${clientId} and is_paid eq 0`);
+    return this.request(`payment_form_periods_view?$filter=client_id eq ${clientId} and is_paid eq 0`);
   }
 
-  // Dashboard data - composed from multiple views
+  // Dashboard data - single view for all dashboard data
   async getDashboardData(clientId: number) {
-    // Fetch all required data in parallel
-    const [client, paymentStatus, metrics, feeReference, recentPayments] = await Promise.all([
-      this.request(`clients?$filter=client_id eq ${clientId}`),
-      this.request(`client_payment_status?$filter=client_id eq ${clientId}`),
-      this.request(`client_metrics?$filter=client_id eq ${clientId}`),
-      this.request(`client_fee_reference?$filter=client_id eq ${clientId}`),
-      this.request(`payment_variance?$filter=client_id eq ${clientId}&$orderby=received_date desc&$top=10`)
-    ]);
-
-    return {
-      client: Array.isArray(client) ? client[0] : client,
-      paymentStatus: Array.isArray(paymentStatus) ? paymentStatus[0] : paymentStatus,
-      metrics: Array.isArray(metrics) ? metrics[0] : metrics,
-      feeReference: Array.isArray(feeReference) ? feeReference[0] : feeReference,
-      recentPayments: Array.isArray(recentPayments) ? recentPayments : [recentPayments]
-    };
+    const response = await this.request(`dashboard_view?$filter=client_id eq ${clientId}`);
+    return Array.isArray(response) ? response[0] : response;
+  }
+  
+  // Payment form defaults
+  async getPaymentDefaults(clientId: number) {
+    const response = await this.request(`payment_form_defaults_view?$filter=client_id eq ${clientId}`);
+    return Array.isArray(response) ? response[0] : response;
   }
 
   // Quarterly summary data
