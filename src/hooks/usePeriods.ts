@@ -1,8 +1,8 @@
-// frontend/src/hooks/usePeriods.ts
+// src/hooks/usePeriods.ts
 import { useState, useEffect } from 'react';
 import { useDataApiClient } from '@/api/client';
 
-// Period data from available_payment_periods view
+// Period data from payment_form_periods_view
 export interface Period {
   client_id: number;
   year: number;

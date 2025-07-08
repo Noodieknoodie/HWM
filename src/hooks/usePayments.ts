@@ -1,4 +1,4 @@
-// frontend/src/hooks/usePayments.ts
+// src/hooks/usePayments.ts
 import { useState, useEffect } from 'react';
 import { useDataApiClient } from '@/api/client';
 
@@ -23,7 +23,7 @@ export interface Payment {
   flat_rate?: number | null;
   payment_schedule?: string;
   has_files?: boolean;
-  // From payment_variance_view
+  // From payment_history_view
   variance_amount?: number | null;
   variance_percent?: number | null;
   variance_status?: string;
