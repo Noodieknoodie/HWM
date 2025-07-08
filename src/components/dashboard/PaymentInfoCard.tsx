@@ -5,9 +5,11 @@ interface PaymentInfoCardProps {
   paymentStatus: DashboardPaymentStatus | null;
   metrics: DashboardMetrics | null;
   loading: boolean;
+  aum?: number | null;
+  aumSource?: 'recorded' | 'estimated' | null;
 }
 
-export default function PaymentInfoCard({ paymentStatus, metrics, loading }: PaymentInfoCardProps) {
+export default function PaymentInfoCard({ paymentStatus, metrics, loading, aum, aumSource }: PaymentInfoCardProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6 animate-pulse">
@@ -83,7 +85,16 @@ export default function PaymentInfoCard({ paymentStatus, metrics, loading }: Pay
           <DollarIcon />
           <div className="ml-3">
             <p className="text-xs font-medium text-gray-500">AUM</p>
-            <p className="text-sm font-semibold text-gray-900">{formatCurrency(metrics.last_recorded_assets)}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-semibold text-gray-900">
+                {formatCurrency(aum !== undefined ? aum : metrics.last_recorded_assets)}
+              </p>
+              {aumSource && (
+                <span className="text-xs text-gray-500">
+                  ({aumSource})
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

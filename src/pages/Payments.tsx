@@ -121,6 +121,8 @@ const Payments: React.FC = () => {
               <PaymentInfoCard 
                 paymentStatus={dashboardData?.payment_status || null}
                 metrics={dashboardData?.metrics || null}
+                aum={dashboardData?.aum}
+                aumSource={dashboardData?.aum_source}
                 loading={loading}
               />
             </ErrorBoundary>

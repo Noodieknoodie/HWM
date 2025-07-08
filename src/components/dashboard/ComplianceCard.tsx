@@ -61,12 +61,26 @@ export default function ComplianceCard({ compliance, paymentStatus, contract, lo
       }
     } else if (contract.fee_type === 'percentage' && contract.percent_rate !== null && contract.percent_rate !== undefined) {
       // For percentage fees, show the rate consistently
-      const percentString = `${contract.percent_rate.toFixed(4)}%`;
-      return {
-        monthly: percentString,
-        quarterly: percentString,
-        annual: percentString
-      };
+      // Convert from decimal to percentage (0.0007 → 0.07%)
+      const percentValue = contract.percent_rate * 100;
+      const percentString = `${percentValue.toFixed(2)}%`;
+      
+      // For display, we need to show different rates for different periods
+      // The DB stores the rate scaled to payment frequency
+      if (contract.payment_schedule === 'monthly') {
+        return {
+          monthly: percentString,
+          quarterly: `${(percentValue * 3).toFixed(2)}%`,
+          annual: `${(percentValue * 12).toFixed(2)}%`
+        };
+      } else {
+        // Quarterly payment schedule
+        return {
+          monthly: `${(percentValue / 3).toFixed(2)}%`,
+          quarterly: percentString,
+          annual: `${(percentValue * 4).toFixed(2)}%`
+        };
+      }
     }
 
     return {
