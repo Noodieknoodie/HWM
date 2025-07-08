@@ -1,7 +1,6 @@
 // frontend/src/hooks/usePayments.ts
 import { useState, useEffect } from 'react';
-import { useApiClient } from '@/api/client';
-import { getErrorMessage } from '@/utils/errorUtils';
+import { useDataApiClient } from '@/api/client';
 
 export interface Payment {
   payment_id: number;
@@ -63,12 +62,13 @@ export interface UsePaymentsOptions {
 }
 
 export function usePayments(clientId: number | null, options: UsePaymentsOptions = {}) {
-  const apiClient = useApiClient();
+  const dataApiClient = useDataApiClient();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   
-  const { page = 1, limit = 50, year = null } = options;
+  const { year = null } = options; // Azure handles pagination
 
   useEffect(() => {
     if (!clientId) return;
@@ -80,26 +80,14 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
       setError(null);
       
       try {
-        const queryParams = new URLSearchParams({
-          client_id: clientId.toString(),
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-        
-        if (year !== null) {
-          queryParams.append('year', year.toString());
-        }
-        
-        const response = await apiClient.request<Payment[]>(
-          `/payments?${queryParams.toString()}`
-        );
+        const response = await dataApiClient.getPayments(clientId, year || undefined);
         
         if (!cancelled) {
-          setPayments(response);
+          setPayments(Array.isArray(response) ? response : []);
         }
       } catch (err: any) {
         if (!cancelled) {
-          setError(getErrorMessage(err, 'Failed to fetch payments'));
+          setError(err.error?.message || 'Failed to fetch payments');
         }
       } finally {
         if (!cancelled) {
@@ -113,76 +101,37 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
     return () => {
       cancelled = true;
     };
-  }, [clientId, page, limit, year]);
+  }, [clientId, year, refreshKey]);
   
   const createPayment = async (data: PaymentCreateData) => {
     try {
-      const response = await apiClient.createPayment(data);
-      // Refresh payments list
-      if (clientId) {
-        const queryParams = new URLSearchParams({
-          client_id: clientId.toString(),
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-        if (year !== null) {
-          queryParams.append('year', year.toString());
-        }
-        const updatedPayments = await apiClient.request<Payment[]>(
-          `/payments?${queryParams.toString()}`
-        );
-        setPayments(updatedPayments);
-      }
+      const response = await dataApiClient.createPayment(data);
+      // Trigger refresh by updating key
+      setRefreshKey(prev => prev + 1);
       return response;
     } catch (err: any) {
-      throw new Error(getErrorMessage(err, 'Failed to create payment'));
+      throw new Error(err.error?.message || 'Failed to create payment');
     }
   };
   
   const updatePayment = async (paymentId: number, data: PaymentUpdateData) => {
     try {
-      const response = await apiClient.updatePayment(paymentId, data);
-      // Refresh payments list
-      if (clientId) {
-        const queryParams = new URLSearchParams({
-          client_id: clientId.toString(),
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-        if (year !== null) {
-          queryParams.append('year', year.toString());
-        }
-        const updatedPayments = await apiClient.request<Payment[]>(
-          `/payments?${queryParams.toString()}`
-        );
-        setPayments(updatedPayments);
-      }
+      const response = await dataApiClient.updatePayment(paymentId, data);
+      // Trigger refresh by updating key
+      setRefreshKey(prev => prev + 1);
       return response;
     } catch (err: any) {
-      throw new Error(getErrorMessage(err, 'Failed to update payment'));
+      throw new Error(err.error?.message || 'Failed to update payment');
     }
   };
   
   const deletePayment = async (paymentId: number) => {
     try {
-      await apiClient.deletePayment(paymentId);
-      // Refresh payments list
-      if (clientId) {
-        const queryParams = new URLSearchParams({
-          client_id: clientId.toString(),
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-        if (year !== null) {
-          queryParams.append('year', year.toString());
-        }
-        const updatedPayments = await apiClient.request<Payment[]>(
-          `/payments?${queryParams.toString()}`
-        );
-        setPayments(updatedPayments);
-      }
+      await dataApiClient.deletePayment(paymentId);
+      // Trigger refresh by updating key
+      setRefreshKey(prev => prev + 1);
     } catch (err: any) {
-      throw new Error(getErrorMessage(err, 'Failed to delete payment'));
+      throw new Error(err.error?.message || 'Failed to delete payment');
     }
   };
   

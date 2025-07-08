@@ -1,22 +1,23 @@
 // frontend/src/api/client.ts
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Azure Static Web Apps data-api provides consistent REST endpoints
+const DATA_API_BASE = '/data-api/rest';
 
-export interface ApiError {
+// Azure's standardized error format
+export interface AzureApiError {
   error: {
     code: string;
     message: string;
   };
 }
 
-export class ApiClient {
+export class DataApiClient {
   async request<T>(
-    path: string,
+    entity: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${DATA_API_BASE}/${entity}`, {
       ...options,
-      credentials: 'include', // Include auth cookies
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -24,18 +25,18 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      let errorData: ApiError;
+      let error: AzureApiError;
       try {
-        errorData = await response.json();
+        error = await response.json();
       } catch {
-        errorData = {
+        error = {
           error: {
-            code: 'UNKNOWN_ERROR',
+            code: 'REQUEST_FAILED',
             message: `Request failed with status ${response.status}`,
           },
         };
       }
-      throw errorData;
+      throw error;
     }
 
     // Handle 204 No Content
@@ -43,97 +44,127 @@ export class ApiClient {
       return {} as T;
     }
 
-    return response.json();
+    const data = await response.json();
+    // Azure data-api returns results in a value array
+    return data.value || data;
   }
 
-  // Client methods
+  // Client entity methods
   async getClients() {
-    return this.request('/clients/');
+    return this.request('clients_by_provider');
   }
 
   async getClient(id: number) {
-    return this.request(`/clients/${id}`);
+    return this.request(`clients?$filter=client_id eq ${id}`);
   }
 
   async createClient(data: any) {
-    return this.request('/clients/', {
+    return this.request('clients', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateClient(id: number, data: any) {
-    return this.request(`/clients/${id}`, {
-      method: 'PUT',
+    return this.request(`clients/client_id/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
   async deleteClient(id: number) {
-    return this.request(`/clients/${id}`, {
+    return this.request(`clients/client_id/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Contract methods
+  // Contract entity methods
   async getClientContracts(clientId: number) {
-    return this.request(`/contracts/client/${clientId}`);
+    return this.request(`contracts?$filter=client_id eq ${clientId}`);
   }
 
   async createContract(data: any) {
-    return this.request('/contracts/', {
+    return this.request('contracts', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateContract(id: number, data: any) {
-    return this.request(`/contracts/${id}`, {
-      method: 'PUT',
+    return this.request(`contracts/contract_id/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
-  // Payment methods
-  async getPayments(clientId: number) {
-    return this.request(`/payments?client_id=${clientId}`);
+  // Payment entity methods - using payment_variance view for rich data
+  async getPayments(clientId: number, year?: number) {
+    let filter = `client_id eq ${clientId}`;
+    if (year) {
+      filter += ` and applied_year eq ${year}`;
+    }
+    return this.request(`payment_variance?$filter=${filter}&$orderby=received_date desc`);
   }
 
   async createPayment(data: any) {
-    return this.request('/payments/', {
+    return this.request('payments', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updatePayment(id: number, data: any) {
-    return this.request(`/payments/${id}`, {
-      method: 'PUT',
+    return this.request(`payments/payment_id/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
   async deletePayment(id: number) {
-    return this.request(`/payments/${id}`, {
+    return this.request(`payments/payment_id/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Period methods
-  async getAvailablePeriods(clientId: number, contractId: number) {
-    return this.request(`/periods?client_id=${clientId}&contract_id=${contractId}`);
+  // Period methods - using available_payment_periods view
+  async getAvailablePeriods(clientId: number) {
+    return this.request(`available_payment_periods?$filter=client_id eq ${clientId} and is_paid eq 0`);
   }
 
-  // Dashboard methods
-  async getDashboard(clientId: number) {
-    return this.request(`/dashboard/${clientId}`);
+  // Dashboard data - composed from multiple views
+  async getDashboardData(clientId: number) {
+    // Fetch all required data in parallel
+    const [client, paymentStatus, metrics, feeReference, recentPayments] = await Promise.all([
+      this.request(`clients?$filter=client_id eq ${clientId}`),
+      this.request(`client_payment_status?$filter=client_id eq ${clientId}`),
+      this.request(`client_metrics?$filter=client_id eq ${clientId}`),
+      this.request(`client_fee_reference?$filter=client_id eq ${clientId}`),
+      this.request(`payment_variance?$filter=client_id eq ${clientId}&$orderby=received_date desc&$top=10`)
+    ]);
+
+    return {
+      client: Array.isArray(client) ? client[0] : client,
+      paymentStatus: Array.isArray(paymentStatus) ? paymentStatus[0] : paymentStatus,
+      metrics: Array.isArray(metrics) ? metrics[0] : metrics,
+      feeReference: Array.isArray(feeReference) ? feeReference[0] : feeReference,
+      recentPayments: Array.isArray(recentPayments) ? recentPayments : [recentPayments]
+    };
+  }
+
+  // Quarterly summary data
+  async getQuarterlySummaries(clientId: number, year?: number) {
+    let filter = `client_id eq ${clientId}`;
+    if (year) {
+      filter += ` and year eq ${year}`;
+    }
+    return this.request(`quarterly_totals?$filter=${filter}&$orderby=year desc,quarter desc`);
   }
 }
 
 // Create a singleton instance
-export const apiClient = new ApiClient();
+export const dataApiClient = new DataApiClient();
 
 // Hook to get the API client instance
-export function useApiClient() {
-  return apiClient;
+export function useDataApiClient() {
+  return dataApiClient;
 }

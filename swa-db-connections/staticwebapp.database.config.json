@@ -1,0 +1,144 @@
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "@env('DATABASE_CONNECTION_STRING')",
+    "options": {
+      "set-session-context": true
+    }
+  },
+  "runtime": {
+    "rest": {
+      "enabled": true,
+      "path": "/data-api"
+    },
+    "graphql": {
+      "enabled": false
+    },
+    "host": {
+      "mode": "development",
+      "authentication": {
+        "provider": "StaticWebApps"
+      }
+    }
+  },
+  "entities": {
+    "clients": {
+      "source": "dbo.clients",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read", "create", "update"]
+        }
+      ]
+    },
+    "contracts": {
+      "source": "dbo.contracts",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read", "create", "update"]
+        }
+      ]
+    },
+    "contacts": {
+      "source": "dbo.contacts",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read", "create", "update", "delete"]
+        }
+      ]
+    },
+    "payments": {
+      "source": "dbo.payments",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read", "create", "update", "delete"]
+        }
+      ]
+    },
+    "payment_periods": {
+      "source": "dbo.payment_periods",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "clients_by_provider": {
+      "source": "dbo.clients_by_provider_view",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "client_metrics": {
+      "source": "dbo.client_metrics_view",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "client_payment_status": {
+      "source": "dbo.client_payment_status",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "payment_variance": {
+      "source": "dbo.payment_variance_view",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "available_payment_periods": {
+      "source": "dbo.available_payment_periods",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "client_fee_reference": {
+      "source": "dbo.client_fee_reference",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "quarterly_totals": {
+      "source": "dbo.quarterly_totals",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "yearly_summaries": {
+      "source": "dbo.yearly_summaries",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    }
+  }
+}

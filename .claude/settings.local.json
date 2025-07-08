@@ -21,7 +21,10 @@
       "Bash(pip3 list:*)",
       "Bash(az sql db query:*)",
       "Bash(az sql db:*)",
-      "Bash(sqlcmd:*)"
+      "Bash(sqlcmd:*)",
+      "Bash(true)",
+      "Bash(mv:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

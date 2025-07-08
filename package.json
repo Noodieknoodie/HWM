@@ -7,9 +7,8 @@
     "test": "tests"
   },
   "scripts": {
-      "dev:frontend": "npm run dev --prefix frontend",
-      "dev:backend": "cd backend && ./.venv-linux/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
-      "dev": "concurrently --kill-others-on-fail \"npm:dev:backend\" \"npm:dev:frontend\""
+      "start": "swa start",
+      "build": "npm run build --prefix frontend"
   },
 
 
@@ -26,6 +25,6 @@
   },
   "homepage": "https://github.com/Noodieknoodie/HWM#readme",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@azure/static-web-apps-cli": "^2.0.1"
   }
 }
