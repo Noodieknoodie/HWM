@@ -152,3 +152,103 @@ Created SQL fix scripts in docs/sql-fixes/:
 - apply_all_fixes.sql (combined script)
 
 ===============================
+
+# Data Flow Analysis | 2025-07-09
+Description: Comprehensive analysis of data flow from DB → API → Frontend → Display to identify bugs and inconsistencies
+Reason: User requested thorough analysis to find real production bugs, naming mismatches, and missing error handlers
+Files Touched: All major components and hooks analyzed (no code changes, documentation only)
+Result: Identified critical bugs, inconsistencies, and missing handlers documented below
+
+## BUGS FOUND:
+
+### 1. **CRITICAL: Period Value Format Mismatch**
+- Location: `src/hooks/usePeriods.ts:42` and `src/components/payment/PaymentForm.tsx:114`
+- Issue: usePeriods formats as `year-period` (e.g., "2025-6") but PaymentForm splits expecting `period-year`
+- Impact: Payment creation will fail with invalid period/year values
+- Fix: Change line 114 to: `const [year, period] = periodParts`
+
+### 2. **Contract ID Null Violation**
+- Location: `src/components/payment/PaymentForm.tsx:142`
+- Issue: Falls back to `contract_id: contractId || 0` which violates FK constraint
+- Impact: Payment creation fails for clients without contracts
+- Fix: Validate contractId exists before allowing payment creation
+
+### 3. **Race Condition in AUM Pre-fill**
+- Location: `src/components/payment/PaymentForm.tsx:50-57`
+- Issue: isDirty check may not prevent overwriting user input if typing occurs during load
+- Impact: User's manually entered AUM could be overwritten
+- Fix: Add timestamp check or disable field until defaults load
+
+## INCONSISTENCIES:
+
+### 1. **Variable Name Chaos**
+- `total_assets` (DB) vs `aum` (UI) vs `last_recorded_assets` (legacy)
+- `percent_rate` (DB) vs `rate` vs `fee_rate` (various places)
+- `aum_source` optional in types but used as required
+
+### 2. **Type Definition Mismatches**
+- `compliance_status` expects 'green'|'yellow' but can be null (new clients)
+- Payment methods hardcoded in UI but free text in DB
+- Period types inconsistent between 'monthly'|'quarterly' and string
+
+### 3. **Duplicated Logic**
+- Period formatting repeated in PaymentHistory, ComplianceCard, and elsewhere
+- Currency formatting implemented differently in each component
+- Variance calculation logic duplicated
+
+## MISSING HANDLERS:
+
+### 1. **Null/Undefined Checks**
+- PaymentInfoCard:88-95 - No null check before formatting currency
+- ComplianceCard:62 - No validation that percent_rate exists
+- PaymentForm:75-89 - Missing null check for dashboardData.contract
+
+### 2. **Error Boundaries**
+- No error handling for empty periods array (new clients)
+- Missing validation for selected period availability
+- No graceful degradation when API calls fail
+
+### 3. **Concurrent Updates**
+- No optimistic locking on payment updates
+- No refresh mechanism for multi-user scenarios
+- Missing conflict resolution for simultaneous edits
+
+### 4. **Data Validation**
+- Negative payment amounts allowed
+- Future payment dates not validated
+- No maximum value limits for AUM/payments
+- Missing format validation for contract numbers
+
+## QUICK FIXES PRIORITY:
+
+1. **Fix period parsing bug** (1 line change) - CRITICAL
+2. **Add contract_id validation** - HIGH
+3. **Add null checks to currency formatting** - HIGH
+4. **Centralize period formatting** - MEDIUM
+5. **Add payment amount validation** - MEDIUM
+6. **Implement proper error boundaries** - LOW
+
+## DATA FLOW SUMMARY:
+
+### Sidebar Flow:
+`sidebar_clients_view` → API → `Sidebar.tsx` → Display
+- Clean flow, minimal issues
+- Only concern: compliance_status null handling
+
+### Dashboard Flow:
+`dashboard_view` → API → `useClientDashboard` → Components → Display
+- Well structured with single API call
+- Issue: Type transformations create confusion
+
+### Payment Creation Flow:
+Multiple views → API calls → `PaymentForm` → Validation → Submit
+- Most problematic flow
+- Critical parsing bug will break all payment creation
+- Missing validation at multiple steps
+
+### Payment History Flow:
+`payment_history_view` → API → `PaymentHistory` → Display
+- Clean implementation
+- Minor issue: Duplicated formatting logic
+
+===============================
