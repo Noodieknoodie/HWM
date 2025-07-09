@@ -14,6 +14,7 @@ export interface DashboardViewData {
   contract_id: number;
   contract_number: string | null;
   provider_name: string;
+  num_people: number | null;
   payment_schedule: 'monthly' | 'quarterly';
   fee_type: 'percentage' | 'flat';
   percent_rate: number | null;
@@ -32,6 +33,10 @@ export interface DashboardViewData {
   // Current period
   current_period: number;
   current_year: number;
+  current_period_display: string;
+  current_quarter: number;
+  current_quarter_payments: number;
+  expected_payments_per_quarter: number;
   
   // Fee rates (already scaled)
   monthly_rate: number | null;
@@ -41,6 +46,11 @@ export interface DashboardViewData {
   // Expected fee and status
   expected_fee: number | null;
   payment_status: 'Paid' | 'Due';
+  
+  // Contact info
+  contact_name: string | null;
+  phone: string | null;
+  physical_address: string | null;
 }
 
 // Dashboard Types (matching backend models)
@@ -162,56 +172,11 @@ export function useClientDashboard(clientId: number | null) {
     };
   }, [clientId]);
 
-  // Transform to match the old interface structure for compatibility
-  const data = dashboardData ? {
-    client: {
-      client_id: dashboardData.client_id,
-      display_name: dashboardData.display_name,
-      full_name: dashboardData.full_name,
-      ima_signed_date: dashboardData.ima_signed_date
-    },
-    contract: {
-      contract_id: dashboardData.contract_id,
-      contract_number: dashboardData.contract_number,
-      provider_name: dashboardData.provider_name,
-      fee_type: dashboardData.fee_type,
-      percent_rate: dashboardData.percent_rate,
-      flat_rate: dashboardData.flat_rate,
-      payment_schedule: dashboardData.payment_schedule
-    },
-    payment_status: {
-      status: dashboardData.payment_status,
-      current_period: `${dashboardData.current_period}`,
-      current_period_number: dashboardData.current_period,
-      current_year: dashboardData.current_year,
-      last_payment_date: dashboardData.last_payment_date,
-      last_payment_amount: dashboardData.last_payment_amount,
-      expected_fee: dashboardData.expected_fee || 0
-    },
-    compliance: {
-      status: 'compliant' as const,
-      color: dashboardData.payment_status === 'Paid' ? 'green' : 'yellow' as 'green' | 'yellow',
-      reason: dashboardData.payment_status === 'Paid' ? 'All payments up to date' : 'Payment due'
-    },
-    recent_payments: recentPayments,
-    metrics: {
-      total_ytd_payments: dashboardData.total_ytd_payments,
-      avg_quarterly_payment: 0,
-      last_recorded_assets: dashboardData.aum,  // Map aum to last_recorded_assets for now
-      next_payment_due: null
-    },
-    quarterly_summaries: [],
-    feeReference: {
-      client_id: dashboardData.client_id,
-      monthly_fee: dashboardData.monthly_rate,  // Now using rates instead of dollar amounts
-      quarterly_fee: dashboardData.quarterly_rate,
-      annual_fee: dashboardData.annual_rate
-    },
-    // New fields from dashboard_view
-    aum: dashboardData.aum,
-    aum_estimated: dashboardData.aum_estimated,
-    aum_source: dashboardData.aum_source
-  } : null;
-
-  return { data, loading, error };
+  // Return the flat dashboard data directly - no transformation needed
+  return { 
+    dashboardData, 
+    recentPayments, 
+    loading, 
+    error 
+  };
 }

@@ -263,12 +263,12 @@ class DatabaseSchemaExtractor:
             """)
             columns = [row[0] for row in cursor.fetchall()]
             
-            # Get sample data
-            cursor.execute(f"SELECT TOP 10 * FROM [{schema_name}].[{table_name}]")
+            # Get sample data - just 3 rows
+            cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{table_name}]")
             rows = cursor.fetchall()
             
             if rows:
-                self.schema_text.append(f"-- Sample data ({len(rows)} rows):")
+                self.schema_text.append(f"-- Sample data (3 rows):")
                 self.schema_text.append(f"-- {' | '.join(columns)}")
                 for row in rows:
                     values = []
@@ -286,43 +286,28 @@ class DatabaseSchemaExtractor:
     def _extract_view_sample_data(self, schema_name, view_name):
         cursor = self.conn.cursor()
         try:
-            # Get total row count
-            cursor.execute(f"SELECT COUNT(*) FROM [{schema_name}].[{view_name}]")
-            result = cursor.fetchone()
-            total_rows = result[0] if result else 0
-            
             # Get column names
             cursor.execute(f"SELECT TOP 1 * FROM [{schema_name}].[{view_name}]")
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
             
-            if total_rows > 0 and columns:
-                sample_sets = (total_rows + 99) // 100  # Round up
-                self.schema_text.append(f"-- Sample data ({total_rows} total rows, showing {min(sample_sets * 10, total_rows)}):")
+            # Get sample data - just 3 rows
+            cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{view_name}]")
+            rows = cursor.fetchall()
+            
+            if rows:
+                self.schema_text.append(f"-- Sample data (3 rows):")
                 self.schema_text.append(f"-- {' | '.join(columns)}")
                 
-                for i in range(sample_sets):
-                    offset = i * 100
-                    cursor.execute(f"""
-                        SELECT * FROM [{schema_name}].[{view_name}]
-                        ORDER BY 1
-                        OFFSET {offset} ROWS
-                        FETCH NEXT 10 ROWS ONLY
-                    """)
-                    rows = cursor.fetchall()
-                    
-                    for row in rows:
-                        values = []
-                        for val in row:
-                            if val is None:
-                                values.append('NULL')
-                            elif isinstance(val, str):
-                                values.append(repr(val)[:50])
-                            else:
-                                values.append(str(val))
-                        self.schema_text.append(f"-- {' | '.join(values)}")
-                    
-                    if i < sample_sets - 1 and len(rows) == 10:
-                        self.schema_text.append("-- ...")
+                for row in rows:
+                    values = []
+                    for val in row:
+                        if val is None:
+                            values.append('NULL')
+                        elif isinstance(val, str):
+                            values.append(repr(val)[:50])
+                        else:
+                            values.append(str(val))
+                    self.schema_text.append(f"-- {' | '.join(values)}")
         except Exception as e:
             self.schema_text.append(f"-- Sample data error: {str(e)[:100]}")    
                     
@@ -353,7 +338,7 @@ if __name__ == "__main__":
         "Server=tcp:hohimerpro-db-server.database.windows.net,1433;"
         "Database=HohimerPro-401k;"
         "Uid=CloudSAddb51659;"
-        "Pwd=Prunes27$;"
+        "Pwd=Prunes27$$$$;"
         "Encrypt=yes;"
         "TrustServerCertificate=no;"
         "Connection Timeout=30;"

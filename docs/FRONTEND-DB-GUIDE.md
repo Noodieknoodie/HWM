@@ -52,74 +52,69 @@ ACME CORPORATION - Acme
 
 ---
 
-### 💼 CONTRACT DETAILS CARD
-**COMPONENT:** `src/components/dashboard/ContractCard.tsx`
+### 📋 NEW DASHBOARD CARDS (4-Card Layout)
+**COMPONENTS:** Located in `src/components/dashboard/cards/`
+- Base component: `DashboardCard.tsx` (reusable wrapper)
+- Individual cards: `PlanDetailsCard.tsx`, `CurrentStatusCard.tsx`, `AssetsAndFeesCard.tsx`, `ContactCard.tsx`
 
-Displays the client's contract information:
+#### 📍 PLAN DETAILS CARD
 ```
 ┌─────────────────────────────────┐
-│ Contract Details                │
+│ 📍 PLAN DETAILS                 │
 ├─────────────────────────────────┤
-│ Contract Number: 134565         │ ← contract_number (NULL for ~30%)
-│ Plan Provider: John Hancock     │ ← provider_name
-│ Payment Frequency: Monthly      │ ← payment_schedule
-│ Fee Structure: AUM%             │ ← fee_type ('percentage' → 'AUM%', 'flat' → 'Flat Fee')
-│ Fee Amount: 0.84%               │ ← annual_rate (% clients) OR flat_rate (flat clients)
+│ John Hancock                    │ ← provider_name
+│ 134565                          │ ← contract_number (or '--' if NULL)
+│ 18 Participants                 │ ← num_people + ' Participants' (or '-- Participants')
+│ Client Since 05/19              │ ← 'Client Since ' + ima_signed_date (MM/YY)
 └─────────────────────────────────┘
 ```
 
-**NOTE:** The percent_rate in DB is already scaled for payment frequency!
-
----
-
-### 💰 PAYMENT INFORMATION CARD
-**COMPONENT:** `src/components/dashboard/PaymentInfoCard.tsx`
-
-Shows payment metrics and calculations:
+#### 💵 CURRENT STATUS CARD
 ```
 ┌─────────────────────────────────┐
-│ Payment Information             │
+│ 💵 CURRENT STATUS               │
 ├─────────────────────────────────┤
-│ AUM: $1,400,234 (recorded)     │ ← aum_estimated + aum_source
-│ Expected Fee: $980.16           │ ← expected_fee
-│ Last Payment: 05/13/25          │ ← last_payment_date
-│ Last Amount: $930.09            │ ← last_payment_amount  
-│ Current Period: June 2025 🔵    │ ← current_period + current_year
-│ Payment Status: Due 🟡          │ ← payment_status
-│ YTD Payments: $2,786.47         │ ← total_ytd_payments
+│ June 2025                       │ ← current_period_display (pre-formatted)
+│ ⚠ Due                          │ ← payment_status with icon (✓ Paid or ⚠ Due)
+│ Expected: $980.16               │ ← expected_fee (currency)
+│ Last: 05/13/25 $930.09         │ ← last_payment_date + last_payment_amount
 └─────────────────────────────────┘
 ```
 
-**TODO - UI Enhancement:** 
-- [ ] Add indicator for AUM source: "(recorded)" vs "(estimated from payment)" with appropriate icon
-
-**CRITICAL DATA:**
-- `contract_id`: Available from dashboard_view for payment creation
-- Expected fee auto-calculates: AUM × percent_rate OR flat_rate
-- AUM can be estimated from payment ÷ rate when not recorded
-
----
-
-### ✅ PAYMENT STATUS CARD
-**COMPONENT:** `src/components/dashboard/ComplianceCard.tsx`
-
-Large status indicator with fee reference:
+#### 📈 ASSETS & FEES CARD
 ```
 ┌─────────────────────────────────┐
-│        ⚠️ PAYMENT DUE          │ ← payment_status
-│         June 2025              │ ← current_period formatted
-│     Monthly @ 0.07%            │ ← payment_schedule + rate
+│ 📈 ASSETS & FEES                │
 ├─────────────────────────────────┤
-│ Fee Reference:                  │
-│ Monthly:    0.07%              │ ← monthly_rate
-│ Quarterly:  0.21%              │ ← quarterly_rate  
-│ Annual:     0.84%              │ ← annual_rate
+│ AUM: $1,400,234*                │ ← aum (currency, no decimals) + '*' if aum_source='estimated'
+│ Frequency: Monthly              │ ← payment_schedule (capitalized)
+│ Type: Percentage                │ ← fee_type (capitalized)
+│ 0.07% / 0.21% / 0.84%          │ ← monthly_rate / quarterly_rate / annual_rate
 └─────────────────────────────────┘
 ```
 
-**TODO - UI Logic:**
-- [ ] Display rates as percentages for % clients, dollars for flat fee clients
-- [ ] Format percentage rates: multiply by 100 for display (0.0007 → 0.07%)
+**NOTE:** For flat fee clients, rates display as currency: "$667 / $2,000 / $8,000"
+
+#### 📞 CONTACT CARD
+```
+┌─────────────────────────────────┐
+│ 📞 CONTACT                      │
+├─────────────────────────────────┤
+│ Donald Jay                      │ ← contact_name
+│ (253) 395-9551                  │ ← phone (formatted)
+│ 3500 West Valley HWY            │ ← physical_address (split by comma)
+│ Ste B-106                       │
+│ Auburn, WA 98001                │
+└─────────────────────────────────┘
+```
+
+**RESPONSIVE LAYOUT:**
+- Desktop (no viewer): 4 columns (`xl:grid-cols-4`)
+- Desktop (with viewer): 2 columns (`xl:grid-cols-2`)
+- Tablet: 2 columns (`lg:grid-cols-2`)
+- Mobile: 1 column (`grid-cols-1`)
+
+**DATA SOURCE:** All cards receive the complete `dashboard_view` data object
 
 ---
 

@@ -30,7 +30,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onCancel,
 }) => {
   const { periods, loading: periodsLoading } = usePeriods(clientId);
-  const { data: dashboardData } = useClientDashboard(clientId);
+  const { dashboardData } = useClientDashboard(clientId);
   const { defaults: paymentDefaults } = usePaymentDefaults(clientId);
   
   const [formData, setFormData] = useState({
@@ -72,17 +72,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   
   // Calculate expected fee based on contract
   const calculateExpectedFee = () => {
-    if (!dashboardData?.contract || !formData.total_assets) return null;
+    if (!dashboardData || !formData.total_assets) return null;
     
-    const contract = dashboardData.contract;
     const assets = parseFloat(formData.total_assets);
     
-    if (contract.fee_type === 'percentage' && contract.percent_rate) {
+    if (dashboardData.fee_type === 'percentage' && dashboardData.percent_rate) {
       // percent_rate is already scaled (e.g., 0.0007 for 0.07% monthly)
       // So just multiply by AUM to get dollar amount
-      return assets * contract.percent_rate;
-    } else if (contract.fee_type === 'flat' && contract.flat_rate) {
-      return contract.flat_rate;
+      return assets * dashboardData.percent_rate;
+    } else if (dashboardData.fee_type === 'flat' && dashboardData.flat_rate) {
+      return dashboardData.flat_rate;
     }
     
     return null;
@@ -140,7 +139,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         actual_fee: parseFloat(formData.actual_fee),
         method: formData.method,
         notes: formData.notes || null,
-        applied_period_type: dashboardData?.contract?.payment_schedule || 'monthly',
+        applied_period_type: dashboardData?.payment_schedule || 'monthly',
         applied_period: period,
         applied_year: year,
       } : {
@@ -152,7 +151,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         actual_fee: parseFloat(formData.actual_fee),
         method: formData.method,
         notes: formData.notes || null,
-        applied_period_type: dashboardData?.contract?.payment_schedule || 'monthly',
+        applied_period_type: dashboardData?.payment_schedule || 'monthly',
         applied_period: period,
         applied_year: year,
       };
