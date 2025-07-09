@@ -10,7 +10,7 @@
   "runtime": {
     "rest": {
       "enabled": true,
-      "path": "/data-api/rest"
+      "path": "/rest"
     },
     "graphql": {
       "enabled": false
@@ -123,19 +123,6 @@
     "payment_form_defaults_view": {
       "source": {
         "object": "dbo.payment_form_defaults_view",
-        "type": "view",
-        "key-fields": ["client_id"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
-        }
-      ]
-    },
-    "client_fee_reference": {
-      "source": {
-        "object": "dbo.client_fee_reference",
         "type": "view",
         "key-fields": ["client_id"]
       },
