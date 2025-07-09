@@ -53,6 +53,7 @@ export interface DashboardClient {
 
 export interface DashboardContract {
   contract_id: number;
+  contract_number: string | null;
   provider_name: string;
   fee_type: 'percentage' | 'flat';
   percent_rate: number | null;
@@ -171,6 +172,7 @@ export function useClientDashboard(clientId: number | null) {
     },
     contract: {
       contract_id: dashboardData.contract_id,
+      contract_number: dashboardData.contract_number,
       provider_name: dashboardData.provider_name,
       fee_type: dashboardData.fee_type,
       percent_rate: dashboardData.percent_rate,
