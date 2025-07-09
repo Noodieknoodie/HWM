@@ -11,6 +11,7 @@
     "start": "swa start dist --port 4280 --data-api-location swa-db-connections"
   },
   "dependencies": {
+    "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.30.1",

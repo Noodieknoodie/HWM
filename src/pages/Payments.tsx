@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import useAppStore from '@/stores/useAppStore';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
 import { usePayments, Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
-import ContractCard from '@/components/dashboard/ContractCard';
-import PaymentInfoCard from '@/components/dashboard/PaymentInfoCard';
-import ComplianceCard from '@/components/dashboard/ComplianceCard';
+import { PlanDetailsCard } from '@/components/dashboard/cards/PlanDetailsCard';
+import { CurrentStatusCard } from '@/components/dashboard/cards/CurrentStatusCard';
+import { AssetsAndFeesCard } from '@/components/dashboard/cards/AssetsAndFeesCard';
+import { ContactCard } from '@/components/dashboard/cards/ContactCard';
 import PaymentForm from '@/components/payment/PaymentForm';
 import PaymentHistory from '@/components/payment/PaymentHistory';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -20,7 +21,7 @@ const getErrorMessage = (error: any): string => {
 const Payments: React.FC = () => {
   const selectedClient = useAppStore((state) => state.selectedClient);
   const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
-  const { data: dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);
+  const { dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);
   
   // Payment form and history state
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -105,36 +106,46 @@ const Payments: React.FC = () => {
             </div>
           )}
 
-          {/* Dashboard cards */}
-          <div className={`grid gap-6 ${
+          {/* Dashboard cards - New 4-card layout with better spacing */}
+          <div className={`grid gap-4 ${
             documentViewerOpen 
-              ? 'lg:grid-cols-2' 
-              : 'lg:grid-cols-3'
-          } grid-cols-1`}>
-            <ErrorBoundary>
-              <ContractCard 
-                contract={dashboardData?.contract || null} 
-                loading={loading}
-              />
-            </ErrorBoundary>
-            <ErrorBoundary>
-              <PaymentInfoCard 
-                paymentStatus={dashboardData?.payment_status || null}
-                metrics={dashboardData?.metrics || null}
-                aum={dashboardData?.aum}
-                aumSource={dashboardData?.aum_source}
-                paymentSchedule={dashboardData?.contract?.payment_schedule}
-                loading={loading}
-              />
-            </ErrorBoundary>
-            <ErrorBoundary>
-              <ComplianceCard 
-                compliance={dashboardData?.compliance || null}
-                paymentStatus={dashboardData?.payment_status || null}
-                contract={dashboardData?.contract || null}
-                loading={loading}
-              />
-            </ErrorBoundary>
+              ? 'lg:grid-cols-2 xl:grid-cols-2' 
+              : 'lg:grid-cols-2 xl:grid-cols-4'
+          } grid-cols-1 sm:grid-cols-2`}>
+            {dashboardData && !loading && (
+              <>
+                <ErrorBoundary>
+                  <PlanDetailsCard dashboardData={dashboardData} />
+                </ErrorBoundary>
+                <ErrorBoundary>
+                  <CurrentStatusCard dashboardData={dashboardData} />
+                </ErrorBoundary>
+                <ErrorBoundary>
+                  <AssetsAndFeesCard dashboardData={dashboardData} />
+                </ErrorBoundary>
+                <ErrorBoundary>
+                  <ContactCard dashboardData={dashboardData} />
+                </ErrorBoundary>
+              </>
+            )}
+            {(loading || (!dashboardData && !error)) && (
+              <>
+                {/* Loading skeletons for 4 cards */}
+                {[1, 2, 3, 4].map((index) => (
+                  <div key={index} className="bg-white rounded-lg shadow-sm p-6 h-full animate-pulse">
+                    <div className="flex items-center mb-4">
+                      <div className="w-8 h-8 bg-gray-200 rounded mr-3"></div>
+                      <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-5 w-full bg-gray-200 rounded"></div>
+                      <div className="h-5 w-3/4 bg-gray-200 rounded"></div>
+                      <div className="h-5 w-1/2 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
 
           {/* Payment Form and History - Fixed TypeScript error */}
@@ -142,7 +153,7 @@ const Payments: React.FC = () => {
             <ErrorBoundary>
               <PaymentForm
                 clientId={selectedClient.client_id}
-                contractId={dashboardData?.contract?.contract_id || null}
+                contractId={dashboardData?.contract_id || null}
                 editingPayment={editingPayment}
                 onSubmit={async (data) => {
                   if (editingPayment) {
