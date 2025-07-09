@@ -68,9 +68,9 @@
         }
       ]
     },
-    "clients_by_provider": {
+    "sidebar_clients_view": {
       "source": {
-        "object": "dbo.clients_by_provider_view",
+        "object": "dbo.sidebar_clients_view",
         "type": "view",
         "key-fields": ["client_id"]
       },
@@ -81,9 +81,9 @@
         }
       ]
     },
-    "client_metrics": {
+    "dashboard_view": {
       "source": {
-        "object": "dbo.client_metrics_view",
+        "object": "dbo.dashboard_view",
         "type": "view",
         "key-fields": ["client_id"]
       },
@@ -94,22 +94,9 @@
         }
       ]
     },
-    "client_payment_status": {
+    "payment_history_view": {
       "source": {
-        "object": "dbo.client_payment_status",
-        "type": "view",
-        "key-fields": ["client_id"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
-        }
-      ]
-    },
-    "payment_variance": {
-      "source": {
-        "object": "dbo.payment_variance_view",
+        "object": "dbo.payment_history_view",
         "type": "view",
         "key-fields": ["payment_id"]
       },
@@ -120,11 +107,24 @@
         }
       ]
     },
-    "available_payment_periods": {
+    "payment_form_periods_view": {
       "source": {
-        "object": "dbo.available_payment_periods",
+        "object": "dbo.payment_form_periods_view",
         "type": "view",
         "key-fields": ["client_id", "year", "period"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "payment_form_defaults_view": {
+      "source": {
+        "object": "dbo.payment_form_defaults_view",
+        "type": "view",
+        "key-fields": ["client_id"]
       },
       "permissions": [
         {
