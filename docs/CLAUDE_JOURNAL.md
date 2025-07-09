@@ -252,3 +252,14 @@ Multiple views → API calls → `PaymentForm` → Validation → Submit
 - Minor issue: Duplicated formatting logic
 
 ===============================
+
+# Fix Development Launch Configuration | 2025-07-09
+Description: Updated launch scripts to use correct SWA CLI command per 2025 documentation
+Reason: Scripts were using outdated approach of manually starting Vite then SWA CLI
+Files Touched: launch-dev.bat, launch-dev.sh
+Result: 
+- Simplified both scripts to just run: swa start --data-api-location=swa-db-connections
+- SWA CLI reads swa-cli.config.json and automatically starts Vite on port 5173
+- Database connection string read from .env file (not .env.local)
+- No need to manually manage Vite process - SWA CLI handles everything
+===============================

@@ -1,7 +1,7 @@
 // frontend/src/api/client.ts
 
 // Azure Static Web Apps data-api provides consistent REST endpoints
-const DATA_API_BASE = '/data-api/rest';
+const DATA_API_BASE = '/rest';
 
 // Azure's standardized error format
 export interface AzureApiError {

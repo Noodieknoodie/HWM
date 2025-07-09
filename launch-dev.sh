@@ -2,19 +2,7 @@
 # launch-dev.sh
 
 echo "🚀 Starting HWM Development Server..."
+echo "☁️  Starting Azure SWA CLI with Vite..."
 
-# Start Vite in background
-echo "📦 Starting Vite..."
-npm run dev &
-VITE_PID=$!
-
-# Wait for Vite to be ready
-echo "⏳ Waiting for Vite..."
-sleep 3
-
-# Start SWA CLI
-echo "☁️  Starting Azure SWA CLI..."
-swa start http://localhost:5173 --data-api-location swa-db-connections
-
-# Kill Vite when SWA exits
-kill $VITE_PID
+# SWA CLI will handle starting Vite automatically based on swa-cli.config.json
+swa start HWM --port 4280
