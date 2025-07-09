@@ -48,7 +48,7 @@ export default function ContractCard({ contract, loading }: ContractCardProps) {
       <div className="space-y-3">
         <div>
           <label className="text-sm font-medium text-gray-500">Contract Number</label>
-          <p className="text-sm text-gray-900">{contract.contract_id}</p>
+          <p className="text-sm text-gray-900">{contract.contract_number || `ID: ${contract.contract_id}`}</p>
         </div>
         
         <div>
