@@ -1,0 +1,9 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/rest/*", "/data-api/*", "/_framework/*"]
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  }
+}

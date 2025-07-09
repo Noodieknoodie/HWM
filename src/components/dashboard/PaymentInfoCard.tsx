@@ -1,5 +1,6 @@
 // src/components/dashboard/PaymentInfoCard.tsx
 import { DashboardPaymentStatus, DashboardMetrics } from '../../hooks/useClientDashboard';
+import { formatPeriodDisplay } from '../../utils/periodFormatting';
 
 interface PaymentInfoCardProps {
   paymentStatus: DashboardPaymentStatus | null;
@@ -7,9 +8,10 @@ interface PaymentInfoCardProps {
   loading: boolean;
   aum?: number | null;
   aumSource?: 'recorded' | 'estimated' | null;
+  paymentSchedule?: 'monthly' | 'quarterly';
 }
 
-export default function PaymentInfoCard({ paymentStatus, metrics, loading, aum, aumSource }: PaymentInfoCardProps) {
+export default function PaymentInfoCard({ paymentStatus, metrics, loading, aum, aumSource, paymentSchedule }: PaymentInfoCardProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6 animate-pulse">
@@ -127,7 +129,11 @@ export default function PaymentInfoCard({ paymentStatus, metrics, loading, aum, 
           <div className="ml-3 flex-1">
             <p className="text-xs font-medium text-gray-500">Current Period</p>
             <p className="text-sm font-semibold text-gray-900 bg-blue-50 px-2 py-1 rounded inline-block">
-              {paymentStatus.current_period}
+              {paymentSchedule ? formatPeriodDisplay(
+                paymentStatus.current_period_number, 
+                paymentStatus.current_year, 
+                paymentSchedule
+              ) : paymentStatus.current_period}
             </p>
           </div>
         </div>
