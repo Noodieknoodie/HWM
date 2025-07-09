@@ -123,6 +123,7 @@ const Payments: React.FC = () => {
                 metrics={dashboardData?.metrics || null}
                 aum={dashboardData?.aum}
                 aumSource={dashboardData?.aum_source}
+                paymentSchedule={dashboardData?.contract?.payment_schedule}
                 loading={loading}
               />
             </ErrorBoundary>

@@ -6,3 +6,10 @@ Add to this journal VERY RARELY and usually only only after you have to apologiz
 - this is depreciated
 - use ABC instead!
 ===============================
+
+# SWA CLI v2 Data API Path Changes | 2025-07-09
+- In SWA CLI v2, frontend MUST use `/data-api/rest/*` paths, NOT `/rest/*`
+- The Data API Builder itself still serves at `/rest/*` (in staticwebapp.database.config.json)
+- But SWA CLI proxies these through `/data-api/rest/*` to the frontend
+- ALWAYS check the DATA_API_BASE constant in frontend code when debugging 404s
+- The fix is usually just changing `/rest` to `/data-api/rest` in the API client

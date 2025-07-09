@@ -1,5 +1,6 @@
 // src/components/dashboard/ComplianceCard.tsx
 import { DashboardCompliance, DashboardPaymentStatus, DashboardContract } from '../../hooks/useClientDashboard';
+import { formatPeriodDisplay } from '../../utils/periodFormatting';
 
 interface ComplianceCardProps {
   compliance: DashboardCompliance | null;
@@ -125,7 +126,11 @@ export default function ComplianceCard({ compliance, paymentStatus, contract, lo
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Current Period:</span>
             <span className="text-sm font-semibold text-gray-900 bg-white px-2 py-1 rounded">
-              {paymentStatus.current_period}
+              {contract?.payment_schedule ? formatPeriodDisplay(
+                paymentStatus.current_period_number, 
+                paymentStatus.current_year, 
+                contract.payment_schedule
+              ) : paymentStatus.current_period}
             </span>
           </div>
         </div>

@@ -18,7 +18,7 @@
     "host": {
       "mode": "development",
       "authentication": {
-        "provider": "StaticWebApps"
+        "provider": "Simulator"
       }
     }
   },
