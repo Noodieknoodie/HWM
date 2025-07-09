@@ -79,8 +79,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     
     if (contract.fee_type === 'percentage' && contract.percent_rate) {
       // percent_rate is already scaled (e.g., 0.0007 for 0.07% monthly)
-      // So just multiply by AUM, then divide by 100 to get dollar amount
-      return assets * (contract.percent_rate / 100.0);
+      // So just multiply by AUM to get dollar amount
+      return assets * contract.percent_rate;
     } else if (contract.fee_type === 'flat' && contract.flat_rate) {
       return contract.flat_rate;
     }
@@ -112,7 +112,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     }
     
     const periodParts = formData.period_selection.split('-').map(Number);
-    const [period, year] = periodParts.length === 2 ? periodParts : [0, 0];
+    const [year, period] = periodParts.length === 2 ? periodParts : [0, 0];
     
     if (!period || !year) {
       setError('Invalid period selection format');
@@ -125,6 +125,11 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       // Prevent form submission during periods loading
       if (periodsLoading) {
         setError('Please wait for periods to load');
+        return;
+      }
+      
+      if (!contractId) {
+        setError('This client does not have an active contract. Please add a contract before recording payments.');
         return;
       }
       
