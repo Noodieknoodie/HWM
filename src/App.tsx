@@ -46,14 +46,14 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<PageLayout />}>
-        <Route index element={<Navigate to="/Payments" replace />} />
-        <Route path="Payments" element={<Payments />} />
+        <Route index element={<Navigate to="/Summary" replace />} />
         <Route path="Summary" element={<Summary />} />
+        <Route path="Payments" element={<Payments />} />
         <Route path="Contacts" element={<Contacts />} />
         <Route path="Contracts" element={<Contracts />} />
         <Route path="Export" element={<Export />} />
         <Route path="Documents" element={<Documents />} />
-        <Route path="*" element={<Navigate to="/Payments" replace />} />
+        <Route path="*" element={<Navigate to="/Summary" replace />} />
       </Route>
     </Routes>
   )
