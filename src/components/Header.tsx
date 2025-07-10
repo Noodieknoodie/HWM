@@ -6,12 +6,12 @@ const Header: React.FC = () => {
   const location = useLocation();
   
   const navItems = [
-    { title: 'PAYMENTS', path: '/Payments' },
     { title: 'SUMMARY', path: '/Summary' },
+    { title: 'PAYMENTS', path: '/Payments' },
     { title: 'CONTACTS', path: '/Contacts' },
     { title: 'CONTRACTS', path: '/Contracts' },
     { title: 'DOCUMENTS', path: '/Documents' },
-    { title: 'EXPORT DATA', path: '/Export' },
+    { title: 'EXPORT', path: '/Export' },
   ];
   
   return (

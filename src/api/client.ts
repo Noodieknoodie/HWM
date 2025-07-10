@@ -182,6 +182,43 @@ export class DataApiClient {
     }
     return this.request(`quarterly_totals?$filter=${filter}&$orderby=year desc,quarter desc`);
   }
+
+  // Summary page data methods
+  async getQuarterlySummaryByProvider(year: number, quarter: number) {
+    return this.request(`quarterly_summary_by_provider?$filter=applied_year eq ${year} and quarter eq ${quarter}`);
+  }
+
+  async getAnnualSummaryByProvider(year: number) {
+    return this.request(`quarterly_summary_by_provider?$filter=applied_year eq ${year}`);
+  }
+
+  async getQuarterlySummaryDetail(clientId: number, year: number, quarter: number) {
+    return this.request(`quarterly_summary_detail?$filter=client_id eq ${clientId} and applied_year eq ${year} and quarter eq ${quarter}`);
+  }
+
+  // Quarterly notes methods
+  async getQuarterlyNote(clientId: number, year: number, quarter: number) {
+    return this.request(`quarterly_notes?$filter=client_id eq ${clientId} and year eq ${year} and quarter eq ${quarter}`);
+  }
+
+  async updateQuarterlyNote(clientId: number, year: number, quarter: number, notes: string) {
+    // First check if note exists
+    const existing = await this.getQuarterlyNote(clientId, year, quarter);
+    
+    if (existing && existing.length > 0) {
+      // Update existing note
+      return this.request(`quarterly_notes/client_id/${clientId}/year/${year}/quarter/${quarter}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ notes }),
+      });
+    } else {
+      // Create new note
+      return this.request('quarterly_notes', {
+        method: 'POST',
+        body: JSON.stringify({ client_id: clientId, year, quarter, notes }),
+      });
+    }
+  }
 }
 
 // Create a singleton instance
