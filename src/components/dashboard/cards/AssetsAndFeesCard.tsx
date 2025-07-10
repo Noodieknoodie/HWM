@@ -20,8 +20,20 @@ export const AssetsAndFeesCard: React.FC<AssetsAndFeesCardProps> = ({ dashboardD
     return formatCurrency(rate, 0);
   };
   
-  // Format composite rates display
-  const compositeRates = `${formatRate(dashboardData.monthly_rate)} / ${formatRate(dashboardData.quarterly_rate)} / ${formatRate(dashboardData.annual_rate)}`;
+  // Format composite rates display as inline pills
+  const compositeRates = (
+    <div className="flex gap-1 flex-wrap">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+        M: {formatRate(dashboardData.monthly_rate)}
+      </span>
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+        Q: {formatRate(dashboardData.quarterly_rate)}
+      </span>
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+        A: {formatRate(dashboardData.annual_rate)}
+      </span>
+    </div>
+  );
   
   const details = [
     { 
@@ -33,7 +45,7 @@ export const AssetsAndFeesCard: React.FC<AssetsAndFeesCardProps> = ({ dashboardD
       value: isPercentage ? 'Percentage' : 'Flat' 
     },
     { 
-      label: "Composite Rates", 
+      label: "Rates", 
       value: compositeRates 
     },
   ];

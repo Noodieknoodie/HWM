@@ -149,34 +149,43 @@ const Payments: React.FC = () => {
           </div>
 
           {/* Payment Form and History - Fixed TypeScript error */}
-          <div className="space-y-6">
+          <div className="space-y-6 relative">
+            {/* Overlay when editing */}
+            {editingPayment && (
+              <div className="fixed inset-0 bg-black bg-opacity-10 z-10 pointer-events-none" />
+            )}
+            
             <ErrorBoundary>
-              <PaymentForm
-                clientId={selectedClient.client_id}
-                contractId={dashboardData?.contract_id || null}
-                editingPayment={editingPayment}
-                onSubmit={async (data) => {
-                  if (editingPayment) {
-                    await updatePayment(editingPayment.payment_id, data as PaymentUpdateData);
-                  } else {
-                    await createPayment(data as PaymentCreateData);
-                  }
-                  setEditingPayment(null);
-                }}
-                onCancel={() => setEditingPayment(null)}
-              />
+              <div className={editingPayment ? 'relative z-20' : ''}>
+                <PaymentForm
+                  clientId={selectedClient.client_id}
+                  contractId={dashboardData?.contract_id || null}
+                  editingPayment={editingPayment}
+                  onSubmit={async (data) => {
+                    if (editingPayment) {
+                      await updatePayment(editingPayment.payment_id, data as PaymentUpdateData);
+                    } else {
+                      await createPayment(data as PaymentCreateData);
+                    }
+                    setEditingPayment(null);
+                  }}
+                  onCancel={() => setEditingPayment(null)}
+                />
+              </div>
             </ErrorBoundary>
             
             <ErrorBoundary>
-              <PaymentHistory
-                payments={payments}
-                loading={paymentsLoading}
-                error={paymentsError}
-                onEdit={setEditingPayment}
-                onDelete={deletePayment}
-                selectedYear={selectedYear}
-                onYearChange={setSelectedYear}
-              />
+              <div className={editingPayment ? 'opacity-50 pointer-events-none' : ''}>
+                <PaymentHistory
+                  payments={payments}
+                  loading={paymentsLoading}
+                  error={paymentsError}
+                  onEdit={setEditingPayment}
+                  onDelete={deletePayment}
+                  selectedYear={selectedYear}
+                  onYearChange={setSelectedYear}
+                />
+              </div>
             </ErrorBoundary>
           </div>
         </>

@@ -30,10 +30,10 @@ export const CurrentStatusCard: React.FC<CurrentStatusCardProps> = ({ dashboardD
   return (
     <GridAlignedCard
       title="Current Status"
+      mainValueLabel={dashboardData.current_period_display || ''}
       mainValue={
         <StatusDisplay 
           status={status} 
-          period={dashboardData.current_period_display || ''} 
         />
       }
       details={details}

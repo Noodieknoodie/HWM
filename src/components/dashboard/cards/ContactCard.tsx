@@ -20,7 +20,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({ dashboardData }) => {
     
     // Return formatted address as JSX with line breaks
     return (
-      <div className="text-right">
+      <div className="text-right text-xs leading-relaxed">
         {parts.map((part, index) => (
           <div key={index}>{part}</div>
         ))}
