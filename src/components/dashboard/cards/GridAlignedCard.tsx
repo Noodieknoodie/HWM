@@ -6,13 +6,15 @@ interface GridAlignedCardProps {
   mainValue: React.ReactNode;
   mainValueLabel?: string;
   details: { label: string; value: React.ReactNode }[];
+  action?: React.ReactNode;
 }
 
 export const GridAlignedCard: React.FC<GridAlignedCardProps> = ({ 
   title, 
   mainValue, 
   mainValueLabel, 
-  details 
+  details,
+  action 
 }) => {
   return (
     <div className="bg-white rounded-lg p-5 border border-gray-200 flex flex-col h-full">
@@ -33,6 +35,11 @@ export const GridAlignedCard: React.FC<GridAlignedCardProps> = ({
           </div>
         ))}
       </div>
+      {action && (
+        <div className="mt-4 pt-3 border-t">
+          {action}
+        </div>
+      )}
     </div>
   );
 };

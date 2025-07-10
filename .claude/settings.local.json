@@ -27,7 +27,17 @@
       "Bash(npm run build:*)",
       "Bash(npm install)",
       "mcp__perplexity-mcp__search",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "mcp__context7__get-library-docs",
+      "mcp__perplexity-mcp__deep_research",
+      "mcp__context7__resolve-library-id",
+      "mcp__azure-mcp-server__microsoft_docs_search",
+      "Bash(mkdir:*)",
+      "Bash(npm run:*)",
+      "mcp__azure-mcp-server__azmcp-subscription-list",
+      "mcp__azure-mcp-server__azmcp-group-list",
+      "mcp__azure-mcp-server__azmcp-extension-az",
+      "mcp__azure-mcp-server__azmcp-sql-server-entraadmin-list"
     ],
     "deny": []
   }

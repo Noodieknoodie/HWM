@@ -5,8 +5,8 @@ A Microsoft Teams application for Hohimer Wealth Management to track 401k client
 ## Architecture
 
 - **Frontend**: React 19.1 with Vite, TypeScript, Tailwind CSS
-- **Database**: Azure SQL Database with automatic REST API via Azure Static Web Apps database connections
-- **Authentication**: Azure Static Web Apps built-in auth (seamless Teams SSO)
+- **Database**: Azure SQL Database with the "Database Connections" feature, which uses Data API builder to automatically generate a secure REST API, eliminating the need to write and maintain custom backend code with Azure Functions
+- **Authentication**: For security, the standard practice is to configure Microsoft Entra ID as a custom authentication provider, which restricts access to users within your company's tenant and provides a seamless single sign-on (SSO) experience across your corporate ecosystem.
 - **Deployment**: Azure Static Web Apps with integrated database connections
 
 ## Project Structure

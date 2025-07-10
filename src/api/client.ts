@@ -3,6 +3,9 @@
 // Azure Static Web Apps data-api provides consistent REST endpoints
 const DATA_API_BASE = '/data-api/rest';
 
+// Import types
+import { Contact } from '../types/contact';
+
 // Azure's standardized error format
 export interface AzureApiError {
   error: {
@@ -205,7 +208,7 @@ export class DataApiClient {
     // First check if note exists
     const existing = await this.getQuarterlyNote(clientId, year, quarter);
     
-    if (existing && existing.length > 0) {
+    if (existing && Array.isArray(existing) && existing.length > 0) {
       // Update existing note
       return this.request(`quarterly_notes/client_id/${clientId}/year/${year}/quarter/${quarter}`, {
         method: 'PATCH',
@@ -218,6 +221,34 @@ export class DataApiClient {
         body: JSON.stringify({ client_id: clientId, year, quarter, notes }),
       });
     }
+  }
+
+  // Contact Management
+  async getContacts(clientId: number): Promise<Contact[]> {
+    const response = await this.request<Contact[]>(`contacts?$filter=client_id eq ${clientId}&$orderby=contact_type,contact_name`);
+    return response || [];
+  }
+
+  async createContact(data: Omit<Contact, 'contact_id'>): Promise<Contact> {
+    const response = await this.request<Contact>('contacts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response;
+  }
+
+  async updateContact(contactId: number, data: Partial<Contact>): Promise<Contact> {
+    const response = await this.request<Contact>(`contacts/contact_id/${contactId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+    return response;
+  }
+
+  async deleteContact(contactId: number): Promise<void> {
+    await this.request(`contacts/contact_id/${contactId}`, {
+      method: 'DELETE',
+    });
   }
 }
 
