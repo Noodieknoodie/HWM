@@ -1,6 +1,7 @@
 // src/hooks/usePeriods.ts
 import { useState, useEffect } from 'react';
 import { useDataApiClient } from '@/api/client';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 // Period data from payment_form_periods_view
 export interface Period {
@@ -28,7 +29,7 @@ export function usePeriods(clientId: number | null) {
         const response = await dataApiClient.getAvailablePeriods(clientId);
         setPeriods(Array.isArray(response) ? response : []);
       } catch (err: any) {
-        setError(err.error?.message || 'Failed to fetch periods');
+        setError(getErrorMessage(err, 'Failed to fetch periods'));
       } finally {
         setLoading(false);
       }

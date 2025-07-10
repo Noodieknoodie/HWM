@@ -1,6 +1,7 @@
 // src/hooks/useClientDashboard.ts
 import { useEffect, useState } from 'react';
 import { useDataApiClient } from '../api/client';
+import { getErrorMessage } from '../utils/errorUtils';
 
 // New consolidated dashboard view data
 export interface DashboardViewData {
@@ -156,7 +157,7 @@ export function useClientDashboard(clientId: number | null) {
         }
       } catch (err: any) {
         if (!cancelled) {
-          setError(err.error?.message || 'Failed to load dashboard data');
+          setError(getErrorMessage(err, 'Failed to load dashboard data'));
         }
       } finally {
         if (!cancelled) {

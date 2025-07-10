@@ -55,7 +55,7 @@ export function formatRate(rate: number | null | undefined, feeType: 'percentage
   
   if (feeType === 'percentage') {
     // Rates are already scaled (e.g., 0.07 for 0.07%)
-    return `${rate}%`;
+    return `${rate.toFixed(2)}%`;
   } else if (feeType === 'flat') {
     // Flat fees are dollar amounts
     return formatCurrency(rate, 0);
