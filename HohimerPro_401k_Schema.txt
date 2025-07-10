@@ -1,4 +1,4 @@
--- Generated: 2025-07-09 15:09:28
+-- Generated: 2025-07-10 00:10:51
 -- ===== TABLES =====
 -- Table: clients
 CREATE TABLE [dbo].[clients] (
@@ -86,6 +86,7 @@ CREATE TABLE [dbo].[payments] (
     [applied_period_type] nvarchar(10),
     [applied_period] int,
     [applied_year] int,
+    [posted_to_hwm] bit NOT NULL DEFAULT ((0)),
     CONSTRAINT [PK_payments] PRIMARY KEY (payment_id),
     CONSTRAINT [chk_applied_period] CHECK ([applied_period_type]='monthly' AND ([applied_period]>=(1) AND [applied_period]<=(12)) OR [applied_period_type]='quarterly' AND ([applied_period]>=(1) AND [applied_period]<=(4)))
 );
@@ -94,10 +95,22 @@ ALTER TABLE [dbo].[payments] ADD CONSTRAINT [FK_payments_clients]
 ALTER TABLE [dbo].[payments] ADD CONSTRAINT [FK_payments_contracts]
     FOREIGN KEY (contract_id) REFERENCES [dbo].[contracts] (contract_id);
 -- Sample data (3 rows):
--- payment_id | contract_id | client_id | received_date | total_assets | expected_fee | actual_fee | method | notes | applied_period_type | applied_period | applied_year
--- 1 | 1 | 1 | 2019-05-03 | 824305.0 | 542.01 | 547.51 | 'Auto - Check' | 'waiting on how John Hancock calculates fee paymen | 'monthly' | 4 | 2019
--- 2 | 1 | 1 | 2019-06-07 | 805477.0 | 547.28 | 535.03 | 'Auto - Check' | NULL | 'monthly' | 5 | 2019
--- 3 | 1 | 1 | 2019-07-05 | 839288.0 | 551.86 | 557.54 | 'Auto - Check' | NULL | 'monthly' | 6 | 2019
+-- payment_id | contract_id | client_id | received_date | total_assets | expected_fee | actual_fee | method | notes | applied_period_type | applied_period | applied_year | posted_to_hwm
+-- 1 | 1 | 1 | 2019-05-03 | 824305.0 | 542.01 | 547.51 | 'Auto - Check' | 'waiting on how John Hancock calculates fee paymen | 'monthly' | 4 | 2019 | False
+-- 2 | 1 | 1 | 2019-06-07 | 805477.0 | 547.28 | 535.03 | 'Auto - Check' | NULL | 'monthly' | 5 | 2019 | False
+-- 3 | 1 | 1 | 2019-07-05 | 839288.0 | 551.86 | 557.54 | 'Auto - Check' | NULL | 'monthly' | 6 | 2019 | False
+-- Table: quarterly_notes
+CREATE TABLE [dbo].[quarterly_notes] (
+    [client_id] int NOT NULL,
+    [year] int NOT NULL,
+    [quarter] int NOT NULL,
+    [notes] nvarchar(MAX),
+    [last_updated] datetime DEFAULT (getdate()),
+    [updated_by] nvarchar(255),
+    CONSTRAINT [PK__quarterl__62C392A836C8B248] PRIMARY KEY (client_id, year, quarter)
+);
+ALTER TABLE [dbo].[quarterly_notes] ADD CONSTRAINT [FK__quarterly__clien__589C25F3]
+    FOREIGN KEY (client_id) REFERENCES [dbo].[clients] (client_id);
 -- ===== VIEWS =====
 -- View: dashboard_view
 -- Create the updated dashboard_view
@@ -421,6 +434,104 @@ LEFT JOIN LastPayment lp ON c.client_id = lp.client_id AND lp.rn = 1;
 -- 1 | 'monthly' | 4 | 2025 | 'monthly' | 6 | 2025 | 'Due'
 -- 2 | 'monthly' | 6 | 2024 | 'monthly' | 6 | 2025 | 'Due'
 -- 3 | 'monthly' | 6 | 2024 | 'monthly' | 6 | 2025 | 'Due'
+-- View: quarterly_summary_by_provider
+-- Create the view with expected_payment_count
+CREATE VIEW quarterly_summary_by_provider AS
+WITH QuarterlyAggregates AS (
+    SELECT 
+        provider_name,
+        client_id,
+        display_name,
+        payment_schedule,
+        fee_type,
+        percent_rate,
+        flat_rate,
+        applied_year,
+        quarter,
+        COUNT(*) as payment_count,
+        SUM(actual_fee) as actual_total,
+        SUM(calculated_expected_fee) as expected_total,
+        SUM(CASE WHEN posted_to_hwm = 1 THEN 1 ELSE 0 END) as posted_count,
+        MAX(total_assets) as last_aum
+    FROM quarterly_summary_detail
+    GROUP BY provider_name, client_id, display_name, payment_schedule, 
+             fee_type, percent_rate, flat_rate, applied_year, quarter
+)
+SELECT 
+    *,
+    CASE 
+        WHEN payment_schedule = 'monthly' THEN 3
+        WHEN payment_schedule = 'quarterly' THEN 1
+    END as expected_payment_count,
+    actual_total - expected_total as variance,
+    CASE 
+        WHEN expected_total IS NULL OR expected_total = 0 THEN NULL
+        ELSE ((actual_total - expected_total) / expected_total) * 100
+    END as variance_percent,
+    CASE 
+        WHEN payment_count = posted_count THEN 1 
+        ELSE 0 
+    END as fully_posted
+FROM QuarterlyAggregates;
+-- Sample data (3 rows):
+-- provider_name | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | applied_year | quarter | payment_count | actual_total | expected_total | posted_count | last_aum | expected_payment_count | variance | variance_percent | fully_posted
+-- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2023 | 4 | 1 | 414.72 | NULL | 0 | NULL | 1 | NULL | NULL | 0
+-- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2024 | 1 | 1 | 1389.06 | NULL | 0 | NULL | 1 | NULL | NULL | 0
+-- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2024 | 2 | 1 | 2560.33 | NULL | 0 | NULL | 1 | NULL | NULL | 0
+-- View: quarterly_summary_detail
+CREATE VIEW quarterly_summary_detail AS
+SELECT 
+    -- Provider grouping
+    ct.provider_name,
+    
+    -- Client info
+    c.client_id,
+    c.display_name,
+    ct.payment_schedule,
+    ct.fee_type,
+    ct.percent_rate,
+    ct.flat_rate,
+    
+    -- Period info
+    p.applied_year,
+    p.applied_period,
+    p.applied_period_type,
+    CASE 
+        WHEN p.applied_period_type = 'monthly' THEN
+            CASE 
+                WHEN p.applied_period IN (1,2,3) THEN 1
+                WHEN p.applied_period IN (4,5,6) THEN 2
+                WHEN p.applied_period IN (7,8,9) THEN 3
+                WHEN p.applied_period IN (10,11,12) THEN 4
+            END
+        ELSE p.applied_period
+    END as quarter,
+    
+    -- Payment details
+    p.payment_id,
+    p.received_date,
+    p.actual_fee,
+    p.expected_fee,
+    p.total_assets,
+    p.method,
+    p.posted_to_hwm,
+    
+    -- Calculated expected (current calculation, not historical)
+    CASE
+        WHEN ct.fee_type = 'flat' THEN ct.flat_rate
+        WHEN ct.fee_type = 'percentage' AND p.total_assets IS NOT NULL THEN
+            ROUND(p.total_assets * ct.percent_rate, 2)
+        ELSE NULL
+    END as calculated_expected_fee
+
+FROM payments p
+JOIN contracts ct ON p.contract_id = ct.contract_id
+JOIN clients c ON p.client_id = c.client_id;
+-- Sample data (3 rows):
+-- provider_name | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | applied_year | applied_period | applied_period_type | quarter | payment_id | received_date | actual_fee | expected_fee | total_assets | method | posted_to_hwm | calculated_expected_fee
+-- 'John Hancock' | 1 | 'AirSea America' | 'monthly' | 'percentage' | 0.0007 | NULL | 2019 | 4 | 'monthly' | 2 | 1 | 2019-05-03 | 547.51 | 542.01 | 824305.0 | 'Auto - Check' | False | 577.01
+-- 'John Hancock' | 1 | 'AirSea America' | 'monthly' | 'percentage' | 0.0007 | NULL | 2019 | 5 | 'monthly' | 2 | 2 | 2019-06-07 | 535.03 | 547.28 | 805477.0 | 'Auto - Check' | False | 563.83
+-- 'John Hancock' | 1 | 'AirSea America' | 'monthly' | 'percentage' | 0.0007 | NULL | 2019 | 6 | 'monthly' | 2 | 3 | 2019-07-05 | 557.54 | 551.86 | 839288.0 | 'Auto - Check' | False | 587.5
 -- View: quarterly_totals
 -- 3. CREATE THE NEW QUARTERLY_TOTALS VIEW WITH COUNT
 CREATE VIEW quarterly_totals AS
@@ -507,9 +618,9 @@ LEFT JOIN yearly_data y2 ON y1.client_id = y2.client_id
     AND y1.[year] = y2.[year] + 1;
 -- Sample data (3 rows):
 -- client_id | year | total_payments | total_assets | payment_count | avg_payment | yoy_growth | last_updated
--- 1 | 2019 | 5097.049999999999 | 844498.5 | 9 | 566.3388888888888 | NULL | 2025-07-09 22:09:33.420000
--- 1 | 2020 | 7436.03 | 943264.8181818182 | 12 | 619.6691666666667 | 45.888896518574484 | 2025-07-09 22:09:33.420000
--- 1 | 2021 | 9255.880000000001 | 1161233.9166666667 | 12 | 771.3233333333334 | 24.473408525785956 | 2025-07-09 22:09:33.420000
+-- 1 | 2019 | 5097.049999999999 | 844498.5 | 9 | 566.3388888888888 | NULL | 2025-07-10 07:10:51.310000
+-- 1 | 2020 | 7436.03 | 943264.8181818182 | 12 | 619.6691666666667 | 45.888896518574484 | 2025-07-10 07:10:51.310000
+-- 1 | 2021 | 9255.880000000001 | 1161233.9166666667 | 12 | 771.3233333333334 | 24.473408525785956 | 2025-07-10 07:10:51.310000
 -- ===== INDEXES =====
 CREATE NONCLUSTERED INDEX [idx_contacts_client_id] ON [dbo].[contacts] (client_id);
 CREATE NONCLUSTERED INDEX [idx_contacts_type] ON [dbo].[contacts] (client_id, contact_type);
