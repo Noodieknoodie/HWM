@@ -387,6 +387,38 @@ The Summary page provides quarterly and annual payment overviews grouped by prov
 - Quarterly: `/Summary?year=2025&quarter=4&view=quarterly`
 - Annual: `/Summary?year=2025&view=annual`
 
+#### Export Functionality
+
+**Export Principle:** "Export = Current View" - What you see is what you export
+
+**Export Options:**
+- CSV format (using PapaParse library)
+- Excel format (using SheetJS/xlsx library)
+
+**Export Behavior:**
+- Quarterly view exports only the selected quarter
+- Annual view exports full year with quarterly breakdown
+- Provider rows show aggregated totals
+- Client rows show individual data with proper indentation
+
+**Data Formatting:**
+- Numbers: Fixed 2 decimal places, no currency symbols
+- Rates: Percentage format (X.XX%) or plain number for flat fees
+- Status: "X/Y" format showing payments made/expected
+- Posted: "Y" or "N" for posted status
+- Provider names: ALL CAPS
+- Client names: Two-space indent
+
+**File Naming Convention:**
+- Quarterly: `summary-2025-Q4.csv` or `.xlsx`
+- Annual: `summary-2025-annual.csv` or `.xlsx`
+
+**Required Libraries:**
+```json
+"papaparse": "^5.x.x",    // CSV generation
+"xlsx": "^0.x.x"          // Excel generation
+```
+
 -----
 
 ### 🚀 VIEW RELATIONSHIPS
