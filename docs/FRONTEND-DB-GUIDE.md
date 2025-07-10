@@ -305,6 +305,90 @@ Simple binary in `sidebar_clients_view`:
 
 -----
 
+### 📊 SUMMARY PAGE
+
+**COMPONENT:** `src/pages/Summary.tsx`
+
+The Summary page provides quarterly and annual payment overviews grouped by provider.
+
+#### Navigation & View Modes
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Quarterly Payment Summary                                                    │
+│                                                                             │
+│    [← Q3 2025]    Q4 2025    [Q1 2026 →]    [Year View] [Export]          │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Quarterly View (default):** Shows one quarter at a time with payment details
+- **Annual View:** Shows all four quarters side-by-side for year overview
+- **Navigation:** Quarter/Year arrows update URL params for bookmarking
+
+#### Metric Cards
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ Total Expected  │  │ Total Received  │  │ Collection Rate │
+│    $287,453     │  │    $276,890     │  │     96.3%       │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+```
+
+#### Data Table Structure
+
+**Quarterly View:**
+- Providers as section headers with aggregated totals
+- Clients grouped under their provider
+- Three levels of expansion: Provider → Client → Payment Details
+
+**Annual View:**
+- Same provider/client grouping
+- Columns for Q1-Q4 with yearly total
+- Payment status icons per quarter
+
+**DATA SOURCES:**
+
+1. **Main Summary Data:** `quarterly_summary_by_provider`
+   - Provider grouping with client totals
+   - Expected vs actual amounts with variance
+   - Payment counts for status display
+   - Posted status tracking
+
+2. **Payment Details:** `quarterly_summary_detail`
+   - Individual payment records for expanded view
+   - Used to show payment dates, methods, amounts
+
+3. **Rate Information:** `dashboard_view`
+   - Quarterly/annual rates for display
+   - Loaded per client for accurate rate formatting
+
+4. **Client Notes:** `quarterly_notes`
+   - Quarter-specific notes per client
+   - Editable via modal dialog
+
+#### Key Features
+
+**Variance Indicators:**
+- ✓ Check (green): On target (< 1% variance)
+- ⚠️ Warning (amber): 1-15% variance
+- ⚠️ Alert (red): >15% variance
+
+**Expansion States:**
+- Provider rows toggle to show/hide clients
+- Client rows toggle to show payment details (quarterly view only)
+- Payment details show as indented list with dates and methods
+
+**Interactive Elements:**
+- Client names link to `/Payments?client={id}`
+- Posted checkboxes update `payments.posted_to_hwm`
+- Note icons open edit modal for quarterly notes
+
+**URL Structure:**
+- Quarterly: `/Summary?year=2025&quarter=4&view=quarterly`
+- Annual: `/Summary?year=2025&view=annual`
+
+-----
+
 ### 🚀 VIEW RELATIONSHIPS
 
 ```
@@ -324,4 +408,13 @@ payment_form_defaults_view
 
 payment_history_view
     └── Payment table with variance
+
+quarterly_summary_by_provider
+    └── Summary page main data
+    
+quarterly_summary_detail
+    └── Payment expansion details
+    
+quarterly_notes
+    └── Client notes by quarter
 ```
