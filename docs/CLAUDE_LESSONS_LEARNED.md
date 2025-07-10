@@ -13,3 +13,8 @@ Add to this journal VERY RARELY and usually only only after you have to apologiz
 - But SWA CLI proxies these through `/data-api/rest/*` to the frontend
 - ALWAYS check the DATA_API_BASE constant in frontend code when debugging 404s
 - The fix is usually just changing `/rest` to `/data-api/rest` in the API client
+
+
+local view
+npm run build
+npm start dev

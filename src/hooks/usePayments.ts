@@ -1,6 +1,7 @@
 // src/hooks/usePayments.ts
 import { useState, useEffect } from 'react';
 import { useDataApiClient } from '@/api/client';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface Payment {
   payment_id: number;
@@ -87,7 +88,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
         }
       } catch (err: any) {
         if (!cancelled) {
-          setError(err.error?.message || 'Failed to fetch payments');
+          setError(getErrorMessage(err, 'Failed to fetch payments'));
         }
       } finally {
         if (!cancelled) {

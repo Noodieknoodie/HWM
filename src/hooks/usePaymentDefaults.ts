@@ -1,6 +1,7 @@
 // src/hooks/usePaymentDefaults.ts
 import { useState, useEffect } from 'react';
 import { useDataApiClient } from '@/api/client';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface PaymentDefaults {
   client_id: number;
@@ -35,7 +36,7 @@ export function usePaymentDefaults(clientId: number | null) {
         const response = await dataApiClient.getPaymentDefaults(clientId);
         setDefaults(response);
       } catch (err: any) {
-        setError(err.error?.message || 'Failed to fetch payment defaults');
+        setError(getErrorMessage(err, 'Failed to fetch payment defaults'));
       } finally {
         setLoading(false);
       }

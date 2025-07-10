@@ -1,6 +1,8 @@
 // frontend/src/components/payment/PaymentHistory.tsx
 import React, { useState, useMemo } from 'react';
 import { Payment } from '@/hooks/usePayments';
+import { formatCurrency } from '@/utils/formatters';
+import { formatPeriodDisplay } from '@/utils/periodFormatting';
 
 interface PaymentHistoryProps {
   payments: Payment[];
@@ -29,24 +31,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     return Array.from(years).sort((a, b) => b - a);
   }, [payments]);
   
-  const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
-  
   const formatPeriod = (payment: Payment) => {
-    if (payment.applied_period_type === 'quarterly') {
-      return `Q${payment.applied_period} ${payment.applied_year}`;
-    } else if (payment.applied_period_type === 'monthly') {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                     'July', 'August', 'September', 'October', 'November', 'December'];
-      const monthIndex = Math.min(Math.max(payment.applied_period - 1, 0), 11);
-      return `${months[monthIndex]} ${payment.applied_year}`;
-    }
-    return 'N/A';
+    return formatPeriodDisplay(payment.applied_period, payment.applied_year, payment.applied_period_type as 'monthly' | 'quarterly');
   };
   
   const getVarianceColor = (status: string | undefined) => {

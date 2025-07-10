@@ -26,7 +26,8 @@
       "Bash(mv:*)",
       "Bash(npm run build:*)",
       "Bash(npm install)",
-      "mcp__perplexity-mcp__search"
+      "mcp__perplexity-mcp__search",
+      "Bash(npm run type-check:*)"
     ],
     "deny": []
   }
