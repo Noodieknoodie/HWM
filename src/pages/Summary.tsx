@@ -11,7 +11,9 @@ import {
   CheckSquare,
   Download,
   FileText,
-  ChevronLeft
+  ChevronLeft,
+  FileSpreadsheet,
+  FileDown
 } from 'lucide-react';
 import { dataApiClient } from '@/api/client';
 import Alert from '@/components/Alert';
@@ -104,6 +106,8 @@ const Summary: React.FC = () => {
   const [clientNotes, setClientNotes] = useState<Map<string, string>>(new Map());
   const [editingNote, setEditingNote] = useState<{ clientId: number; note: string } | null>(null);
   const [dashboardData, setDashboardData] = useState<Map<number, DashboardClient>>(new Map());
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [rawQuarterlyData, setRawQuarterlyData] = useState<QuarterlySummaryData[]>([]);
 
   // Calculate current billable period (billing in arrears)
   const getBillablePeriod = () => {
@@ -210,6 +214,9 @@ const Summary: React.FC = () => {
         ]);
         data = allQuarters.flat();
       }
+      
+      // Store raw data for export
+      setRawQuarterlyData(data);
 
       // Get unique client IDs and load dashboard data
       const clientIds = [...new Set(data.map(d => d.client_id))];
@@ -223,8 +230,6 @@ const Summary: React.FC = () => {
           if (existingClient && viewMode === 'annual') {
             // For annual view, we need to aggregate quarterly data
             existingClient.actual_total += item.actual_total;
-            existingClient.expected_total = (existingClient.expected_total || 0) + (item.expected_total || 0);
-            existingClient.variance = existingClient.actual_total - (existingClient.expected_total || 0);
             existingClient.payment_count += item.payment_count;
             existingClient.expected_payment_count += item.expected_payment_count;
             existingClient.posted_count += item.posted_count;
@@ -246,6 +251,26 @@ const Summary: React.FC = () => {
         }
         return acc;
       }, [] as ProviderGroup[]);
+
+      // For annual view, calculate expected totals using annual rates from dashboard data
+      if (viewMode === 'annual') {
+        groupedData.forEach(provider => {
+          provider.clients.forEach(client => {
+            const dashboardClient = dashboardData.get(client.client_id);
+            if (dashboardClient && dashboardClient.annual_rate !== null) {
+              client.expected_total = dashboardClient.annual_rate;
+            } else {
+              // Fallback: use sum of quarterly values if annual rate not available
+              client.expected_total = data
+                .filter(d => d.client_id === client.client_id)
+                .reduce((sum, d) => sum + (d.expected_total || 0), 0);
+            }
+            client.variance = client.actual_total - (client.expected_total || 0);
+            client.variance_percent = client.expected_total ? 
+              ((client.actual_total - client.expected_total) / client.expected_total * 100) : null;
+          });
+        });
+      }
 
       // Calculate provider totals
       groupedData.forEach(provider => {
@@ -289,6 +314,21 @@ const Summary: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.export-menu-container')) {
+        setShowExportMenu(false);
+      }
+    };
+
+    if (showExportMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showExportMenu]);
 
   // Toggle provider expansion
   const toggleProvider = (providerName: string) => {
@@ -368,6 +408,163 @@ const Summary: React.FC = () => {
       setEditingNote(null);
     } catch (err) {
       console.error('Failed to save note:', err);
+    }
+  };
+
+  // Handle export
+  const handleExport = async (format: 'csv' | 'excel') => {
+    setShowExportMenu(false);
+    
+    try {
+      // @ts-ignore - Libraries will be installed
+      const Papa = (await import('papaparse')).default;
+      // @ts-ignore - Libraries will be installed
+      const XLSX = format === 'excel' ? await import('xlsx') : null;
+      
+      // Build export data
+      const exportRows: any[] = [];
+      
+      // Add title row
+      const title = viewMode === 'quarterly' 
+        ? `Q${currentQuarter} ${currentYear} Payment Summary`
+        : `${currentYear} Annual Payment Summary`;
+      
+      // Build header row based on view mode
+      const headers = viewMode === 'quarterly'
+        ? ['Client', 'Frequency', 'Quarterly Rate', 'Expected', 'Actual', 'Variance', 'Status', 'Posted', 'Notes']
+        : ['Client', 'Frequency', 'Annual Rate', 'Q1 ' + currentYear, 'Q2 ' + currentYear, 'Q3 ' + currentYear, 'Q4 ' + currentYear, 'Total'];
+      
+      // Process provider groups
+      providerGroups.forEach(provider => {
+        // Provider row
+        const providerRow: any = {
+          Client: provider.provider_name.toUpperCase(),
+          Frequency: '',
+        };
+        
+        if (viewMode === 'quarterly') {
+          providerRow['Quarterly Rate'] = '';
+          providerRow.Expected = provider.total_expected.toFixed(2);
+          providerRow.Actual = provider.total_actual.toFixed(2);
+          providerRow.Variance = provider.total_variance.toFixed(2);
+          providerRow.Status = `${provider.posted_clients}/${provider.total_clients}`;
+          providerRow.Posted = provider.posted_clients === provider.total_clients ? 'Y' : 'N';
+          providerRow.Notes = '';
+        } else {
+          providerRow['Annual Rate'] = '';
+          // For annual view, calculate quarterly totals from the original data
+          let q1Total = 0, q2Total = 0, q3Total = 0, q4Total = 0;
+          
+          // Get all quarterly data for this provider's clients
+          provider.clients.forEach(client => {
+            // We need to look back at the original data to get quarterly breakdown
+            const clientQuarterlyData = rawQuarterlyData.filter(d => 
+              d.client_id === client.client_id && 
+              d.provider_name === provider.provider_name
+            );
+            
+            clientQuarterlyData.forEach(qData => {
+              switch(qData.quarter) {
+                case 1: q1Total += qData.actual_total; break;
+                case 2: q2Total += qData.actual_total; break;
+                case 3: q3Total += qData.actual_total; break;
+                case 4: q4Total += qData.actual_total; break;
+              }
+            });
+          });
+          
+          providerRow['Q1 ' + currentYear] = q1Total.toFixed(2);
+          providerRow['Q2 ' + currentYear] = q2Total.toFixed(2);
+          providerRow['Q3 ' + currentYear] = q3Total.toFixed(2);
+          providerRow['Q4 ' + currentYear] = q4Total.toFixed(2);
+          providerRow.Total = provider.total_actual.toFixed(2);
+        }
+        
+        exportRows.push(providerRow);
+        
+        // Client rows
+        provider.clients.forEach(client => {
+          const clientRow: any = {
+            Client: `  ${client.display_name}`,
+            Frequency: client.payment_schedule === 'monthly' ? 'Monthly' : 'Quarterly',
+          };
+          
+          // Get dashboard data for rate
+          const dashboardClient = dashboardData.get(client.client_id);
+          const rate = viewMode === 'quarterly' 
+            ? dashboardClient?.quarterly_rate 
+            : dashboardClient?.annual_rate;
+          
+          const rateDisplay = !dashboardClient ? '' :
+            dashboardClient.fee_type === 'percentage' 
+              ? (rate ? rate + '%' : '')
+              : (rate ? rate.toFixed(2) : '');
+          
+          if (viewMode === 'quarterly') {
+            clientRow['Quarterly Rate'] = rateDisplay;
+            clientRow.Expected = client.expected_total?.toFixed(2) || '';
+            clientRow.Actual = client.actual_total.toFixed(2);
+            clientRow.Variance = client.variance?.toFixed(2) || '';
+            clientRow.Status = `${client.payment_count}/${client.expected_payment_count}`;
+            clientRow.Posted = client.fully_posted ? 'Y' : 'N';
+            clientRow.Notes = clientNotes.get(`${client.client_id}-${currentYear}-${currentQuarter}`) || '';
+          } else {
+            clientRow['Annual Rate'] = rateDisplay;
+            // For annual view, get quarterly breakdown from raw data
+            const clientQuarterlyData = rawQuarterlyData.filter(d => 
+              d.client_id === client.client_id && 
+              d.provider_name === provider.provider_name
+            );
+            
+            let q1 = 0, q2 = 0, q3 = 0, q4 = 0;
+            clientQuarterlyData.forEach(qData => {
+              switch(qData.quarter) {
+                case 1: q1 = qData.actual_total; break;
+                case 2: q2 = qData.actual_total; break;
+                case 3: q3 = qData.actual_total; break;
+                case 4: q4 = qData.actual_total; break;
+              }
+            });
+            
+            clientRow['Q1 ' + currentYear] = q1.toFixed(2);
+            clientRow['Q2 ' + currentYear] = q2.toFixed(2);
+            clientRow['Q3 ' + currentYear] = q3.toFixed(2);
+            clientRow['Q4 ' + currentYear] = q4.toFixed(2);
+            clientRow.Total = client.actual_total.toFixed(2);
+          }
+          
+          exportRows.push(clientRow);
+        });
+      });
+      
+      // Generate and download file
+      const filename = viewMode === 'quarterly' 
+        ? `summary-${currentYear}-Q${currentQuarter}`
+        : `summary-${currentYear}-annual`;
+      
+      if (format === 'csv') {
+        const csv = Papa.unparse(exportRows, { header: true });
+        const blob = new Blob([title + '\n\n' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filename}.csv`;
+        link.click();
+      } else if (format === 'excel' && XLSX) {
+        // Add title as first row
+        const titleRow = {};
+        headers.forEach((header, index) => {
+          titleRow[header] = index === 0 ? title : '';
+        });
+        
+        const allRows = [titleRow, ...exportRows];
+        const ws = XLSX.utils.json_to_sheet(allRows, { header: headers, skipHeader: false });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+        XLSX.writeFile(wb, `${filename}.xlsx`);
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+      setError('Export failed. Please make sure required libraries are installed.');
     }
   };
 
@@ -486,10 +683,33 @@ const Summary: React.FC = () => {
           >
             {viewMode === 'quarterly' ? 'Year View' : 'Quarter View'}
           </button>
-          <button className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
+          <div className="relative export-menu-container">
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Download as CSV
+                </button>
+                <button
+                  onClick={() => handleExport('excel')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Download as Excel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
