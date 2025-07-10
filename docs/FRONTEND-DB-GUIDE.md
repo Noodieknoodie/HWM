@@ -1,13 +1,17 @@
 # FRONTEND-DB-GUIDE.md
 
+# FRONTEND-DB-GUIDE.md
+
 ## 🗄️ DATABASE-TO-UI MAPPING
 
 ### 📊 Dashboard Overview
+
 The application displays payment tracking for financial advisory clients with 401(k) plans. Each client has one active contract with a provider (John Hancock, Voya, Ascensus, etc.) and pays advisory fees either monthly or quarterly, calculated as a percentage of AUM or a flat fee.
 
----
+-----
 
 ### 🧭 SIDEBAR NAVIGATION
+
 **COMPONENT:** `src/components/Sidebar.tsx` + `src/components/ClientSearch.tsx`
 
 The sidebar shows all clients with their current payment status:
@@ -20,7 +24,8 @@ The sidebar shows all clients with their current payment status:
 └─────────────────────────────┘
 ```
 
-**When "View by Provider" is toggled:**
+**When “View by Provider” is toggled:**
+
 ```
 ┌─────────────────────────────┐
 │ ▼ John Hancock (4 clients) │  ← GROUP BY: provider_name
@@ -32,103 +37,121 @@ The sidebar shows all clients with their current payment status:
 ```
 
 **DATA SOURCE:** `sidebar_clients_view`
+
 - `client_id`: Navigation target
 - `display_name`: What users see
 - `provider_name`: For grouping
-- `compliance_status`: 'yellow' (payment due) or 'green' (paid up)
+- `compliance_status`: ‘yellow’ (payment due) or ‘green’ (paid up)
 
----
+-----
 
 ### 📋 MAIN CLIENT VIEW
+
 **COMPONENT:** `src/pages/Payments.tsx`
 
 When a client is selected, the header shows:
+
 ```
-ACME CORPORATION - Acme
-└─ full_name ─┘   └display_name┘
+ACME CORPORATION
+Acme
+└─ full_name ─┘
+└─display_name┘
 ```
 
 **DATA SOURCE:** `dashboard_view` (single source for entire dashboard!)
 
----
+-----
 
-### 📋 NEW DASHBOARD CARDS (4-Card Layout)
-**COMPONENTS:** Located in `src/components/dashboard/cards/`
-- Base component: `DashboardCard.tsx` (reusable wrapper)
-- Individual cards: `PlanDetailsCard.tsx`, `CurrentStatusCard.tsx`, `AssetsAndFeesCard.tsx`, `ContactCard.tsx`
+### 💳 DASHBOARD CARDS (4 Cards Layout)
 
-#### 📍 PLAN DETAILS CARD
+All four cards receive data from the same `dashboard_view` - one query, maximum efficiency!
+
+#### 1️⃣ PLAN DETAILS CARD
+
+**COMPONENT:** `src/components/dashboard/cards/PlanDetailsCard.tsx`
+
 ```
 ┌─────────────────────────────────┐
-│ 📍 PLAN DETAILS                 │
+│ Plan Details                    │
 ├─────────────────────────────────┤
+│ PROVIDER                        │
 │ John Hancock                    │ ← provider_name
-│ 134565                          │ ← contract_number (or '--' if NULL)
-│ 18 Participants                 │ ← num_people + ' Participants' (or '-- Participants')
-│ Client Since 05/19              │ ← 'Client Since ' + ima_signed_date (MM/YY)
+├─────────────────────────────────┤
+│ Contract #: 134565              │ ← contract_number
+│ Participants: 25                │ ← num_people  
+│ Client Since: 05/19             │ ← ima_signed_date (MM/YY format)
 └─────────────────────────────────┘
 ```
 
-#### 💵 CURRENT STATUS CARD
+#### 2️⃣ CURRENT STATUS CARD
+
+**COMPONENT:** `src/components/dashboard/cards/CurrentStatusCard.tsx`
+
 ```
 ┌─────────────────────────────────┐
-│ 💵 CURRENT STATUS               │
+│ Current Status                  │
 ├─────────────────────────────────┤
-│ June 2025                       │ ← current_period_display (pre-formatted)
-│ ⚠ Due                          │ ← payment_status with icon (✓ Paid or ⚠ Due)
-│ Expected: $980.16               │ ← expected_fee (currency)
-│ Last: 05/13/25 $930.09         │ ← last_payment_date + last_payment_amount
+│ Payment Due for June 2025 🟡    │ ← payment_status + current_period_display
+├─────────────────────────────────┤
+│ Expected Payment: $980.16       │ ← expected_fee
+│ Last Payment Date: 05/13/25     │ ← last_payment_date (MM/DD/YY)
+│ Last Payment Amount: $930.09    │ ← last_payment_amount
 └─────────────────────────────────┘
 ```
 
-#### 📈 ASSETS & FEES CARD
+#### 3️⃣ ASSETS & FEES CARD
+
+**COMPONENT:** `src/components/dashboard/cards/AssetsAndFeesCard.tsx`
+
 ```
 ┌─────────────────────────────────┐
-│ 📈 ASSETS & FEES                │
+│ Assets & Fees                   │
 ├─────────────────────────────────┤
-│ AUM: $1,400,234*                │ ← aum (currency, no decimals) + '*' if aum_source='estimated'
-│ Frequency: Monthly              │ ← payment_schedule (capitalized)
-│ Type: Percentage                │ ← fee_type (capitalized)
-│ 0.07% / 0.21% / 0.84%          │ ← monthly_rate / quarterly_rate / annual_rate
+│ AUM                             │
+│ $1,400,234*                     │ ← aum (* if aum_source = 'estimated')
+├─────────────────────────────────┤
+│ Frequency: Monthly              │ ← payment_schedule
+│ Fee Type: Percentage            │ ← fee_type
+│ Composite Rates:                │ ← monthly_rate / quarterly_rate / annual_rate
+│   0.07% / 0.21% / 0.84%         │    (all three displayed as one line)
 └─────────────────────────────────┘
 ```
 
-**NOTE:** For flat fee clients, rates display as currency: "$667 / $2,000 / $8,000"
+**NOTE:** Rates in dashboard_view are already display-ready percentages (0.07 not 0.0007)
 
-#### 📞 CONTACT CARD
+#### 4️⃣ CONTACT CARD
+
+**COMPONENT:** `src/components/dashboard/cards/ContactCard.tsx`
+
 ```
 ┌─────────────────────────────────┐
-│ 📞 CONTACT                      │
+│ Contact                         │
 ├─────────────────────────────────┤
-│ Donald Jay                      │ ← contact_name
-│ (253) 395-9551                  │ ← phone (formatted)
-│ 3500 West Valley HWY            │ ← physical_address (split by comma)
-│ Ste B-106                       │
-│ Auburn, WA 98001                │
+│ PRIMARY CONTACT                 │
+│ John Smith                      │ ← contact_name
+├─────────────────────────────────┤
+│ Phone: (206) 555-1234          │ ← phone (formatted)
+│ Address:                        │ ← physical_address (multi-line)
+│   123 Main St                   │
+│   Seattle, WA 98101             │
 └─────────────────────────────────┘
 ```
 
-**RESPONSIVE LAYOUT:**
-- Desktop (no viewer): 4 columns (`xl:grid-cols-4`)
-- Desktop (with viewer): 2 columns (`xl:grid-cols-2`)
-- Tablet: 2 columns (`lg:grid-cols-2`)
-- Mobile: 1 column (`grid-cols-1`)
-
-**DATA SOURCE:** All cards receive the complete `dashboard_view` data object
-
----
+-----
 
 ### 📝 PAYMENT FORM
+
 **COMPONENT:** `src/components/payment/PaymentForm.tsx`
 
 Form for recording new payments:
+
 ```
 ┌─────────────────────────────────┐
 │ Record Payment                  │
 ├─────────────────────────────────┤
 │ Received Date: [____-__-__]    │ ← User input
-│ Payment Amount: [$_____.__]    │ ← User input
-│ AUM: [$1,400,234.25]           │ ← Defaults to suggested_aum
+│ Payment Amount: [$_____.__]    │ ← User input (required)
+│ AUM: [$1,400,234.25]           │ ← Pre-filled from suggested_aum
 │ Payment Method: [Check ▼]      │ ← HARDCODED list
 │ Applied Period: [June 2025 ▼]  │ ← FROM: payment_form_periods_view
 │ Expected Fee: $980.16          │ ← Live calculation
@@ -138,45 +161,44 @@ Form for recording new payments:
 └─────────────────────────────────┘
 ```
 
-**PAYMENT METHODS (hardcoded):**
-- Check
-- ACH  
-- Wire
-- Auto - Check
+**PAYMENT METHODS (hardcoded in component):**
+
 - Auto - ACH
+- Auto - Check
 - Invoice - Check
+- Wire Transfer
+- Check
 
-**TODO - Form Enhancement:**
-- [ ] Implement live expected fee calculation as user types AUM
-- [ ] Pre-fill AUM from payment_form_defaults_view.suggested_aum
+**DATA SOURCES:**
 
-**CRITICAL FOR SUBMISSION:**
-- Must include both `client_id` and `contract_id`
-- Period dropdown only shows unpaid periods (is_paid = 0)
-- Expected fee is what we calculate NOW (not historical)
+- **Form defaults:** `payment_form_defaults_view` → suggested_aum
+- **Period dropdown:** `payment_form_periods_view` → Only unpaid periods (is_paid = 0)
+- **Contract ID:** `dashboard_view.contract_id` (REQUIRED for submission)
 
----
+-----
 
 ### 📜 PAYMENT HISTORY TABLE
+
 **COMPONENT:** `src/components/payment/PaymentHistory.tsx`
 
 Shows all payments with variance analysis:
+
 ```
 ┌──────┬──────────┬────────┬─────────┬──────────┬──────────┬───────────┬─────┐
 │ Date │ Provider │ Period │ Payment │ Expected │ Variance │    AUM    │     │
 ├──────┼──────────┼────────┼─────────┼──────────┼──────────┼───────────┼─────┤
-│05/13 │John Han..│Apr 2025│ $930.09 │  Unknown │    --    │$1,400,234 │[✏️🗑️]│
-│04/21 │John Han..│Mar 2025│ $925.94 │  Unknown │    --    │$1,394,055 │[✏️🗑️]│
-│10/26 │John Han..│Sep 2022│ $681.45 │  $697.06 │  -$15.61 │$1,025,920 │[✏️🗑️]│
+│05/13 │John Han..│Apr 2025│ $930.09 │  $925.00 │  +$5.09  │$1,400,234 │[✏️🗑️]│
+│04/21 │John Han..│Mar 2025│ $925.94 │  $920.00 │  +$5.94  │$1,394,055 │[✏️🗑️]│
 └──────┴──────────┴────────┴─────────┴──────────┴──────────┴───────────┴─────┘
 ```
 
 **DATA SOURCE:** `payment_history_view`
-- Variance colors: Green (exact/acceptable), Yellow (warning 5-15%), Red (alert >15%)
-- Provider comes directly from view (no JOIN needed)
-- Shows historical expected fee (what was expected AT THAT TIME)
 
----
+- `variance_status`: Colors variance (exact, acceptable, warning, alert)
+- `provider_name`: Included in view (no JOIN needed)
+- `expected_fee`: Historical value (what was expected THEN, not now)
+
+-----
 
 ### 🔄 KEY API ENDPOINTS
 
@@ -222,60 +244,84 @@ POST /api/payments
 }
 ```
 
----
+-----
 
 ### 💡 BUSINESS LOGIC & DATA NOTES
 
-**Rate Scaling:**
-The rates stored in the database are already scaled to the payment frequency:
-- Monthly at 0.84% annual = stored as 0.0007 (0.84% ÷ 12)
-- Quarterly at 0.84% annual = stored as 0.0021 (0.84% ÷ 4)
-- **Don't scale again!** Just multiply by AUM.
+**Dashboard View Magic:**
+The `dashboard_view` consolidates everything needed for the dashboard into one efficient query:
+
+- Client info + Contract details + Payment status + Contact info
+- AUM with source indicator (recorded vs estimated from payment)
+- Pre-calculated display values (current_period_display, formatted rates)
+- Expected fee for current period
+
+**Rate Display:**
+Database stores raw rates (0.0007) but `dashboard_view` provides display-ready percentages:
+
+- `monthly_rate`: 0.07 (for 0.07% display)
+- `quarterly_rate`: 0.21 (for 0.21% display)
+- `annual_rate`: 0.84 (for 0.84% display)
+- Frontend just adds % symbol for percentage clients or formats as currency for flat fee
 
 **Billing in Arrears:**
+
 - Current date: July 2025
 - Monthly clients: Billing for June 2025
 - Quarterly clients: Billing for Q2 2025 (April-June)
-- Always one period behind!
+- The `current_period_display` field handles this automatically
 
-**Period Display:**
-- Monthly: 6 → "June"
-- Quarterly: 2 → "Q2"
-- Use period_display from views when available
+**AUM Source Indicator:**
 
-**AUM Handling:**
-- Can be NULL for percentage clients (when not recorded)
-- dashboard_view provides both recorded AUM and estimated AUM
-- Estimated AUM = last payment ÷ rate (for display purposes)
-- Always prefer recorded over estimated
+- `aum_source = 'recorded'`: Actual AUM was entered
+- `aum_source = 'estimated'`: Calculated from payment ÷ rate
+- UI shows asterisk (*) for estimated values
 
 **Expected Fee Context:**
+
 - `payments.expected_fee`: Historical - what was expected when payment was made
-- `dashboard_view.expected_fee`: Current - what we expect for current period  
+- `dashboard_view.expected_fee`: Current - what we expect for current period
 - Form calculation: Live - updates as user types
 
-**Variance Analysis:**
-- Based on historical expected_fee stored in payments table
-- "Unknown" when no expected fee was recorded
-- Percentage variance determines color coding
+**Payment Status Logic:**
+Simple binary in `sidebar_clients_view`:
 
-**Multiple Payments:**
-Clients can make multiple payments for the same period (partials, corrections). Views handle SUMming automatically.
+- `compliance_status = 'green'`: All caught up
+- `compliance_status = 'yellow'`: Payment due
 
----
+**Period Selection:**
+`payment_form_periods_view` provides:
 
-### 🚀 FUTURE FEATURES
+- Only periods where client was active
+- Only unpaid periods (is_paid = 0)
+- Formatted display text (e.g., “June 2025” or “Q2 2025”)
 
-**Quarterly Summary Page** (View exists: `quarterly_totals`)
-- Shows total payments by quarter
-- Payment counts to identify partial payments
-- Year comparisons
+**Variance Thresholds:**
 
-**Views to Clean Up:**
-- `client_metrics_view` - Replaced by dashboard_view
-- Old individual views consolidated into dashboard_view
+- exact: < $0.01 difference
+- acceptable: ≤ 5% variance (green)
+- warning: 5-15% variance (yellow)
+- alert: > 15% variance (red)
 
+-----
 
+### 🚀 VIEW RELATIONSHIPS
 
--- SEE @DB_SCHEMA_REFERENCE.sql
+```
+dashboard_view (master view)
+    ├── All 4 dashboard cards
+    ├── Client header info
+    └── Contract ID for payments
 
+sidebar_clients_view
+    └── Client list with status
+
+payment_form_periods_view
+    └── Dropdown options
+
+payment_form_defaults_view
+    └── Suggested AUM
+
+payment_history_view
+    └── Payment table with variance
+```
