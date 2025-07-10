@@ -4,11 +4,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "swa start http://localhost:5173 --run \"vite --host\" --data-api-location swa-db-connections --port 4280",
+    "dev:vite": "vite --host --port 5173",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "start": "swa start dist --port 4280 --data-api-location swa-db-connections"
+    "start": "echo \"\" && echo \"🚀 Click here to view: http://localhost:4280\" && echo \"\" && swa start dist --port 4280 --data-api-location swa-db-connections"
   },
   "dependencies": {
     "lucide-react": "^0.525.0",

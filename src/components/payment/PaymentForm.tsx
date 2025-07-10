@@ -1,5 +1,5 @@
 // src/components/payment/PaymentForm.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePeriods } from '@/hooks/usePeriods';
 import { Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
@@ -32,6 +32,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const { periods, loading: periodsLoading } = usePeriods(clientId);
   const { dashboardData } = useClientDashboard(clientId);
   const { defaults: paymentDefaults } = usePaymentDefaults(clientId);
+  const formRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     received_date: new Date().toISOString().split('T')[0],
@@ -56,7 +58,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     }
   }, [paymentDefaults, editingPayment, isDirty]);
   
-  // Populate form when editing
+  // Populate form when editing and handle focus/scroll
   useEffect(() => {
     if (editingPayment) {
       setFormData({
@@ -67,6 +69,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         notes: editingPayment.notes || '',
         period_selection: `${editingPayment.applied_period}-${editingPayment.applied_year}`,
       });
+      
+      // Scroll to form and focus first input
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstInputRef.current?.focus();
+      }, 100);
     }
   }, [editingPayment]);
   
@@ -196,7 +204,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   };
   
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+    <div 
+      ref={formRef}
+      className={`
+        bg-white shadow-sm rounded-lg border p-6 transition-all duration-300
+        ${editingPayment 
+          ? 'border-blue-500 ring-4 ring-blue-100 shadow-lg' 
+          : 'border-gray-200'
+        }
+      `}
+    >
       <h3 className="text-lg font-medium text-gray-900 mb-4">
         {editingPayment ? 'Edit Payment' : 'Record New Payment'}
       </h3>
@@ -215,6 +232,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               Received Date <span className="text-red-500">*</span>
             </label>
             <input
+              ref={firstInputRef}
               type="date"
               id="received_date"
               name="received_date"
