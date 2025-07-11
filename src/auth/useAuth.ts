@@ -70,7 +70,7 @@ export function useAuth() {
   }, []);
 
   const logout = () => {
-    window.location.href = '/.auth/logout';
+    window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
   };
 
   return {
