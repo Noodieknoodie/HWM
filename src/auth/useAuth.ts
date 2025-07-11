@@ -22,20 +22,34 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Mock auth for local development
-    if (window.location.hostname === 'localhost') {
-      setAuthState({
-        user: {
-          userId: 'local-dev-user',
-          userDetails: 'dev@localhost',
-          userRoles: ['authenticated'],
-          identityProvider: 'aad'
-        },
-        loading: false,
-        error: null
-      });
-      return;
-    }
+    // TEMPORARY: Mock auth for all environments during development
+    // TODO: Remove this and uncomment production auth code
+    setAuthState({
+      user: {
+        userId: 'dev-user',
+        userDetails: 'dev@hohimer.com',
+        userRoles: ['authenticated'],
+        identityProvider: 'aad'
+      },
+      loading: false,
+      error: null
+    });
+    return;
+    
+    // PRODUCTION AUTH CODE - UNCOMMENT WHEN READY
+    // if (window.location.hostname === 'localhost') {
+    //   setAuthState({
+    //     user: {
+    //       userId: 'local-dev-user',
+    //       userDetails: 'dev@localhost',
+    //       userRoles: ['authenticated'],
+    //       identityProvider: 'aad'
+    //     },
+    //     loading: false,
+    //     error: null
+    //   });
+    //   return;
+    // }
     
     // Fetch user info from Static Web App auth endpoint
     fetch('/.auth/me')

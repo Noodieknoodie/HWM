@@ -37,7 +37,8 @@
       "mcp__azure-mcp-server__azmcp-subscription-list",
       "mcp__azure-mcp-server__azmcp-group-list",
       "mcp__azure-mcp-server__azmcp-extension-az",
-      "mcp__azure-mcp-server__azmcp-sql-server-entraadmin-list"
+      "mcp__azure-mcp-server__azmcp-sql-server-entraadmin-list",
+      "Bash(git push:*)"
     ],
     "deny": []
   }
