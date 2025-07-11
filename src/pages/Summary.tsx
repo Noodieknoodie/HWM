@@ -16,7 +16,7 @@ import {
   FileDown
 } from 'lucide-react';
 import { dataApiClient } from '@/api/client';
-import Alert from '@/components/Alert';
+import { Alert } from '@/components/Alert';
 
 interface QuarterlySummaryData {
   provider_name: string;
@@ -72,12 +72,6 @@ interface ProviderGroup {
   isExpanded: boolean;
 }
 
-interface ClientNote {
-  client_id: number;
-  year: number;
-  quarter: number;
-  notes: string;
-}
 
 interface DashboardClient {
   client_id: number;
@@ -94,9 +88,30 @@ const Summary: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // URL parameters
-  const currentYear = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
-  const currentQuarter = parseInt(searchParams.get('quarter') || Math.ceil((new Date().getMonth() + 1) / 3).toString());
+  // URL parameters with arrears logic
+  const now = new Date();
+  const defaultYear = (() => {
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentQ = Math.ceil(currentMonth / 3); // 1-4
+    // If we're in Q1, we bill for Q4 of previous year
+    if (currentQ === 1) {
+      return now.getFullYear() - 1;
+    }
+    return now.getFullYear();
+  })();
+  const currentYear = parseInt(searchParams.get('year') || defaultYear.toString());
+  
+  // Arrears logic: default to previous quarter (billing is for the quarter that just ended)
+  const defaultQuarter = (() => {
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentQ = Math.ceil(currentMonth / 3); // 1-4
+    if (currentQ === 1) {
+      // If we're in Q1, we bill for Q4 of previous year
+      return 4;
+    }
+    return currentQ - 1;
+  })();
+  const currentQuarter = parseInt(searchParams.get('quarter') || defaultQuarter.toString());
   const viewMode = searchParams.get('view') || 'quarterly';
   
   // Data state
@@ -109,26 +124,6 @@ const Summary: React.FC = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [rawQuarterlyData, setRawQuarterlyData] = useState<QuarterlySummaryData[]>([]);
 
-  // Calculate current billable period (billing in arrears)
-  const getBillablePeriod = () => {
-    const today = new Date();
-    const month = today.getMonth() + 1; // 1-12
-    
-    // For quarterly view
-    if (viewMode === 'quarterly') {
-      const currentQ = Math.ceil(month / 3);
-      if (currentQ === 1) {
-        return { year: today.getFullYear() - 1, quarter: 4 };
-      }
-      return { year: today.getFullYear(), quarter: currentQ - 1 };
-    }
-    
-    // For annual view
-    if (month <= 3) { // Q1 - show previous year
-      return { year: today.getFullYear() - 1 };
-    }
-    return { year: today.getFullYear() };
-  };
 
   // Navigation functions
   const navigateQuarter = (direction: 'prev' | 'next') => {
@@ -203,7 +198,7 @@ const Summary: React.FC = () => {
       let data: QuarterlySummaryData[] = [];
       
       if (viewMode === 'quarterly') {
-        data = await dataApiClient.getQuarterlySummaryByProvider(currentYear, currentQuarter);
+        data = await dataApiClient.getQuarterlySummaryByProvider(currentYear, currentQuarter) as QuarterlySummaryData[];
       } else {
         // For annual view, get all quarters
         const allQuarters = await Promise.all([
@@ -212,8 +207,37 @@ const Summary: React.FC = () => {
           dataApiClient.getQuarterlySummaryByProvider(currentYear, 3),
           dataApiClient.getQuarterlySummaryByProvider(currentYear, 4)
         ]);
-        data = allQuarters.flat();
+        data = (allQuarters as QuarterlySummaryData[][]).flat();
+        
+        // Remove duplicate entries for clients with no payments (they appear in each quarter query)
+        const seenNoPaymentClients = new Set<number>();
+        data = data.filter(item => {
+          if (item.applied_year === null && item.quarter === null) {
+            if (seenNoPaymentClients.has(item.client_id)) {
+              return false; // Skip duplicate
+            }
+            seenNoPaymentClients.add(item.client_id);
+          }
+          return true;
+        });
       }
+      
+      // Process data to handle clients without payments (they have null year/quarter)
+      data = data.map(item => {
+        if (item.applied_year === null && item.quarter === null) {
+          // This is a client with no payments - set the year/quarter to current
+          return {
+            ...item,
+            applied_year: currentYear,
+            quarter: viewMode === 'quarterly' ? currentQuarter : 1,
+            payment_count: 0,
+            actual_total: 0,
+            posted_count: 0,
+            fully_posted: 0
+          };
+        }
+        return item;
+      });
       
       // Store raw data for export
       setRawQuarterlyData(data);
@@ -292,7 +316,7 @@ const Summary: React.FC = () => {
         
         for (const clientId of clientIds) {
           try {
-            const notes = await dataApiClient.getQuarterlyNote(clientId, currentYear, currentQuarter);
+            const notes = await dataApiClient.getQuarterlyNote(clientId, currentYear, currentQuarter) as Array<{notes: string}>;
             if (notes && notes.length > 0 && notes[0].notes) {
               notesMap.set(`${clientId}-${currentYear}-${currentQuarter}`, notes[0].notes);
             }
@@ -351,7 +375,7 @@ const Summary: React.FC = () => {
       // Load payment details if not already loaded
       if (!paymentDetails.has(clientId)) {
         try {
-          const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter);
+          const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
           setPaymentDetails(prev => new Map(prev).set(clientId, details));
         } catch (err) {
           console.error(`Failed to load payment details for client ${clientId}:`, err);
@@ -416,9 +440,7 @@ const Summary: React.FC = () => {
     setShowExportMenu(false);
     
     try {
-      // @ts-ignore - Libraries will be installed
       const Papa = (await import('papaparse')).default;
-      // @ts-ignore - Libraries will be installed
       const XLSX = format === 'excel' ? await import('xlsx') : null;
       
       // Build export data
@@ -551,7 +573,7 @@ const Summary: React.FC = () => {
         link.click();
       } else if (format === 'excel' && XLSX) {
         // Add title as first row
-        const titleRow = {};
+        const titleRow: any = {};
         headers.forEach((header, index) => {
           titleRow[header] = index === 0 ? title : '';
         });
@@ -590,14 +612,18 @@ const Summary: React.FC = () => {
   const getVarianceIcon = (variance: number | null, expected: number | null) => {
     if (variance === null || expected === null || expected === 0) return null;
     
-    const variancePercent = Math.abs(variance / expected) * 100;
-    
-    if (Math.abs(variance) < 1) {
+    // Only show warning/alert for negative variances (underpayments) greater than $15
+    if (variance >= -15) {
+      // Variance is acceptable (overpayment or underpayment <= $15)
       return <Check className="inline w-4 h-4 text-green-600 ml-1" />;
-    } else if (variancePercent <= 15) {
-      return <AlertTriangle className="inline w-4 h-4 text-amber-600 ml-1" />;
     } else {
-      return <AlertCircle className="inline w-4 h-4 text-red-600 ml-1" />;
+      // Significant underpayment (> $15)
+      const variancePercent = Math.abs(variance / expected) * 100;
+      if (variancePercent <= 15) {
+        return <AlertTriangle className="inline w-4 h-4 text-amber-600 ml-1" />;
+      } else {
+        return <AlertCircle className="inline w-4 h-4 text-red-600 ml-1" />;
+      }
     }
   };
 
@@ -623,9 +649,7 @@ const Summary: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {error && (
-        <Alert type="error" className="mb-4">
-          {error}
-        </Alert>
+        <Alert variant="error" message={error} className="mb-4" />
       )}
 
       <div className="mb-6">
@@ -800,25 +824,43 @@ const Summary: React.FC = () => {
                         {provider.posted_clients}/{provider.total_clients} ☑
                       </td>
                     </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.clients.filter(c => c.quarter === 1).reduce((sum, c) => sum + c.actual_total, 0)).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.clients.filter(c => c.quarter === 2).reduce((sum, c) => sum + c.actual_total, 0)).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.clients.filter(c => c.quarter === 3).reduce((sum, c) => sum + c.actual_total, 0)).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.clients.filter(c => c.quarter === 4).reduce((sum, c) => sum + c.actual_total, 0)).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.total_actual).toLocaleString()}
-                      </td>
-                    </>
-                  )}
+                  ) : (() => {
+                    // Calculate quarterly totals for provider from raw data
+                    const providerQuarterlyTotals: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                    
+                    provider.clients.forEach(client => {
+                      const clientQuarterlyData = rawQuarterlyData.filter(d => 
+                        d.client_id === client.client_id && 
+                        d.provider_name === provider.provider_name
+                      );
+                      
+                      clientQuarterlyData.forEach(qData => {
+                        if (qData.quarter >= 1 && qData.quarter <= 4) {
+                          providerQuarterlyTotals[qData.quarter] += qData.actual_total;
+                        }
+                      });
+                    });
+                    
+                    return (
+                      <>
+                        <td className="px-4 py-3 text-right font-medium">
+                          ${Math.round(providerQuarterlyTotals[1]).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          ${Math.round(providerQuarterlyTotals[2]).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          ${Math.round(providerQuarterlyTotals[3]).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          ${Math.round(providerQuarterlyTotals[4]).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          ${Math.round(provider.total_actual).toLocaleString()}
+                        </td>
+                      </>
+                    );
+                  })()}
                 </tr>
 
                 {/* Client Rows */}
@@ -875,13 +917,17 @@ const Summary: React.FC = () => {
                           <td className="px-4 py-3 text-right">
                             ${Math.round(client.actual_total).toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-right">
-                            {client.variance !== null ? (
-                              <>
-                                ${Math.round(client.variance).toLocaleString()}
-                                {getVarianceIcon(client.variance, client.expected_total)}
-                              </>
-                            ) : '--'}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <span className="text-right">
+                                {client.variance !== null ? 
+                                  `$${Math.round(client.variance).toLocaleString()}` : 
+                                  '--'}
+                              </span>
+                              <span className="w-5 flex-shrink-0">
+                                {client.variance !== null && getVarianceIcon(client.variance, client.expected_total)}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-center text-sm">
                             {client.payment_count}/{client.expected_payment_count}
@@ -903,34 +949,87 @@ const Summary: React.FC = () => {
                             </button>
                           </td>
                         </>
-                      ) : (
-                        <>
-                          <td className="px-4 py-3 text-right">
-                            {/* Q1 data */}
-                            ${Math.round(client.actual_total).toLocaleString()}
-                            {client.payment_count > 0 ? (
-                              <Check className="inline w-4 h-4 text-green-600 ml-1" />
-                            ) : (
-                              <AlertTriangle className="inline w-4 h-4 text-amber-600 ml-1" />
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {/* Q2 data - would need separate API call */}
-                            $0
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {/* Q3 data - would need separate API call */}
-                            $0
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {/* Q4 data - would need separate API call */}
-                            $0
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            ${Math.round(client.actual_total).toLocaleString()}
-                          </td>
-                        </>
-                      )}
+                      ) : (() => {
+                        // For annual view, get quarterly breakdown from raw data
+                        const clientQuarterlyData = rawQuarterlyData.filter(d => 
+                          d.client_id === client.client_id && 
+                          d.provider_name === provider.provider_name
+                        );
+                        
+                        const quarterlyTotals: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                        const quarterlyPayments: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                        
+                        clientQuarterlyData.forEach(qData => {
+                          if (qData.quarter >= 1 && qData.quarter <= 4) {
+                            quarterlyTotals[qData.quarter] = qData.actual_total;
+                            quarterlyPayments[qData.quarter] = qData.payment_count;
+                          }
+                        });
+                        
+                        return (
+                          <>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                <span className="text-right">
+                                  ${Math.round(quarterlyTotals[1]).toLocaleString()}
+                                </span>
+                                <span className="w-5 flex-shrink-0">
+                                  {quarterlyPayments[1] > 0 ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                  )}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                <span className="text-right">
+                                  ${Math.round(quarterlyTotals[2]).toLocaleString()}
+                                </span>
+                                <span className="w-5 flex-shrink-0">
+                                  {quarterlyPayments[2] > 0 ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                  )}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                <span className="text-right">
+                                  ${Math.round(quarterlyTotals[3]).toLocaleString()}
+                                </span>
+                                <span className="w-5 flex-shrink-0">
+                                  {quarterlyPayments[3] > 0 ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                  )}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                <span className="text-right">
+                                  ${Math.round(quarterlyTotals[4]).toLocaleString()}
+                                </span>
+                                <span className="w-5 flex-shrink-0">
+                                  {quarterlyPayments[4] > 0 ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                  )}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-medium">
+                              ${Math.round(client.actual_total).toLocaleString()}
+                            </td>
+                          </>
+                        );
+                      })()}
                     </tr>
 
                     {/* Payment Details (Quarterly View Only) */}

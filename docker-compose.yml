@@ -1,0 +1,29 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hwm-sql-server
+    hostname: hwm-sql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=HWM_Strong@Pass123
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - hwm-sql-data:/var/opt/mssql
+      - ./sql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "HWM_Strong@Pass123", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  hwm-sql-data:
+    driver: local

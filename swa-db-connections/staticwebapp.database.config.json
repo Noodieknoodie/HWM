@@ -158,6 +158,41 @@
           "actions": ["read"]
         }
       ]
+    },
+    "quarterly_summary_by_provider": {
+      "source": {
+        "object": "dbo.quarterly_summary_by_provider",
+        "type": "view",
+        "key-fields": ["applied_year", "quarter", "client_id"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "quarterly_summary_detail": {
+      "source": {
+        "object": "dbo.quarterly_summary_detail",
+        "type": "view",
+        "key-fields": ["client_id", "applied_year", "quarter"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "quarterly_notes": {
+      "source": "dbo.quarterly_notes",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read", "create", "update"]
+        }
+      ]
     }
   }
 }

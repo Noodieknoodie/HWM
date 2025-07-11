@@ -188,11 +188,13 @@ export class DataApiClient {
 
   // Summary page data methods
   async getQuarterlySummaryByProvider(year: number, quarter: number) {
-    return this.request(`quarterly_summary_by_provider?$filter=applied_year eq ${year} and quarter eq ${quarter}`);
+    // Include clients with payments in this quarter OR clients with no payments at all
+    return this.request(`quarterly_summary_by_provider?$filter=(applied_year eq ${year} and quarter eq ${quarter}) or (applied_year eq null and quarter eq null)`);
   }
 
   async getAnnualSummaryByProvider(year: number) {
-    return this.request(`quarterly_summary_by_provider?$filter=applied_year eq ${year}`);
+    // Include clients with payments in this year OR clients with no payments at all
+    return this.request(`quarterly_summary_by_provider?$filter=applied_year eq ${year} or (applied_year eq null and quarter eq null)`);
   }
 
   async getQuarterlySummaryDetail(clientId: number, year: number, quarter: number) {
