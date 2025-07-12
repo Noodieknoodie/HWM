@@ -188,17 +188,18 @@ export class DataApiClient {
 
   // Summary page data methods
   async getQuarterlySummaryByProvider(year: number, quarter: number) {
-    // Include clients with payments in this quarter OR clients with no payments at all
-    return this.request(`quarterly_summary_by_provider?$filter=(applied_year eq ${year} and quarter eq ${quarter}) or (applied_year eq null and quarter eq null)`);
+    // Use new aggregated view which shows all clients including those without payments
+    return this.request(`quarterly_summary_aggregated?$filter=year eq ${year} and quarter eq ${quarter}`);
   }
 
   async getAnnualSummaryByProvider(year: number) {
-    // Include clients with payments in this year OR clients with no payments at all
-    return this.request(`quarterly_summary_by_provider?$filter=applied_year eq ${year} or (applied_year eq null and quarter eq null)`);
+    // Use new yearly summaries view for annual data
+    return this.request(`yearly_summaries_view?$filter=year eq ${year}`);
   }
 
   async getQuarterlySummaryDetail(clientId: number, year: number, quarter: number) {
-    return this.request(`quarterly_summary_detail?$filter=client_id eq ${clientId} and applied_year eq ${year} and quarter eq ${quarter}`);
+    // Use comprehensive payment summary which includes missing payments (payment_id = NULL)
+    return this.request(`comprehensive_payment_summary?$filter=client_id eq ${clientId} and year eq ${year} and quarter eq ${quarter}`);
   }
 
   // Quarterly notes methods
