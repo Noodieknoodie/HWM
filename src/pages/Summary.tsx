@@ -26,7 +26,7 @@ interface QuarterlySummaryData {
   fee_type: string;
   percent_rate: number | null;
   flat_rate: number | null;
-  applied_year: number;
+  year: number;
   quarter: number;
   payment_count: number;
   actual_total: number;
@@ -36,6 +36,7 @@ interface QuarterlySummaryData {
   expected_payment_count: number;
   variance: number | null;
   variance_percent: number | null;
+  variance_status: string | null;
   fully_posted: number;
 }
 
@@ -47,18 +48,18 @@ interface QuarterlySummaryDetail {
   fee_type: string;
   percent_rate: number | null;
   flat_rate: number | null;
-  applied_year: number;
+  year: number;
+  quarter: number;
   applied_period: number;
   applied_period_type: string;
-  quarter: number;
-  payment_id: number;
-  received_date: string;
+  payment_id: number | null; // NULL for missing payments
+  received_date: string | null;
   actual_fee: number;
   expected_fee: number | null;
   total_assets: number | null;
-  method: string;
+  method: string | null;
   posted_to_hwm: boolean;
-  calculated_expected_fee: number | null;
+  variance_status: string | null;
 }
 
 interface ProviderGroup {
@@ -81,6 +82,29 @@ interface DashboardClient {
   monthly_rate: number | null;
   quarterly_rate: number | null;
   annual_rate: number | null;
+}
+
+interface YearlySummaryData {
+  provider_name: string;
+  client_id: number;
+  display_name: string;
+  payment_schedule: string;
+  fee_type: string;
+  year: number;
+  annual_expected: number | null;
+  annual_actual: number;
+  q1_actual: number;
+  q2_actual: number;
+  q3_actual: number;
+  q4_actual: number;
+  q1_payments: number;
+  q2_payments: number;
+  q3_payments: number;
+  q4_payments: number;
+  total_payments: number;
+  variance: number | null;
+  variance_percent: number | null;
+  variance_status: string | null;
 }
 
 const Summary: React.FC = () => {
@@ -212,7 +236,7 @@ const Summary: React.FC = () => {
         // Remove duplicate entries for clients with no payments (they appear in each quarter query)
         const seenNoPaymentClients = new Set<number>();
         data = data.filter(item => {
-          if (item.applied_year === null && item.quarter === null) {
+          if (item.year === null && item.quarter === null) {
             if (seenNoPaymentClients.has(item.client_id)) {
               return false; // Skip duplicate
             }
@@ -224,16 +248,17 @@ const Summary: React.FC = () => {
       
       // Process data to handle clients without payments (they have null year/quarter)
       data = data.map(item => {
-        if (item.applied_year === null && item.quarter === null) {
+        if (item.year === null && item.quarter === null) {
           // This is a client with no payments - set the year/quarter to current
           return {
             ...item,
-            applied_year: currentYear,
+            year: currentYear,
             quarter: viewMode === 'quarterly' ? currentQuarter : 1,
             payment_count: 0,
             actual_total: 0,
             posted_count: 0,
-            fully_posted: 0
+            fully_posted: 0,
+            variance_status: 'no_payment'
           };
         }
         return item;
@@ -394,12 +419,17 @@ const Summary: React.FC = () => {
       ? months[payment.applied_period - 1]
       : `Q${payment.applied_period}`;
       
-    const amount = Math.round(payment.actual_fee);
-    const date = new Date(payment.received_date).toLocaleDateString('en-US', 
-      { month: '2-digit', day: '2-digit' }
-    );
+    // Handle missing payments
+    if (payment.payment_id === null) {
+      return `${period}: MISSING - Expected $${Math.round(payment.expected_fee || 0).toLocaleString()}`;
+    }
     
-    return `${period}: $${amount.toLocaleString()} paid ${date} via ${payment.method}`;
+    const amount = Math.round(payment.actual_fee);
+    const date = payment.received_date ? new Date(payment.received_date).toLocaleDateString('en-US', 
+      { month: '2-digit', day: '2-digit' }
+    ) : '';
+    
+    return `${period}: $${amount.toLocaleString()} paid ${date} via ${payment.method || 'unknown'}`;
   };
 
   // Update posted status
@@ -608,22 +638,21 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Get variance icon
-  const getVarianceIcon = (variance: number | null, expected: number | null) => {
-    if (variance === null || expected === null || expected === 0) return null;
+  // Get variance icon based on variance_status
+  const getVarianceIcon = (varianceStatus: string | null) => {
+    if (!varianceStatus) return null;
     
-    // Only show warning/alert for negative variances (underpayments) greater than $15
-    if (variance >= -15) {
-      // Variance is acceptable (overpayment or underpayment <= $15)
-      return <Check className="inline w-4 h-4 text-green-600 ml-1" />;
-    } else {
-      // Significant underpayment (> $15)
-      const variancePercent = Math.abs(variance / expected) * 100;
-      if (variancePercent <= 15) {
+    switch (varianceStatus) {
+      case 'acceptable':
+        return <Check className="inline w-4 h-4 text-green-600 ml-1" />;
+      case 'minor':
         return <AlertTriangle className="inline w-4 h-4 text-amber-600 ml-1" />;
-      } else {
+      case 'major':
         return <AlertCircle className="inline w-4 h-4 text-red-600 ml-1" />;
-      }
+      case 'no_payment':
+        return <AlertCircle className="inline w-4 h-4 text-red-600 ml-1" />;
+      default:
+        return null;
     }
   };
 
@@ -925,7 +954,7 @@ const Summary: React.FC = () => {
                                   '--'}
                               </span>
                               <span className="w-5 flex-shrink-0">
-                                {client.variance !== null && getVarianceIcon(client.variance, client.expected_total)}
+                                {getVarianceIcon(client.variance_status)}
                               </span>
                             </div>
                           </td>
@@ -937,7 +966,11 @@ const Summary: React.FC = () => {
                               onClick={() => {
                                 const details = paymentDetails.get(client.client_id);
                                 if (details && details.length > 0) {
-                                  updatePostedStatus(details[0].payment_id, !client.fully_posted);
+                                  // Find a payment with actual payment_id (not missing)
+                                  const actualPayment = details.find(d => d.payment_id !== null);
+                                  if (actualPayment) {
+                                    updatePostedStatus(actualPayment.payment_id, !client.fully_posted);
+                                  }
                                 }
                               }}
                             >
