@@ -133,50 +133,24 @@
         }
       ]
     },
-    "quarterly_totals": {
+    "quarterly_summary_aggregated": {
       "source": {
-        "object": "dbo.quarterly_totals",
-        "type": "view",
-        "key-fields": ["client_id", "year", "quarter"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
-        }
-      ]
-    },
-    "yearly_summaries": {
-      "source": {
-        "object": "dbo.yearly_summaries",
-        "type": "view",
-        "key-fields": ["client_id", "year"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
-        }
-      ]
-    },
-    "quarterly_summary_by_provider": {
-      "source": {
-        "object": "dbo.quarterly_summary_by_provider",
-        "type": "view",
-        "key-fields": ["applied_year", "quarter", "client_id"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
-        }
-      ]
-    },
-    "quarterly_summary_detail": {
-      "source": {
-        "object": "dbo.quarterly_summary_detail",
+        "object": "dbo.quarterly_summary_aggregated",
         "type": "view",
         "key-fields": ["client_id", "applied_year", "quarter"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "yearly_summaries_view": {
+      "source": {
+        "object": "dbo.yearly_summaries_view",
+        "type": "view",
+        "key-fields": ["client_id", "year"]
       },
       "permissions": [
         {

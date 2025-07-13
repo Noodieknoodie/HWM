@@ -26,7 +26,7 @@ interface QuarterlySummaryData {
   fee_type: string;
   percent_rate: number | null;
   flat_rate: number | null;
-  year: number;
+  applied_year: number;
   quarter: number;
   payment_count: number;
   actual_total: number;
@@ -236,7 +236,7 @@ const Summary: React.FC = () => {
         // Remove duplicate entries for clients with no payments (they appear in each quarter query)
         const seenNoPaymentClients = new Set<number>();
         data = data.filter(item => {
-          if (item.year === null && item.quarter === null) {
+          if (item.applied_year === null && item.quarter === null) {
             if (seenNoPaymentClients.has(item.client_id)) {
               return false; // Skip duplicate
             }
@@ -248,11 +248,11 @@ const Summary: React.FC = () => {
       
       // Process data to handle clients without payments (they have null year/quarter)
       data = data.map(item => {
-        if (item.year === null && item.quarter === null) {
+        if (item.applied_year === null && item.quarter === null) {
           // This is a client with no payments - set the year/quarter to current
           return {
             ...item,
-            year: currentYear,
+            applied_year: currentYear,
             quarter: viewMode === 'quarterly' ? currentQuarter : 1,
             payment_count: 0,
             actual_total: 0,

@@ -181,15 +181,15 @@ export class DataApiClient {
   async getQuarterlySummaries(clientId: number, year?: number) {
     let filter = `client_id eq ${clientId}`;
     if (year) {
-      filter += ` and year eq ${year}`;
+      filter += ` and applied_year eq ${year}`;
     }
-    return this.request(`quarterly_totals?$filter=${filter}&$orderby=year desc,quarter desc`);
+    return this.request(`quarterly_summary_aggregated?$filter=${filter}&$orderby=applied_year desc,quarter desc`);
   }
 
   // Summary page data methods
   async getQuarterlySummaryByProvider(year: number, quarter: number) {
     // Use new aggregated view which shows all clients including those without payments
-    return this.request(`quarterly_summary_aggregated?$filter=year eq ${year} and quarter eq ${quarter}`);
+    return this.request(`quarterly_summary_aggregated?$filter=applied_year eq ${year} and quarter eq ${quarter}`);
   }
 
   async getAnnualSummaryByProvider(year: number) {

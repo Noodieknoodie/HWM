@@ -312,6 +312,8 @@ JOHN HANCOCK                                        59493.00    58359.00    -113
   HWM Holdings         Monthly     5880.00         5880.00     5500.00     -380.00     3/3     Y       
 ```
 
+// 'posted' essentially means "reviewed" - its a marker for the compliance officer to use. it doesnt have functionality, just on or off.
+
 **Export Template - Annual View:**
 
 ```
