@@ -5,6 +5,7 @@ const DATA_API_BASE = '/data-api/rest';
 
 // Import types
 import { Contact } from '../types/contact';
+import { apiCache, cacheKeys } from '../utils/cache';
 
 // Azure's standardized error format
 export interface AzureApiError {
@@ -207,23 +208,48 @@ export class DataApiClient {
     return this.request(`quarterly_notes?$filter=client_id eq ${clientId} and year eq ${year} and quarter eq ${quarter}`);
   }
 
+  // NEW: Batch method to get all quarterly notes for a period (WITH CACHING)
+  async getQuarterlyNotesBatch(year: number, quarter: number) {
+    const cacheKey = cacheKeys.quarterlyNotes(year, quarter);
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    // If not cached, fetch from API
+    const data = await this.request(`quarterly_notes_all_clients?$filter=year eq ${year} and quarter eq ${quarter}`);
+    
+    // Cache for 5 minutes (quarterly notes don't change often)
+    apiCache.set(cacheKey, data, 5 * 60 * 1000);
+    
+    return data;
+  }
+
   async updateQuarterlyNote(clientId: number, year: number, quarter: number, notes: string) {
     // First check if note exists
     const existing = await this.getQuarterlyNote(clientId, year, quarter);
     
+    let result;
     if (existing && Array.isArray(existing) && existing.length > 0) {
       // Update existing note
-      return this.request(`quarterly_notes/client_id/${clientId}/year/${year}/quarter/${quarter}`, {
+      result = await this.request(`quarterly_notes/client_id/${clientId}/year/${year}/quarter/${quarter}`, {
         method: 'PATCH',
         body: JSON.stringify({ notes }),
       });
     } else {
       // Create new note
-      return this.request('quarterly_notes', {
+      result = await this.request('quarterly_notes', {
         method: 'POST',
         body: JSON.stringify({ client_id: clientId, year, quarter, notes }),
       });
     }
+    
+    // Invalidate cache after update
+    apiCache.clear(cacheKeys.quarterlyNotes(year, quarter));
+    
+    return result;
   }
 
   // Contact Management

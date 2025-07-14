@@ -9,7 +9,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "start": "echo \"\" && echo \"🚀 Click here to view: http://localhost:4280\" && echo \"\" && swa start dist --port 4280 --data-api-location swa-db-connections"
+    "start": "echo \"\" && echo \"🚀 Click here to view: http://localhost:4280\" && echo \"\" && swa start dist --port 4280 --data-api-location swa-db-connections",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "lucide-react": "^0.525.0",
@@ -21,17 +23,22 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
     "@types/node": "^24.0.12",
     "@types/papaparse": "^5.3.16",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "dotenv-cli": "^8.0.0",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.7.3",
-    "vite": "^6.0.6"
+    "vite": "^6.0.6",
+    "vitest": "^3.2.4"
   }
 }

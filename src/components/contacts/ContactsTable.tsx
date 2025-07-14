@@ -37,7 +37,7 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
         <p className="text-gray-600">Manage all contact types for this client</p>
         <button
           onClick={onAdd}
-          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 gap-2"
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 gap-2"
         >
           <Plus size={16} /> Add Contact
         </button>
@@ -93,7 +93,7 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Mail size={12} className="text-gray-400" />
-                        <a href={`mailto:${contact.email}`} className="text-indigo-600 hover:text-indigo-900">
+                        <a href={`mailto:${contact.email}`} className="text-blue-600 hover:text-blue-900">
                           {contact.email}
                         </a>
                       </div>
@@ -121,7 +121,7 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
                     <div className="flex gap-2 justify-end">
                       <button
                         onClick={() => onEdit(contact)}
-                        className="text-indigo-600 hover:text-indigo-900 p-1"
+                        className="text-blue-600 hover:text-blue-900 p-1"
                         title="Edit contact"
                       >
                         <Edit size={16} />

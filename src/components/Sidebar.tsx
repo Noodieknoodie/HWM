@@ -60,54 +60,23 @@ const Sidebar: React.FC = () => {
   
   const groupedClients = groupClientsByProvider();
   
-  // Get the status icon based on compliance status (binary: green or yellow)
+  // Simple gray dot for items with pending entries (yellow status)
   const StatusIcon: React.FC<{ status?: 'green' | 'yellow' }> = ({ status }) => {
-    if (status === 'green') {
+    // Only show gray dot for items with pending entries (yellow status)
+    if (status === 'yellow') {
       return (
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          className="text-green-500"
-        >
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      );
-    } else {
-      // Default to yellow for 'Due' status
-      return (
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          className="text-yellow-500"
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
+        <span className="w-2 h-2 bg-gray-400 rounded-full inline-block"></span>
       );
     }
+    // Return nothing for green status (all caught up)
+    return null;
   };
   
   if (error) {
     return (
       <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-dark-700 mb-4">Clients</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Clients</h2>
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <p className="text-sm text-red-800">{typeof error === 'string' ? error : 'Failed to load clients'}</p>
             <button
@@ -125,12 +94,12 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full lg:relative lg:translate-x-0 transition-transform duration-300">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-dark-700 mb-4">Clients</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Clients</h2>
         <ClientSearch clients={clients} isLoading={isLoading} />
         <div className="flex items-center justify-between mt-3">
-          <span className="text-sm font-medium text-dark-600">View by Provider</span>
+          <span className="text-sm font-medium text-gray-800">View by Provider</span>
           <button 
-            className={`h-5 w-10 rounded-full relative transition-colors ${showByProvider ? 'bg-primary-600' : 'bg-gray-200'}`}
+            className={`h-5 w-10 rounded-full relative transition-colors ${showByProvider ? 'bg-blue-600' : 'bg-gray-200'}`}
             onClick={() => setShowByProvider(!showByProvider)}
             disabled={isLoading}
           >
@@ -157,7 +126,7 @@ const Sidebar: React.FC = () => {
             {groupedClients.map(([provider, providerClients]) => (
               <div key={provider} className="mb-2">
                 {showByProvider && (
-                  <div className="px-3 py-2 text-xs font-semibold text-dark-500 bg-light-200 rounded-md mb-1">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-50 rounded-md mb-1">
                     {provider}
                   </div>
                 )}
@@ -166,8 +135,8 @@ const Sidebar: React.FC = () => {
                     key={client.client_id}
                     className={`w-full flex items-center py-2 px-3 mb-1 text-left rounded transition-colors ${
                       selectedClient?.client_id === client.client_id 
-                        ? 'bg-gray-100 border-l-4 border-primary-600 font-medium text-dark-700' 
-                        : 'text-dark-600 hover:bg-light-200'
+                        ? 'bg-gray-100 border-l-4 border-blue-600 font-medium text-gray-900' 
+                        : 'text-gray-800 hover:bg-gray-50'
                     }`}
                     onClick={() => setSelectedClient(client)}
                   >
@@ -181,7 +150,7 @@ const Sidebar: React.FC = () => {
             ))}
             
             {clients.length === 0 && (
-              <div className="p-4 text-center text-dark-500">
+              <div className="p-4 text-center text-gray-700">
                 No clients available
               </div>
             )}

@@ -136,3 +136,46 @@ Add to this journal VERY RARELY and usually only only after you have to apologiz
 - Assign roles via API function using `rolesSource` configuration
 - Use Microsoft Graph to check group membership for role assignment
 - Roles persist in user's session - no need to check every request
+
+# HWM Payment Calculation Business Logic | 2025-07-13
+- Expected fee calculation is simply: total_assets * percent_rate (no scaling needed)
+- Percent rates in DB are pre-scaled: 0.000417 = 0.0417% monthly fee
+- Expected fee field in payments table often NULL - calculated on the fly
+- Actual fees match calculated fees within penny tolerance (rounding differences)
+- For quarterly payments, the rate is already quarterly (not monthly * 3)
+
+# HWM Compliance Status Logic | 2025-07-13
+- Current period: June 2025 (monthly), Q2 2025 (quarterly)
+- Monthly compliance: Client is "Paid" if they have payment for May 2025 (previous month)
+- Quarterly compliance: Client is "Paid" if they have payment for Q1 2025 (previous quarter)
+- Many clients show as "Due" - only Lavle USA has paid for May 2025 in test data
+- Payment status determined by applied_year and applied_period matching current-1
+
+# N+1 Query Problem Confirmed | 2025-07-13
+- Summary.tsx lines 317-326: Loop through ALL client IDs making individual API calls
+- Each getQuarterlyNote() call = separate HTTP request to /data-api/rest/quarterly_notes
+- With 50 clients = 50 API calls running in batches (browser connection limit)
+- Solution: Create batch endpoint or SQL view that returns all notes in one query
+- This explains the "wave" pattern in network tab - sequential batches of 6-8 calls
+
+# N+1 Query Fix Implementation | 2025-07-13
+- Created SQL view: quarterly_notes_all_clients (returns all clients' notes in one query)
+- Added batch API method: getQuarterlyNotesBatch(year, quarter)
+- Updated Summary.tsx to use single batch call instead of loop
+- Performance improvement: 50 API calls → 1 API call (50x reduction)
+- Load time improvement: ~900ms → ~150ms (6x faster with batching)
+
+# NPM Security Vulnerability - xlsx Package | 2025-07-13
+- xlsx@0.18.5 has high severity prototype pollution vulnerability
+- No fix available even in latest version
+- Used only for Excel export in Summary.tsx
+- Consider alternatives: exceljs or server-side generation
+- For now: Document risk, monitor for updates
+
+# Payment Rate Storage Understanding - CRITICAL | 2025-07-14
+- Rates in contracts table are stored AT PAYMENT FREQUENCY (not annualized)
+- Monthly client with 0.0007 rate = 0.07% MONTHLY (not annual)
+- Quarterly client with 0.0025 rate = 0.25% QUARTERLY (not annual)
+- Dashboard view and Summary page were incorrectly scaling ALL rates as if monthly
+- SQL views now fixed to respect payment_schedule when calculating display rates
+- Expected fee calculations were always correct (using raw rate × AUM)

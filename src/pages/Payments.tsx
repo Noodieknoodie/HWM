@@ -47,14 +47,14 @@ const Payments: React.FC = () => {
             <div>
               <div>
                 {selectedClient.full_name && (
-                  <div className="text-sm text-dark-400 mb-1 uppercase tracking-wider">
+                  <div className="text-sm text-gray-600 mb-1 uppercase tracking-wider">
                     {selectedClient.full_name}
                   </div>
                 )}
-                <h1 className="text-3xl font-bold text-dark-700">
+                <h1 className="text-2xl font-bold text-gray-900">
                   {selectedClient.display_name}
                 </h1>
-                <div className="h-1 w-full mt-2 bg-gradient-to-r from-primary-600 to-primary-200 rounded-full"></div>
+                <div className="h-1 w-full mt-2 bg-gradient-to-r from-blue-600 to-blue-200 rounded-full"></div>
               </div>
             </div>
             <button
@@ -62,8 +62,8 @@ const Payments: React.FC = () => {
               className={`
                 flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-sm transition-all duration-200
                 ${documentViewerOpen
-                  ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
-                  : 'bg-white border border-light-400 text-dark-600 hover:bg-light-200 hover:border-primary-400'}
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                  : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-blue-400'}
               `}
             >
               <svg
@@ -76,7 +76,7 @@ const Payments: React.FC = () => {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className={documentViewerOpen ? 'text-white' : 'text-primary-500'}
+                className={documentViewerOpen ? 'text-white' : 'text-blue-500'}
               >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>

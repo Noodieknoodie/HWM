@@ -136,7 +136,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="contact_name"
                     value={formData.contact_name}
                     onChange={(e) => handleChange('contact_name', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.contact_name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     disabled={saving}
@@ -154,7 +154,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="contact_type"
                     value={formData.contact_type}
                     onChange={(e) => handleChange('contact_type', e.target.value as Contact['contact_type'])}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={saving}
                   >
                     <option value="Primary">Primary</option>
@@ -172,7 +172,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.phone ? 'border-red-500' : 'border-gray-300'
                     }`}
                     disabled={saving}
@@ -191,7 +191,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="email"
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
                     disabled={saving}
@@ -210,7 +210,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="fax"
                     value={formData.fax}
                     onChange={(e) => handleChange('fax', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={saving}
                   />
                 </div>
@@ -224,7 +224,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="physical_address"
                     value={formData.physical_address}
                     onChange={(e) => handleChange('physical_address', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.physical_address ? 'border-red-500' : 'border-gray-300'
                     }`}
                     disabled={saving}
@@ -243,7 +243,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="mailing_address"
                     value={formData.mailing_address}
                     onChange={(e) => handleChange('mailing_address', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Leave blank if same as physical address"
                     disabled={saving}
                   />
@@ -255,14 +255,14 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   disabled={saving}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={saving}
                 >
                   {saving ? 'Saving...' : (contact ? 'Update' : 'Add')} Contact

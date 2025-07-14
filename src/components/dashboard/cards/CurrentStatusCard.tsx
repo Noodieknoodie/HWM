@@ -3,14 +3,13 @@ import React from 'react';
 import { DashboardViewData } from '../../../hooks/useClientDashboard';
 import { formatCurrency, formatDateMMDDYY } from '../../../utils/formatters';
 import { GridAlignedCard } from './GridAlignedCard';
-import { StatusDisplay } from './StatusDisplay';
 
 interface CurrentStatusCardProps {
   dashboardData: DashboardViewData;
 }
 
 export const CurrentStatusCard: React.FC<CurrentStatusCardProps> = ({ dashboardData }) => {
-  const status = dashboardData.payment_status === 'Paid' ? 'Paid' : 'Payment Due';
+  const isPaid = dashboardData.payment_status === 'Paid';
   
   const details = [
     { 
@@ -30,11 +29,15 @@ export const CurrentStatusCard: React.FC<CurrentStatusCardProps> = ({ dashboardD
   return (
     <GridAlignedCard
       title="Current Status"
-      mainValueLabel={dashboardData.current_period_display || ''}
       mainValue={
-        <StatusDisplay 
-          status={status} 
-        />
+        <div>
+          <p className="text-xl font-bold text-gray-800 break-words leading-tight">
+            {dashboardData.current_period_display || '--'}
+          </p>
+          {!isPaid && (
+            <p className="text-sm text-gray-500 mt-1">Awaiting Entry</p>
+          )}
+        </div>
       }
       details={details}
     />

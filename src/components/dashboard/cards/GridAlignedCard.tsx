@@ -17,7 +17,7 @@ export const GridAlignedCard: React.FC<GridAlignedCardProps> = ({
   action 
 }) => {
   return (
-    <div className="bg-white rounded-lg p-5 border border-gray-200 flex flex-col h-full">
+    <div className="bg-white rounded-lg p-6 border border-gray-200 flex flex-col h-full">
       <h3 className="font-semibold text-sm mb-3 text-gray-600">{title}</h3>
       <div className="min-h-[4rem] flex flex-col justify-center border-b pb-3 mb-3">
         {mainValueLabel && <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{mainValueLabel}</p>}

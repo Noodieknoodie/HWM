@@ -40,7 +40,14 @@
       "mcp__azure-mcp-server__azmcp-sql-server-entraadmin-list",
       "Bash(git push:*)",
       "Bash(swa start:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "mcp__MSSQL_MCP__list_table",
+      "mcp__MSSQL_MCP__describe_table",
+      "mcp__MSSQL_MCP__read_data",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(npm audit:*)",
+      "mcp__MSSQL_MCP__insert_data"
     ],
     "deny": []
   }

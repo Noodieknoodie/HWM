@@ -251,6 +251,40 @@ class DatabaseSchemaExtractor:
             self.schema_text.append(definition.strip())
             self.schema_text.append("GO")
             
+    def _find_date_column(self, schema_name, table_name):
+        """Find potential date columns in table"""
+        cursor = self.conn.cursor()
+        
+        # Common date column patterns
+        date_patterns = [
+            'date', 'created', 'modified', 'updated', 'timestamp', 
+            'datetime', 'period', 'effective', 'transaction'
+        ]
+        
+        cursor.execute(f"""
+            SELECT c.name, t.name as data_type
+            FROM sys.columns c
+            INNER JOIN sys.types t ON c.user_type_id = t.user_type_id
+            WHERE c.object_id = OBJECT_ID('{schema_name}.{table_name}')
+            AND t.name IN ('date', 'datetime', 'datetime2', 'smalldatetime')
+            ORDER BY c.column_id
+        """)
+        
+        date_columns = cursor.fetchall()
+        
+        if not date_columns:
+            return None
+            
+        # Prioritize columns with common date patterns
+        for col_name, data_type in date_columns:
+            col_lower = col_name.lower()
+            for pattern in date_patterns:
+                if pattern in col_lower:
+                    return col_name
+                    
+        # Just return the first date column if no pattern matches
+        return date_columns[0][0]
+            
     def _extract_table_sample_data(self, schema_name, table_name):
         cursor = self.conn.cursor()
         try:
@@ -263,12 +297,45 @@ class DatabaseSchemaExtractor:
             """)
             columns = [row[0] for row in cursor.fetchall()]
             
-            # Get sample data - just 3 rows
-            cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{table_name}]")
-            rows = cursor.fetchall()
+            # Check for date column
+            date_col = self._find_date_column(schema_name, table_name)
+            
+            if date_col:
+                # Try to get data from end of 2024
+                try:
+                    cursor.execute(f"""
+                        SELECT TOP 3 * 
+                        FROM [{schema_name}].[{table_name}]
+                        WHERE [{date_col}] >= '2024-10-01' 
+                        AND [{date_col}] < '2025-01-01'
+                        ORDER BY [{date_col}] DESC
+                    """)
+                    rows = cursor.fetchall()
+                    
+                    if not rows:
+                        # If no 2024 data, try any historical data
+                        cursor.execute(f"""
+                            SELECT TOP 3 * 
+                            FROM [{schema_name}].[{table_name}]
+                            WHERE [{date_col}] < '2025-01-01'
+                            ORDER BY [{date_col}] DESC
+                        """)
+                        rows = cursor.fetchall()
+                        
+                except:
+                    # Fall back to regular TOP 3
+                    cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{table_name}]")
+                    rows = cursor.fetchall()
+            else:
+                # No date column, use regular TOP 3
+                cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{table_name}]")
+                rows = cursor.fetchall()
             
             if rows:
-                self.schema_text.append(f"-- Sample data (3 rows):")
+                if date_col:
+                    self.schema_text.append(f"-- Sample data (3 rows from end of 2024 or latest available):")
+                else:
+                    self.schema_text.append(f"-- Sample data (3 rows):")
                 self.schema_text.append(f"-- {' | '.join(columns)}")
                 for row in rows:
                     values = []
@@ -286,16 +353,59 @@ class DatabaseSchemaExtractor:
     def _extract_view_sample_data(self, schema_name, view_name):
         cursor = self.conn.cursor()
         try:
-            # Get column names
-            cursor.execute(f"SELECT TOP 1 * FROM [{schema_name}].[{view_name}]")
+            # Get column names and check for date columns
+            cursor.execute(f"SELECT TOP 0 * FROM [{schema_name}].[{view_name}]")
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
             
-            # Get sample data - just 3 rows
-            cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{view_name}]")
-            rows = cursor.fetchall()
+            # Find date-like column
+            date_col = None
+            date_patterns = ['date', 'created', 'modified', 'updated', 'timestamp', 'datetime', 'period', 'effective', 'transaction']
+            
+            for col in columns:
+                col_lower = col.lower()
+                for pattern in date_patterns:
+                    if pattern in col_lower:
+                        date_col = col
+                        break
+                if date_col:
+                    break
+            
+            if date_col:
+                # Try to get data from end of 2024
+                try:
+                    cursor.execute(f"""
+                        SELECT TOP 3 * 
+                        FROM [{schema_name}].[{view_name}]
+                        WHERE [{date_col}] >= '2024-10-01' 
+                        AND [{date_col}] < '2025-01-01'
+                        ORDER BY [{date_col}] DESC
+                    """)
+                    rows = cursor.fetchall()
+                    
+                    if not rows:
+                        # If no 2024 data, try any historical data
+                        cursor.execute(f"""
+                            SELECT TOP 3 * 
+                            FROM [{schema_name}].[{view_name}]
+                            WHERE [{date_col}] < '2025-01-01'
+                            ORDER BY [{date_col}] DESC
+                        """)
+                        rows = cursor.fetchall()
+                        
+                except:
+                    # Fall back to regular TOP 3
+                    cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{view_name}]")
+                    rows = cursor.fetchall()
+            else:
+                # No date column, use regular TOP 3
+                cursor.execute(f"SELECT TOP 3 * FROM [{schema_name}].[{view_name}]")
+                rows = cursor.fetchall()
             
             if rows:
-                self.schema_text.append(f"-- Sample data (3 rows):")
+                if date_col:
+                    self.schema_text.append(f"-- Sample data (3 rows from end of 2024 or latest available):")
+                else:
+                    self.schema_text.append(f"-- Sample data (3 rows):")
                 self.schema_text.append(f"-- {' | '.join(columns)}")
                 
                 for row in rows:

@@ -35,14 +35,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     return formatPeriodDisplay(payment.applied_period, payment.applied_year, payment.applied_period_type as 'monthly' | 'quarterly');
   };
   
-  const getVarianceColor = (status: string | undefined) => {
-    switch (status) {
-      case 'exact': return 'text-blue-600';
-      case 'acceptable': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'alert': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
+  const shouldShowVarianceIndicator = (variancePercent: number | null | undefined) => {
+    return variancePercent !== null && variancePercent !== undefined && Math.abs(variancePercent) > 10;
   };
   
   const handleDelete = async (paymentId: number) => {
@@ -174,12 +168,15 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     {payment.variance_amount !== undefined && payment.variance_amount !== null ? (
-                      <span className={getVarianceColor(payment.variance_status)}>
+                      <span className="text-gray-900">
                         {formatCurrency(payment.variance_amount)}
                         {payment.variance_percent !== undefined && payment.variance_percent !== null && (
                           <span className="text-xs ml-1">
                             ({payment.variance_percent.toFixed(1)}%)
                           </span>
+                        )}
+                        {shouldShowVarianceIndicator(payment.variance_percent) && (
+                          <span className="text-amber-500 ml-1">•</span>
                         )}
                       </span>
                     ) : (

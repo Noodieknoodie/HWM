@@ -4,9 +4,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { 
   ChevronRight, 
   ChevronDown, 
-  Check, 
-  AlertTriangle, 
-  AlertCircle, 
   Square, 
   CheckSquare,
   Download,
@@ -74,38 +71,8 @@ interface ProviderGroup {
 }
 
 
-interface DashboardClient {
-  client_id: number;
-  display_name: string;
-  payment_schedule: string;
-  fee_type: string;
-  monthly_rate: number | null;
-  quarterly_rate: number | null;
-  annual_rate: number | null;
-}
+// Removed DashboardClient interface - using data from quarterly summary instead
 
-interface YearlySummaryData {
-  provider_name: string;
-  client_id: number;
-  display_name: string;
-  payment_schedule: string;
-  fee_type: string;
-  year: number;
-  annual_expected: number | null;
-  annual_actual: number;
-  q1_actual: number;
-  q2_actual: number;
-  q3_actual: number;
-  q4_actual: number;
-  q1_payments: number;
-  q2_payments: number;
-  q3_payments: number;
-  q4_payments: number;
-  total_payments: number;
-  variance: number | null;
-  variance_percent: number | null;
-  variance_status: string | null;
-}
 
 const Summary: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -144,7 +111,7 @@ const Summary: React.FC = () => {
   const [paymentDetails, setPaymentDetails] = useState<Map<number, QuarterlySummaryDetail[]>>(new Map());
   const [clientNotes, setClientNotes] = useState<Map<string, string>>(new Map());
   const [editingNote, setEditingNote] = useState<{ clientId: number; note: string } | null>(null);
-  const [dashboardData, setDashboardData] = useState<Map<number, DashboardClient>>(new Map());
+  // Removed dashboardData state - rates are already in quarterly summary data
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [rawQuarterlyData, setRawQuarterlyData] = useState<QuarterlySummaryData[]>([]);
 
@@ -187,31 +154,7 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Load dashboard data for rate information
-  const loadDashboardData = async (clientIds: number[]) => {
-    const dashboardMap = new Map<number, DashboardClient>();
-    
-    for (const clientId of clientIds) {
-      try {
-        const data = await dataApiClient.getDashboardData(clientId);
-        if (data) {
-          dashboardMap.set(clientId, {
-            client_id: data.client_id,
-            display_name: data.display_name,
-            payment_schedule: data.payment_schedule,
-            fee_type: data.fee_type,
-            monthly_rate: data.monthly_rate,
-            quarterly_rate: data.quarterly_rate,
-            annual_rate: data.annual_rate
-          });
-        }
-      } catch (err) {
-        console.error(`Failed to load dashboard data for client ${clientId}:`, err);
-      }
-    }
-    
-    setDashboardData(dashboardMap);
-  };
+  // Removed loadDashboardData - rates are already in quarterly summary data
 
   // Load data
   const loadData = useCallback(async () => {
@@ -267,9 +210,7 @@ const Summary: React.FC = () => {
       // Store raw data for export
       setRawQuarterlyData(data);
 
-      // Get unique client IDs and load dashboard data
-      const clientIds = [...new Set(data.map(d => d.client_id))];
-      await loadDashboardData(clientIds);
+      // Removed dashboard data loading - rates are already in quarterly summary data
 
       // Group by provider
       const groupedData = data.reduce((acc, item) => {
@@ -301,15 +242,15 @@ const Summary: React.FC = () => {
         return acc;
       }, [] as ProviderGroup[]);
 
-      // For annual view, calculate expected totals using annual rates from dashboard data
+      // For annual view, calculate expected totals
       if (viewMode === 'annual') {
         groupedData.forEach(provider => {
           provider.clients.forEach(client => {
-            const dashboardClient = dashboardData.get(client.client_id);
-            if (dashboardClient && dashboardClient.annual_rate !== null) {
-              client.expected_total = dashboardClient.annual_rate;
-            } else {
-              // Fallback: use sum of quarterly values if annual rate not available
+            // Calculate annual expected from rate data in the summary
+            if (client.fee_type === 'flat' && client.flat_rate) {
+              client.expected_total = client.flat_rate * 12;
+            } else if (client.fee_type === 'percentage' && client.percent_rate) {
+              // For percentage, we need to sum quarterly expected totals
               client.expected_total = data
                 .filter(d => d.client_id === client.client_id)
                 .reduce((sum, d) => sum + (d.expected_total || 0), 0);
@@ -335,19 +276,25 @@ const Summary: React.FC = () => {
       
       setProviderGroups(groupedData);
 
-      // Load notes for quarterly view
+      // Load notes for quarterly view - FIXED N+1 QUERY PROBLEM
       if (viewMode === 'quarterly') {
         const notesMap = new Map<string, string>();
         
-        for (const clientId of clientIds) {
-          try {
-            const notes = await dataApiClient.getQuarterlyNote(clientId, currentYear, currentQuarter) as Array<{notes: string}>;
-            if (notes && notes.length > 0 && notes[0].notes) {
-              notesMap.set(`${clientId}-${currentYear}-${currentQuarter}`, notes[0].notes);
+        try {
+          // Single batch call instead of N individual calls
+          const allNotes = await dataApiClient.getQuarterlyNotesBatch(currentYear, currentQuarter) as Array<{
+            client_id: number;
+            notes: string | null;
+          }>;
+          
+          // Process all notes at once
+          allNotes.forEach(note => {
+            if (note.notes) {
+              notesMap.set(`${note.client_id}-${currentYear}-${currentQuarter}`, note.notes);
             }
-          } catch (err) {
-            console.error(`Failed to load notes for client ${clientId}:`, err);
-          }
+          });
+        } catch (err) {
+          console.error('Failed to load quarterly notes batch:', err);
         }
         
         setClientNotes(notesMap);
@@ -411,26 +358,6 @@ const Summary: React.FC = () => {
     setExpandedClients(newExpanded);
   };
 
-  // Format payment detail line
-  const formatPaymentLine = (payment: QuarterlySummaryDetail) => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    const period = payment.applied_period_type === 'monthly' 
-      ? months[payment.applied_period - 1]
-      : `Q${payment.applied_period}`;
-      
-    // Handle missing payments
-    if (payment.payment_id === null) {
-      return `${period}: MISSING - Expected $${Math.round(payment.expected_fee || 0).toLocaleString()}`;
-    }
-    
-    const amount = Math.round(payment.actual_fee);
-    const date = payment.received_date ? new Date(payment.received_date).toLocaleDateString('en-US', 
-      { month: '2-digit', day: '2-digit' }
-    ) : '';
-    
-    return `${period}: $${amount.toLocaleString()} paid ${date} via ${payment.method || 'unknown'}`;
-  };
 
   // Update posted status
   const updatePostedStatus = async (paymentId: number, posted: boolean) => {
@@ -541,16 +468,8 @@ const Summary: React.FC = () => {
             Frequency: client.payment_schedule === 'monthly' ? 'Monthly' : 'Quarterly',
           };
           
-          // Get dashboard data for rate
-          const dashboardClient = dashboardData.get(client.client_id);
-          const rate = viewMode === 'quarterly' 
-            ? dashboardClient?.quarterly_rate 
-            : dashboardClient?.annual_rate;
-          
-          const rateDisplay = !dashboardClient ? '' :
-            dashboardClient.fee_type === 'percentage' 
-              ? (rate ? rate + '%' : '')
-              : (rate ? rate.toFixed(2) : '');
+          // Get rate display
+          const rateDisplay = formatRate(client);
           
           if (viewMode === 'quarterly') {
             clientRow['Quarterly Rate'] = rateDisplay;
@@ -622,38 +541,27 @@ const Summary: React.FC = () => {
 
   // Format rate display
   const formatRate = (client: QuarterlySummaryData) => {
-    const dashboardClient = dashboardData.get(client.client_id);
-    if (!dashboardClient) return '';
-    
-    const rate = viewMode === 'quarterly' 
-      ? dashboardClient.quarterly_rate 
-      : dashboardClient.annual_rate;
-    
-    if (!rate) return '';
-    
-    if (client.fee_type === 'percentage') {
-      return `${rate}%`;
-    } else {
+    if (client.fee_type === 'percentage' && client.percent_rate) {
+      // Convert decimal to percentage and multiply by period
+      const rate = viewMode === 'quarterly' 
+        ? client.percent_rate * 100 * 3  // 3 months for quarterly
+        : client.percent_rate * 100 * 12; // 12 months for annual
+      return `${rate.toFixed(4)}%`;
+    } else if (client.fee_type === 'flat' && client.flat_rate) {
+      const rate = viewMode === 'quarterly'
+        ? client.flat_rate * 3  // 3 months for quarterly
+        : client.flat_rate * 12; // 12 months for annual
       return `$${rate.toLocaleString()}`;
     }
+    return '';
   };
 
-  // Get variance icon based on variance_status
-  const getVarianceIcon = (varianceStatus: string | null) => {
-    if (!varianceStatus) return null;
-    
-    switch (varianceStatus) {
-      case 'acceptable':
-        return <Check className="inline w-4 h-4 text-green-600 ml-1" />;
-      case 'minor':
-        return <AlertTriangle className="inline w-4 h-4 text-amber-600 ml-1" />;
-      case 'major':
-        return <AlertCircle className="inline w-4 h-4 text-red-600 ml-1" />;
-      case 'no_payment':
-        return <AlertCircle className="inline w-4 h-4 text-red-600 ml-1" />;
-      default:
-        return null;
+  // Show amber dot for variance >10%
+  const getVarianceIndicator = (variancePercent: number | null | undefined) => {
+    if (variancePercent !== null && variancePercent !== undefined && Math.abs(variancePercent) > 10) {
+      return <span className="text-amber-500 ml-1">•</span>;
     }
+    return null;
   };
 
   // Calculate totals
@@ -667,7 +575,7 @@ const Summary: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="space-y-6">
         <div className="text-center py-12">
           <h2 className="text-xl font-medium text-gray-600">Loading summary data...</h2>
         </div>
@@ -676,7 +584,7 @@ const Summary: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {error && (
         <Alert variant="error" message={error} className="mb-4" />
       )}
@@ -685,6 +593,7 @@ const Summary: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">
           {viewMode === 'quarterly' ? 'Quarterly' : 'Annual'} Payment Summary
         </h1>
+        <div className="h-1 w-full mt-2 bg-gradient-to-r from-blue-600 to-blue-200 rounded-full"></div>
       </div>
 
       {/* Navigation Controls */}
@@ -948,14 +857,12 @@ const Summary: React.FC = () => {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              <span className="text-right">
+                              <span className="text-right text-gray-900">
                                 {client.variance !== null ? 
                                   `$${Math.round(client.variance).toLocaleString()}` : 
                                   '--'}
                               </span>
-                              <span className="w-5 flex-shrink-0">
-                                {getVarianceIcon(client.variance_status)}
-                              </span>
+                              {getVarianceIndicator(client.variance_percent)}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center text-sm">
@@ -968,7 +875,7 @@ const Summary: React.FC = () => {
                                 if (details && details.length > 0) {
                                   // Find a payment with actual payment_id (not missing)
                                   const actualPayment = details.find(d => d.payment_id !== null);
-                                  if (actualPayment) {
+                                  if (actualPayment && actualPayment.payment_id !== null) {
                                     updatePostedStatus(actualPayment.payment_id, !client.fully_posted);
                                   }
                                 }
@@ -1002,60 +909,24 @@ const Summary: React.FC = () => {
                         return (
                           <>
                             <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1">
-                                <span className="text-right">
-                                  ${Math.round(quarterlyTotals[1]).toLocaleString()}
-                                </span>
-                                <span className="w-5 flex-shrink-0">
-                                  {quarterlyPayments[1] > 0 ? (
-                                    <Check className="w-4 h-4 text-green-600" />
-                                  ) : (
-                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                  )}
-                                </span>
-                              </div>
+                              <span className={`text-right ${quarterlyPayments[1] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                                ${Math.round(quarterlyTotals[1]).toLocaleString()}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1">
-                                <span className="text-right">
-                                  ${Math.round(quarterlyTotals[2]).toLocaleString()}
-                                </span>
-                                <span className="w-5 flex-shrink-0">
-                                  {quarterlyPayments[2] > 0 ? (
-                                    <Check className="w-4 h-4 text-green-600" />
-                                  ) : (
-                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                  )}
-                                </span>
-                              </div>
+                              <span className={`text-right ${quarterlyPayments[2] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                                ${Math.round(quarterlyTotals[2]).toLocaleString()}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1">
-                                <span className="text-right">
-                                  ${Math.round(quarterlyTotals[3]).toLocaleString()}
-                                </span>
-                                <span className="w-5 flex-shrink-0">
-                                  {quarterlyPayments[3] > 0 ? (
-                                    <Check className="w-4 h-4 text-green-600" />
-                                  ) : (
-                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                  )}
-                                </span>
-                              </div>
+                              <span className={`text-right ${quarterlyPayments[3] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                                ${Math.round(quarterlyTotals[3]).toLocaleString()}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1">
-                                <span className="text-right">
-                                  ${Math.round(quarterlyTotals[4]).toLocaleString()}
-                                </span>
-                                <span className="w-5 flex-shrink-0">
-                                  {quarterlyPayments[4] > 0 ? (
-                                    <Check className="w-4 h-4 text-green-600" />
-                                  ) : (
-                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                  )}
-                                </span>
-                              </div>
+                              <span className={`text-right ${quarterlyPayments[4] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                                ${Math.round(quarterlyTotals[4]).toLocaleString()}
+                              </span>
                             </td>
                             <td className="px-4 py-3 text-right font-medium">
                               ${Math.round(client.actual_total).toLocaleString()}
@@ -1070,11 +941,26 @@ const Summary: React.FC = () => {
                       <tr>
                         <td colSpan={8} className="px-4 py-2 bg-gray-50">
                           <div className="pl-16 space-y-1 text-sm text-gray-600">
-                            {paymentDetails.get(client.client_id)?.map((payment, idx) => (
-                              <div key={idx}>
-                                └─ {formatPaymentLine(payment)}
-                              </div>
-                            ))}
+                            {paymentDetails.get(client.client_id)?.map((payment, idx) => {
+                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                              const period = payment.applied_period_type === 'monthly' 
+                                ? months[payment.applied_period - 1]
+                                : `Q${payment.applied_period}`;
+                              
+                              return (
+                                <div key={idx}>
+                                  └─ {period}: {payment.payment_id === null ? (
+                                    <span className="text-gray-400">
+                                      ${Math.round(payment.expected_fee || 0).toLocaleString()}
+                                    </span>
+                                  ) : (
+                                    <span>
+                                      ${Math.round(payment.actual_fee).toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                             {clientNotes.has(`${client.client_id}-${currentYear}-${currentQuarter}`) && (
                               <div className="mt-2">
                                 └─ Note: "{clientNotes.get(`${client.client_id}-${currentYear}-${currentQuarter}`)}"
