@@ -1,5 +1,11 @@
 # CLAUDE_JOURNAL.md
 
+# Database Refactoring: Frontend Logic Migration | 2025-07-14
+Description: Migrated complex frontend data processing to SQL views, fixing N+1 queries and rate bugs
+Reason: Performance issues and incorrect rate calculations required moving logic to database layer
+Files Touched: swa-db-connections/staticwebapp.database.config.json, src/api/client.ts, src/pages/Summary.tsx
+Result: Reduced Summary.tsx from ~1000 to ~968 lines, eliminated ~600 lines of data processing, fixed rate display bugs
+---
 # Test Suite Creation with Real Database Insights | 2025-07-13
 Description: Created comprehensive test suite based on actual Azure SQL data exploration
 Reason: Needed to understand business logic by querying real data before writing meaningful tests
