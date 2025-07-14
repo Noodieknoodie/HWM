@@ -167,6 +167,32 @@
           "actions": ["read", "create", "update"]
         }
       ]
+    },
+    "quarterly_page_data": {
+      "source": {
+        "object": "dbo.quarterly_page_data",
+        "type": "view",
+        "key-fields": ["client_id", "applied_year", "quarter", "provider_name"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "annual_page_data": {
+      "source": {
+        "object": "dbo.annual_page_data",
+        "type": "view",
+        "key-fields": ["client_id", "applied_year", "provider_name"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
     }
   }
 }

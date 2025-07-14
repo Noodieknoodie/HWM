@@ -9,32 +9,97 @@ import {
   Download,
   FileText,
   ChevronLeft,
-  FileSpreadsheet,
-  FileDown
+  FileSpreadsheet
 } from 'lucide-react';
 import { dataApiClient } from '@/api/client';
 import { Alert } from '@/components/Alert';
 
-interface QuarterlySummaryData {
+// Interfaces for the new page-ready views
+interface QuarterlyPageData {
+  // Provider-level fields
   provider_name: string;
+  provider_client_count: number;
+  provider_actual_total: number;
+  provider_expected_total: number;
+  provider_variance: number;
+  clients_posted: number;
+  total_clients: number;
+  provider_posted_display: string; // e.g., "2/3"
+  
+  // Client-level fields
   client_id: number;
   display_name: string;
   payment_schedule: string;
   fee_type: string;
   percent_rate: number | null;
   flat_rate: number | null;
+  quarterly_rate: number; // Pre-calculated rate for display
+  client_expected: number;
+  client_actual: number;
+  client_variance: number;
+  client_variance_percent: number | null;
+  variance_status: string;
+  payment_count: number;
+  expected_payment_count: number;
+  payment_status_display: string; // e.g., "2/3"
+  fully_posted: number;
+  has_notes: number;
+  quarterly_notes: string | null;
+  posted_count: number;
+  
+  // Period identifiers
   applied_year: number;
   quarter: number;
-  payment_count: number;
-  actual_total: number;
-  expected_total: number | null;
-  posted_count: number;
-  last_aum: number | null;
-  expected_payment_count: number;
-  variance: number | null;
-  variance_percent: number | null;
-  variance_status: string | null;
+  
+  row_type: 'client'; // Always 'client' for now
+}
+
+interface AnnualPageData {
+  // Provider-level fields
+  provider_name: string;
+  provider_client_count: number;
+  provider_q1_total: number;
+  provider_q2_total: number;
+  provider_q3_total: number;
+  provider_q4_total: number;
+  provider_annual_total: number;
+  
+  // Client-level fields
+  client_id: number;
+  display_name: string;
+  payment_schedule: string;
+  fee_type: string;
+  percent_rate: number | null;
+  flat_rate: number | null;
+  annual_rate: number; // Pre-calculated annual rate
+  q1_actual: number;
+  q2_actual: number;
+  q3_actual: number;
+  q4_actual: number;
+  q1_payments: number;
+  q2_payments: number;
+  q3_payments: number;
+  q4_payments: number;
+  client_annual_total: number;
+  client_annual_expected: number;
+  client_annual_variance: number;
+  client_annual_variance_percent: number | null;
   fully_posted: number;
+  total_payments: number;
+  total_expected_payments: number;
+  
+  // Period identifier
+  applied_year: number;
+  
+  row_type: 'client'; // Always 'client' for now
+}
+
+interface ProviderGroup<T> {
+  provider_name: string;
+  clients: T[];
+  isExpanded: boolean;
+  // Provider-level totals (from first client in group)
+  providerData?: T;
 }
 
 interface QuarterlySummaryDetail {
@@ -58,21 +123,6 @@ interface QuarterlySummaryDetail {
   posted_to_hwm: boolean;
   variance_status: string | null;
 }
-
-interface ProviderGroup {
-  provider_name: string;
-  clients: QuarterlySummaryData[];
-  total_expected: number;
-  total_actual: number;
-  total_variance: number;
-  posted_clients: number;
-  total_clients: number;
-  isExpanded: boolean;
-}
-
-
-// Removed DashboardClient interface - using data from quarterly summary instead
-
 
 const Summary: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,15 +156,12 @@ const Summary: React.FC = () => {
   const viewMode = searchParams.get('view') || 'quarterly';
   
   // Data state
-  const [providerGroups, setProviderGroups] = useState<ProviderGroup[]>([]);
+  const [quarterlyGroups, setQuarterlyGroups] = useState<ProviderGroup<QuarterlyPageData>[]>([]);
+  const [annualGroups, setAnnualGroups] = useState<ProviderGroup<AnnualPageData>[]>([]);
   const [expandedClients, setExpandedClients] = useState<Set<number>>(new Set());
   const [paymentDetails, setPaymentDetails] = useState<Map<number, QuarterlySummaryDetail[]>>(new Map());
-  const [clientNotes, setClientNotes] = useState<Map<string, string>>(new Map());
   const [editingNote, setEditingNote] = useState<{ clientId: number; note: string } | null>(null);
-  // Removed dashboardData state - rates are already in quarterly summary data
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [rawQuarterlyData, setRawQuarterlyData] = useState<QuarterlySummaryData[]>([]);
-
 
   // Navigation functions
   const navigateQuarter = (direction: 'prev' | 'next') => {
@@ -154,150 +201,54 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Removed loadDashboardData - rates are already in quarterly summary data
-
-  // Load data
+  // Load data using the new page-ready views
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
-      let data: QuarterlySummaryData[] = [];
-      
       if (viewMode === 'quarterly') {
-        data = await dataApiClient.getQuarterlySummaryByProvider(currentYear, currentQuarter) as QuarterlySummaryData[];
+        // Load quarterly data from the new view
+        const data = await dataApiClient.getQuarterlyPageData(currentYear, currentQuarter) as QuarterlyPageData[];
+        
+        // Group by provider (data comes flat, we need to group for display)
+        const grouped = data.reduce((acc, row) => {
+          let group = acc.find(g => g.provider_name === row.provider_name);
+          if (!group) {
+            group = {
+              provider_name: row.provider_name,
+              clients: [],
+              isExpanded: true,
+              providerData: row // Store first row as provider data
+            };
+            acc.push(group);
+          }
+          group.clients.push(row);
+          return acc;
+        }, [] as ProviderGroup<QuarterlyPageData>[]);
+        
+        setQuarterlyGroups(grouped);
       } else {
-        // For annual view, get all quarters
-        const allQuarters = await Promise.all([
-          dataApiClient.getQuarterlySummaryByProvider(currentYear, 1),
-          dataApiClient.getQuarterlySummaryByProvider(currentYear, 2),
-          dataApiClient.getQuarterlySummaryByProvider(currentYear, 3),
-          dataApiClient.getQuarterlySummaryByProvider(currentYear, 4)
-        ]);
-        data = (allQuarters as QuarterlySummaryData[][]).flat();
+        // Load annual data from the new view
+        const data = await dataApiClient.getAnnualPageData(currentYear) as AnnualPageData[];
         
-        // Remove duplicate entries for clients with no payments (they appear in each quarter query)
-        const seenNoPaymentClients = new Set<number>();
-        data = data.filter(item => {
-          if (item.applied_year === null && item.quarter === null) {
-            if (seenNoPaymentClients.has(item.client_id)) {
-              return false; // Skip duplicate
-            }
-            seenNoPaymentClients.add(item.client_id);
+        // Group by provider
+        const grouped = data.reduce((acc, row) => {
+          let group = acc.find(g => g.provider_name === row.provider_name);
+          if (!group) {
+            group = {
+              provider_name: row.provider_name,
+              clients: [],
+              isExpanded: true,
+              providerData: row // Store first row as provider data
+            };
+            acc.push(group);
           }
-          return true;
-        });
-      }
-      
-      // Process data to handle clients without payments (they have null year/quarter)
-      data = data.map(item => {
-        if (item.applied_year === null && item.quarter === null) {
-          // This is a client with no payments - set the year/quarter to current
-          return {
-            ...item,
-            applied_year: currentYear,
-            quarter: viewMode === 'quarterly' ? currentQuarter : 1,
-            payment_count: 0,
-            actual_total: 0,
-            posted_count: 0,
-            fully_posted: 0,
-            variance_status: 'no_payment'
-          };
-        }
-        return item;
-      });
-      
-      // Store raw data for export
-      setRawQuarterlyData(data);
-
-      // Removed dashboard data loading - rates are already in quarterly summary data
-
-      // Group by provider
-      const groupedData = data.reduce((acc, item) => {
-        const provider = acc.find(p => p.provider_name === item.provider_name);
-        if (provider) {
-          const existingClient = provider.clients.find(c => c.client_id === item.client_id);
-          if (existingClient && viewMode === 'annual') {
-            // For annual view, we need to aggregate quarterly data
-            existingClient.actual_total += item.actual_total;
-            existingClient.payment_count += item.payment_count;
-            existingClient.expected_payment_count += item.expected_payment_count;
-            existingClient.posted_count += item.posted_count;
-            existingClient.fully_posted = existingClient.payment_count === existingClient.posted_count ? 1 : 0;
-          } else if (!existingClient) {
-            provider.clients.push(item);
-          }
-        } else {
-          acc.push({
-            provider_name: item.provider_name,
-            clients: [item],
-            total_expected: 0,
-            total_actual: 0,
-            total_variance: 0,
-            posted_clients: 0,
-            total_clients: 0,
-            isExpanded: true
-          });
-        }
-        return acc;
-      }, [] as ProviderGroup[]);
-
-      // For annual view, calculate expected totals
-      if (viewMode === 'annual') {
-        groupedData.forEach(provider => {
-          provider.clients.forEach(client => {
-            // Calculate annual expected from rate data in the summary
-            if (client.fee_type === 'flat' && client.flat_rate) {
-              client.expected_total = client.flat_rate * 12;
-            } else if (client.fee_type === 'percentage' && client.percent_rate) {
-              // For percentage, we need to sum quarterly expected totals
-              client.expected_total = data
-                .filter(d => d.client_id === client.client_id)
-                .reduce((sum, d) => sum + (d.expected_total || 0), 0);
-            }
-            client.variance = client.actual_total - (client.expected_total || 0);
-            client.variance_percent = client.expected_total ? 
-              ((client.actual_total - client.expected_total) / client.expected_total * 100) : null;
-          });
-        });
-      }
-
-      // Calculate provider totals
-      groupedData.forEach(provider => {
-        provider.total_actual = provider.clients.reduce((sum, client) => sum + client.actual_total, 0);
-        provider.total_expected = provider.clients.reduce((sum, client) => sum + (client.expected_total || 0), 0);
-        provider.total_variance = provider.total_actual - provider.total_expected;
-        provider.posted_clients = provider.clients.filter(c => c.fully_posted).length;
-        provider.total_clients = provider.clients.length;
-      });
-
-      // Sort providers by name
-      groupedData.sort((a, b) => a.provider_name.localeCompare(b.provider_name));
-      
-      setProviderGroups(groupedData);
-
-      // Load notes for quarterly view - FIXED N+1 QUERY PROBLEM
-      if (viewMode === 'quarterly') {
-        const notesMap = new Map<string, string>();
+          group.clients.push(row);
+          return acc;
+        }, [] as ProviderGroup<AnnualPageData>[]);
         
-        try {
-          // Single batch call instead of N individual calls
-          const allNotes = await dataApiClient.getQuarterlyNotesBatch(currentYear, currentQuarter) as Array<{
-            client_id: number;
-            notes: string | null;
-          }>;
-          
-          // Process all notes at once
-          allNotes.forEach(note => {
-            if (note.notes) {
-              notesMap.set(`${note.client_id}-${currentYear}-${currentQuarter}`, note.notes);
-            }
-          });
-        } catch (err) {
-          console.error('Failed to load quarterly notes batch:', err);
-        }
-        
-        setClientNotes(notesMap);
+        setAnnualGroups(grouped);
       }
     } catch (err) {
       console.error('Failed to load summary data:', err);
@@ -328,11 +279,19 @@ const Summary: React.FC = () => {
 
   // Toggle provider expansion
   const toggleProvider = (providerName: string) => {
-    setProviderGroups(prev => prev.map(provider => 
-      provider.provider_name === providerName 
-        ? { ...provider, isExpanded: !provider.isExpanded }
-        : provider
-    ));
+    if (viewMode === 'quarterly') {
+      setQuarterlyGroups(prev => prev.map(provider => 
+        provider.provider_name === providerName 
+          ? { ...provider, isExpanded: !provider.isExpanded }
+          : provider
+      ));
+    } else {
+      setAnnualGroups(prev => prev.map(provider => 
+        provider.provider_name === providerName 
+          ? { ...provider, isExpanded: !provider.isExpanded }
+          : provider
+      ));
+    }
   };
 
   // Toggle client expansion
@@ -344,8 +303,8 @@ const Summary: React.FC = () => {
     } else {
       newExpanded.add(clientId);
       
-      // Load payment details if not already loaded
-      if (!paymentDetails.has(clientId)) {
+      // Load payment details if not already loaded (only for quarterly view)
+      if (viewMode === 'quarterly' && !paymentDetails.has(clientId)) {
         try {
           const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
           setPaymentDetails(prev => new Map(prev).set(clientId, details));
@@ -357,7 +316,6 @@ const Summary: React.FC = () => {
     
     setExpandedClients(newExpanded);
   };
-
 
   // Update posted status
   const updatePostedStatus = async (paymentId: number, posted: boolean) => {
@@ -381,11 +339,8 @@ const Summary: React.FC = () => {
         editingNote.note
       );
       
-      setClientNotes(prev => new Map(prev).set(
-        `${editingNote.clientId}-${currentYear}-${currentQuarter}`,
-        editingNote.note
-      ));
-      
+      // Reload data to get updated notes
+      await loadData();
       setEditingNote(null);
     } catch (err) {
       console.error('Failed to save note:', err);
@@ -414,7 +369,12 @@ const Summary: React.FC = () => {
         : ['Client', 'Frequency', 'Annual Rate', 'Q1 ' + currentYear, 'Q2 ' + currentYear, 'Q3 ' + currentYear, 'Q4 ' + currentYear, 'Total'];
       
       // Process provider groups
-      providerGroups.forEach(provider => {
+      const groups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;
+      
+      groups.forEach(provider => {
+        const providerData = provider.providerData;
+        if (!providerData) return;
+        
         // Provider row
         const providerRow: any = {
           Client: provider.provider_name.toUpperCase(),
@@ -422,41 +382,22 @@ const Summary: React.FC = () => {
         };
         
         if (viewMode === 'quarterly') {
+          const qData = providerData as QuarterlyPageData;
           providerRow['Quarterly Rate'] = '';
-          providerRow.Expected = provider.total_expected.toFixed(2);
-          providerRow.Actual = provider.total_actual.toFixed(2);
-          providerRow.Variance = provider.total_variance.toFixed(2);
-          providerRow.Status = `${provider.posted_clients}/${provider.total_clients}`;
-          providerRow.Posted = provider.posted_clients === provider.total_clients ? 'Y' : 'N';
+          providerRow.Expected = qData.provider_expected_total.toFixed(2);
+          providerRow.Actual = qData.provider_actual_total.toFixed(2);
+          providerRow.Variance = qData.provider_variance.toFixed(2);
+          providerRow.Status = qData.provider_posted_display;
+          providerRow.Posted = qData.clients_posted === qData.total_clients ? 'Y' : 'N';
           providerRow.Notes = '';
         } else {
+          const aData = providerData as AnnualPageData;
           providerRow['Annual Rate'] = '';
-          // For annual view, calculate quarterly totals from the original data
-          let q1Total = 0, q2Total = 0, q3Total = 0, q4Total = 0;
-          
-          // Get all quarterly data for this provider's clients
-          provider.clients.forEach(client => {
-            // We need to look back at the original data to get quarterly breakdown
-            const clientQuarterlyData = rawQuarterlyData.filter(d => 
-              d.client_id === client.client_id && 
-              d.provider_name === provider.provider_name
-            );
-            
-            clientQuarterlyData.forEach(qData => {
-              switch(qData.quarter) {
-                case 1: q1Total += qData.actual_total; break;
-                case 2: q2Total += qData.actual_total; break;
-                case 3: q3Total += qData.actual_total; break;
-                case 4: q4Total += qData.actual_total; break;
-              }
-            });
-          });
-          
-          providerRow['Q1 ' + currentYear] = q1Total.toFixed(2);
-          providerRow['Q2 ' + currentYear] = q2Total.toFixed(2);
-          providerRow['Q3 ' + currentYear] = q3Total.toFixed(2);
-          providerRow['Q4 ' + currentYear] = q4Total.toFixed(2);
-          providerRow.Total = provider.total_actual.toFixed(2);
+          providerRow['Q1 ' + currentYear] = aData.provider_q1_total.toFixed(2);
+          providerRow['Q2 ' + currentYear] = aData.provider_q2_total.toFixed(2);
+          providerRow['Q3 ' + currentYear] = aData.provider_q3_total.toFixed(2);
+          providerRow['Q4 ' + currentYear] = aData.provider_q4_total.toFixed(2);
+          providerRow.Total = aData.provider_annual_total.toFixed(2);
         }
         
         exportRows.push(providerRow);
@@ -468,40 +409,31 @@ const Summary: React.FC = () => {
             Frequency: client.payment_schedule === 'monthly' ? 'Monthly' : 'Quarterly',
           };
           
-          // Get rate display
-          const rateDisplay = formatRate(client);
-          
           if (viewMode === 'quarterly') {
+            const qClient = client as QuarterlyPageData;
+            const rateDisplay = qClient.fee_type === 'percentage' 
+              ? `${qClient.quarterly_rate}%`
+              : `$${qClient.quarterly_rate.toLocaleString()}`;
+            
             clientRow['Quarterly Rate'] = rateDisplay;
-            clientRow.Expected = client.expected_total?.toFixed(2) || '';
-            clientRow.Actual = client.actual_total.toFixed(2);
-            clientRow.Variance = client.variance?.toFixed(2) || '';
-            clientRow.Status = `${client.payment_count}/${client.expected_payment_count}`;
-            clientRow.Posted = client.fully_posted ? 'Y' : 'N';
-            clientRow.Notes = clientNotes.get(`${client.client_id}-${currentYear}-${currentQuarter}`) || '';
+            clientRow.Expected = qClient.client_expected.toFixed(2);
+            clientRow.Actual = qClient.client_actual.toFixed(2);
+            clientRow.Variance = qClient.client_variance.toFixed(2);
+            clientRow.Status = qClient.payment_status_display;
+            clientRow.Posted = qClient.fully_posted ? 'Y' : 'N';
+            clientRow.Notes = qClient.quarterly_notes || '';
           } else {
+            const aClient = client as AnnualPageData;
+            const rateDisplay = aClient.fee_type === 'percentage' 
+              ? `${aClient.annual_rate}%`
+              : `$${aClient.annual_rate.toLocaleString()}`;
+            
             clientRow['Annual Rate'] = rateDisplay;
-            // For annual view, get quarterly breakdown from raw data
-            const clientQuarterlyData = rawQuarterlyData.filter(d => 
-              d.client_id === client.client_id && 
-              d.provider_name === provider.provider_name
-            );
-            
-            let q1 = 0, q2 = 0, q3 = 0, q4 = 0;
-            clientQuarterlyData.forEach(qData => {
-              switch(qData.quarter) {
-                case 1: q1 = qData.actual_total; break;
-                case 2: q2 = qData.actual_total; break;
-                case 3: q3 = qData.actual_total; break;
-                case 4: q4 = qData.actual_total; break;
-              }
-            });
-            
-            clientRow['Q1 ' + currentYear] = q1.toFixed(2);
-            clientRow['Q2 ' + currentYear] = q2.toFixed(2);
-            clientRow['Q3 ' + currentYear] = q3.toFixed(2);
-            clientRow['Q4 ' + currentYear] = q4.toFixed(2);
-            clientRow.Total = client.actual_total.toFixed(2);
+            clientRow['Q1 ' + currentYear] = aClient.q1_actual.toFixed(2);
+            clientRow['Q2 ' + currentYear] = aClient.q2_actual.toFixed(2);
+            clientRow['Q3 ' + currentYear] = aClient.q3_actual.toFixed(2);
+            clientRow['Q4 ' + currentYear] = aClient.q4_actual.toFixed(2);
+            clientRow.Total = aClient.client_annual_total.toFixed(2);
           }
           
           exportRows.push(clientRow);
@@ -539,23 +471,6 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Format rate display
-  const formatRate = (client: QuarterlySummaryData) => {
-    if (client.fee_type === 'percentage' && client.percent_rate) {
-      // Convert decimal to percentage and multiply by period
-      const rate = viewMode === 'quarterly' 
-        ? client.percent_rate * 100 * 3  // 3 months for quarterly
-        : client.percent_rate * 100 * 12; // 12 months for annual
-      return `${rate.toFixed(4)}%`;
-    } else if (client.fee_type === 'flat' && client.flat_rate) {
-      const rate = viewMode === 'quarterly'
-        ? client.flat_rate * 3  // 3 months for quarterly
-        : client.flat_rate * 12; // 12 months for annual
-      return `$${rate.toLocaleString()}`;
-    }
-    return '';
-  };
-
   // Show amber dot for variance >10%
   const getVarianceIndicator = (variancePercent: number | null | undefined) => {
     if (variancePercent !== null && variancePercent !== undefined && Math.abs(variancePercent) > 10) {
@@ -565,11 +480,33 @@ const Summary: React.FC = () => {
   };
 
   // Calculate totals
-  const totals = providerGroups.reduce((acc, provider) => ({
-    expected: acc.expected + provider.total_expected,
-    actual: acc.actual + provider.total_actual,
-    variance: acc.variance + provider.total_variance
-  }), { expected: 0, actual: 0, variance: 0 });
+  const totals = (() => {
+    if (viewMode === 'quarterly') {
+      return quarterlyGroups.reduce((acc, provider) => {
+        const data = provider.providerData;
+        if (data) {
+          return {
+            expected: acc.expected + data.provider_expected_total,
+            actual: acc.actual + data.provider_actual_total,
+            variance: acc.variance + data.provider_variance
+          };
+        }
+        return acc;
+      }, { expected: 0, actual: 0, variance: 0 });
+    } else {
+      return annualGroups.reduce((acc, provider) => {
+        const data = provider.providerData;
+        if (data) {
+          return {
+            expected: acc.expected + provider.clients.reduce((sum, c) => sum + c.client_annual_expected, 0),
+            actual: acc.actual + data.provider_annual_total,
+            variance: acc.variance + provider.clients.reduce((sum, c) => sum + c.client_annual_variance, 0)
+          };
+        }
+        return acc;
+      }, { expected: 0, actual: 0, variance: 0 });
+    }
+  })();
 
   const collectionRate = totals.expected > 0 ? (totals.actual / totals.expected * 100) : 0;
 
@@ -582,6 +519,8 @@ const Summary: React.FC = () => {
       </div>
     );
   }
+
+  const providerGroups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;
 
   return (
     <div className="space-y-6">
@@ -597,77 +536,87 @@ const Summary: React.FC = () => {
       </div>
 
       {/* Navigation Controls */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex justify-between items-center bg-white rounded-lg shadow-sm p-4">
+        <div className="flex items-center space-x-4">
           {viewMode === 'quarterly' ? (
             <>
-              <button 
+              <button
                 onClick={() => navigateQuarter('prev')}
-                className="p-2 hover:bg-gray-100 rounded"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Previous quarter"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
-              <div className="text-lg font-medium">
+              <h2 className="text-lg font-semibold text-gray-800">
                 Q{currentQuarter} {currentYear}
-              </div>
-              <button 
+              </h2>
+              <button
                 onClick={() => navigateQuarter('next')}
-                className="p-2 hover:bg-gray-100 rounded"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Next quarter"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="h-5 w-5" />
               </button>
             </>
           ) : (
             <>
-              <button 
+              <button
                 onClick={() => navigateYear('prev')}
-                className="p-2 hover:bg-gray-100 rounded"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Previous year"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
-              <div className="text-lg font-medium">
-                {currentYear}
-              </div>
-              <button 
+              <h2 className="text-lg font-semibold text-gray-800">
+                {currentYear} Annual Summary
+              </h2>
+              <button
                 onClick={() => navigateYear('next')}
-                className="p-2 hover:bg-gray-100 rounded"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Next year"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="h-5 w-5" />
               </button>
             </>
           )}
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center space-x-4">
           <button
             onClick={toggleViewMode}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
           >
-            {viewMode === 'quarterly' ? 'Year View' : 'Quarter View'}
+            Switch to {viewMode === 'quarterly' ? 'Annual' : 'Quarterly'} View
           </button>
+          
           <div className="relative export-menu-container">
-            <button 
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowExportMenu(!showExportMenu);
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
             >
-              <Download className="w-4 h-4" />
-              Export
+              <Download className="h-4 w-4" />
+              <span>Export</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
             </button>
+            
             {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 <button
                   onClick={() => handleExport('csv')}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
                 >
-                  <FileDown className="w-4 h-4" />
-                  Download as CSV
+                  <FileText className="h-4 w-4" />
+                  <span>Export as CSV</span>
                 </button>
                 <button
                   onClick={() => handleExport('excel')}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  Download as Excel
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span>Export as Excel</span>
                 </button>
               </div>
             )}
@@ -675,337 +624,343 @@ const Summary: React.FC = () => {
         </div>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Total Expected</h3>
-          <p className="text-2xl font-bold text-gray-900">
-            ${totals.expected.toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Total Received</h3>
-          <p className="text-2xl font-bold text-gray-900">
-            ${totals.actual.toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-600 mb-1">Collection Rate</h3>
-          <p className="text-2xl font-bold text-gray-900">
-            {collectionRate.toFixed(1)}%
-          </p>
+      {/* Totals Card */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 text-white">
+        <div className="grid grid-cols-4 gap-4">
+          <div>
+            <p className="text-blue-100 text-sm font-medium">Expected Total</p>
+            <p className="text-2xl font-bold">${totals.expected.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-blue-100 text-sm font-medium">Actual Total</p>
+            <p className="text-2xl font-bold">${totals.actual.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-blue-100 text-sm font-medium">Variance</p>
+            <p className="text-2xl font-bold">
+              ${Math.abs(totals.variance).toLocaleString()}
+              {totals.variance < 0 && <span className="text-red-300 text-lg ml-1">↓</span>}
+            </p>
+          </div>
+          <div>
+            <p className="text-blue-100 text-sm font-medium">Collection Rate</p>
+            <p className="text-2xl font-bold">{collectionRate.toFixed(1)}%</p>
+          </div>
         </div>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <table className="w-full">
-          <thead className="border-b border-gray-200">
-            <tr className="text-left text-sm font-medium text-gray-600">
-              <th className="px-4 py-3" style={{ width: '300px' }}>Provider / Client</th>
-              <th className="px-4 py-3" style={{ width: '100px' }}>Frequency</th>
-              <th className="px-4 py-3" style={{ width: '120px' }}>
-                {viewMode === 'quarterly' ? 'Quarterly Rate' : 'Annual Rate'}
-              </th>
-              {viewMode === 'quarterly' ? (
-                <>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Expected</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Actual</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Variance</th>
-                  <th className="px-4 py-3 text-center" style={{ width: '80px' }}>Status</th>
-                  <th className="px-4 py-3 text-center" style={{ width: '80px' }}>Posted</th>
-                </>
-              ) : (
-                <>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Q1 2025</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Q2 2025</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Q3 2025</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Q4 2025</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px' }}>Total</th>
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {providerGroups.map((provider) => (
-              <React.Fragment key={provider.provider_name}>
-                {/* Provider Row */}
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    <button
-                      onClick={() => toggleProvider(provider.provider_name)}
-                      className="flex items-center gap-2 hover:text-blue-600"
+      {/* Provider Groups */}
+      <div className="space-y-4">
+        {providerGroups.map(provider => (
+          <div key={provider.provider_name} className="bg-white rounded-lg shadow">
+            {/* Provider Header */}
+            <div
+              className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer border-b"
+              onClick={() => toggleProvider(provider.provider_name)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {provider.isExpanded ? (
+                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-gray-500" />
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {provider.provider_name}
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    ({provider.clients.length} {provider.clients.length === 1 ? 'client' : 'clients'})
+                  </span>
+                </div>
+                
+                {viewMode === 'quarterly' && provider.providerData && (
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div>
+                      <span className="text-gray-600">Expected:</span>
+                      <span className="ml-2 font-semibold">
+                        ${(provider.providerData as QuarterlyPageData).provider_expected_total.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Actual:</span>
+                      <span className="ml-2 font-semibold">
+                        ${(provider.providerData as QuarterlyPageData).provider_actual_total.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Posted:</span>
+                      <span className="ml-2 font-semibold">
+                        {(provider.providerData as QuarterlyPageData).provider_posted_display}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {viewMode === 'annual' && provider.providerData && (
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div>
+                      <span className="text-gray-600">Annual Total:</span>
+                      <span className="ml-2 font-semibold">
+                        ${(provider.providerData as AnnualPageData).provider_annual_total.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Client List */}
+            {provider.isExpanded && (
+              <div className="divide-y divide-gray-200">
+                {provider.clients.map(client => (
+                  <div key={client.client_id} className="hover:bg-gray-50 transition-colors">
+                    {/* Client Row */}
+                    <div
+                      className="p-4 cursor-pointer"
+                      onClick={() => viewMode === 'quarterly' && toggleClient(client.client_id)}
                     >
-                      {provider.isExpanded ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                      {provider.provider_name.toUpperCase()} ({provider.total_clients} clients)
-                    </button>
-                  </td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3"></td>
-                  {viewMode === 'quarterly' ? (
-                    <>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.total_expected).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.total_actual).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        ${Math.round(provider.total_variance).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3"></td>
-                      <td className="px-4 py-3 text-center">
-                        {provider.posted_clients}/{provider.total_clients} ☑
-                      </td>
-                    </>
-                  ) : (() => {
-                    // Calculate quarterly totals for provider from raw data
-                    const providerQuarterlyTotals: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-                    
-                    provider.clients.forEach(client => {
-                      const clientQuarterlyData = rawQuarterlyData.filter(d => 
-                        d.client_id === client.client_id && 
-                        d.provider_name === provider.provider_name
-                      );
-                      
-                      clientQuarterlyData.forEach(qData => {
-                        if (qData.quarter >= 1 && qData.quarter <= 4) {
-                          providerQuarterlyTotals[qData.quarter] += qData.actual_total;
-                        }
-                      });
-                    });
-                    
-                    return (
-                      <>
-                        <td className="px-4 py-3 text-right font-medium">
-                          ${Math.round(providerQuarterlyTotals[1]).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          ${Math.round(providerQuarterlyTotals[2]).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          ${Math.round(providerQuarterlyTotals[3]).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          ${Math.round(providerQuarterlyTotals[4]).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          ${Math.round(provider.total_actual).toLocaleString()}
-                        </td>
-                      </>
-                    );
-                  })()}
-                </tr>
-
-                {/* Client Rows */}
-                {provider.isExpanded && provider.clients.map((client) => (
-                  <React.Fragment key={client.client_id}>
-                    <tr className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-3 pl-10">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
                           {viewMode === 'quarterly' && (
-                            <button
-                              onClick={() => toggleClient(client.client_id)}
-                              className="p-1"
-                            >
-                              {expandedClients.has(client.client_id) ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4" />
-                              )}
-                            </button>
+                            expandedClients.has(client.client_id) ? (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                            )
                           )}
                           <Link
-                            to={`/Payments?client=${client.client_id}`}
-                            className="text-blue-600 hover:text-blue-800"
+                            to={`/client/${client.client_id}`}
+                            className="font-medium text-blue-600 hover:text-blue-800"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {client.display_name}
                           </Link>
-                          {viewMode === 'quarterly' && clientNotes.has(`${client.client_id}-${currentYear}-${currentQuarter}`) && (
-                            <button
-                              onClick={() => setEditingNote({ 
-                                clientId: client.client_id, 
-                                note: clientNotes.get(`${client.client_id}-${currentYear}-${currentQuarter}`) || '' 
-                              })}
-                              className="p-1 hover:bg-gray-200 rounded"
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {client.payment_schedule === 'monthly' ? 'Monthly' : 'Quarterly'}
+                          </span>
+                        </div>
+                        
+                        {viewMode === 'quarterly' ? (
+                          <div className="flex items-center space-x-6 text-sm">
+                            <div className="text-right">
+                              <p className="text-gray-600">Rate</p>
+                              <p className="font-semibold">
+                                {(client as QuarterlyPageData).fee_type === 'percentage' 
+                                  ? `${(client as QuarterlyPageData).quarterly_rate}%`
+                                  : `$${(client as QuarterlyPageData).quarterly_rate.toLocaleString()}`}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Expected</p>
+                              <p className="font-semibold">
+                                ${(client as QuarterlyPageData).client_expected.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Actual</p>
+                              <p className="font-semibold">
+                                ${(client as QuarterlyPageData).client_actual.toLocaleString()}
+                                {getVarianceIndicator((client as QuarterlyPageData).client_variance_percent)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Status</p>
+                              <p className="font-semibold">
+                                {(client as QuarterlyPageData).payment_status_display}
+                              </p>
+                            </div>
+                            <div className="flex items-center">
+                              {(client as QuarterlyPageData).fully_posted ? (
+                                <CheckSquare className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <Square className="h-5 w-5 text-gray-400" />
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-6 text-sm">
+                            <div className="text-right">
+                              <p className="text-gray-600">Rate</p>
+                              <p className="font-semibold">
+                                {(client as AnnualPageData).fee_type === 'percentage' 
+                                  ? `${(client as AnnualPageData).annual_rate}%`
+                                  : `$${(client as AnnualPageData).annual_rate.toLocaleString()}`}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Q1</p>
+                              <p className="font-semibold">
+                                ${(client as AnnualPageData).q1_actual.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Q2</p>
+                              <p className="font-semibold">
+                                ${(client as AnnualPageData).q2_actual.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Q3</p>
+                              <p className="font-semibold">
+                                ${(client as AnnualPageData).q3_actual.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Q4</p>
+                              <p className="font-semibold">
+                                ${(client as AnnualPageData).q4_actual.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600">Total</p>
+                              <p className="font-semibold">
+                                ${(client as AnnualPageData).client_annual_total.toLocaleString()}
+                                {getVarianceIndicator((client as AnnualPageData).client_annual_variance_percent)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Notes section for quarterly view */}
+                      {viewMode === 'quarterly' && (client as QuarterlyPageData).has_notes && (
+                        <div className="mt-3 ml-7">
+                          {editingNote?.clientId === client.client_id ? (
+                            <div className="flex items-start space-x-2">
+                              <textarea
+                                value={editingNote.note}
+                                onChange={(e) => setEditingNote({ ...editingNote, note: e.target.value })}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                rows={2}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  saveNote();
+                                }}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingNote(null);
+                                }}
+                                className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              className="text-sm text-gray-600 italic cursor-pointer hover:text-gray-800"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingNote({
+                                  clientId: client.client_id,
+                                  note: (client as QuarterlyPageData).quarterly_notes || ''
+                                });
+                              }}
                             >
-                              <FileText className="w-4 h-4 text-gray-600" />
+                              {(client as QuarterlyPageData).quarterly_notes || 'Click to add note...'}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Add note button for quarterly view without notes */}
+                      {viewMode === 'quarterly' && !(client as QuarterlyPageData).has_notes && (
+                        <div className="mt-3 ml-7">
+                          {editingNote?.clientId === client.client_id ? (
+                            <div className="flex items-start space-x-2">
+                              <textarea
+                                value={editingNote.note}
+                                onChange={(e) => setEditingNote({ ...editingNote, note: e.target.value })}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                rows={2}
+                                placeholder="Add a note..."
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  saveNote();
+                                }}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingNote(null);
+                                }}
+                                className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="text-sm text-gray-500 hover:text-gray-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingNote({ clientId: client.client_id, note: '' });
+                              }}
+                            >
+                              <FileText className="h-4 w-4 inline mr-1" />
+                              Add note
                             </button>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {client.payment_schedule === 'monthly' ? 'Monthly' : 'Quarterly'}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {formatRate(client)}
-                      </td>
-                      {viewMode === 'quarterly' ? (
-                        <>
-                          <td className="px-4 py-3 text-right">
-                            {client.expected_total ? 
-                              `$${Math.round(client.expected_total).toLocaleString()}` : 
-                              'Unknown'
-                            }
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            ${Math.round(client.actual_total).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-end gap-1">
-                              <span className="text-right text-gray-900">
-                                {client.variance !== null ? 
-                                  `$${Math.round(client.variance).toLocaleString()}` : 
-                                  '--'}
-                              </span>
-                              {getVarianceIndicator(client.variance_percent)}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm">
-                            {client.payment_count}/{client.expected_payment_count}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => {
-                                const details = paymentDetails.get(client.client_id);
-                                if (details && details.length > 0) {
-                                  // Find a payment with actual payment_id (not missing)
-                                  const actualPayment = details.find(d => d.payment_id !== null);
-                                  if (actualPayment && actualPayment.payment_id !== null) {
-                                    updatePostedStatus(actualPayment.payment_id, !client.fully_posted);
-                                  }
-                                }
-                              }}
-                            >
-                              {client.fully_posted ? (
-                                <CheckSquare className="w-5 h-5 text-green-600" />
-                              ) : (
-                                <Square className="w-5 h-5 text-gray-400" />
-                              )}
-                            </button>
-                          </td>
-                        </>
-                      ) : (() => {
-                        // For annual view, get quarterly breakdown from raw data
-                        const clientQuarterlyData = rawQuarterlyData.filter(d => 
-                          d.client_id === client.client_id && 
-                          d.provider_name === provider.provider_name
-                        );
-                        
-                        const quarterlyTotals: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-                        const quarterlyPayments: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-                        
-                        clientQuarterlyData.forEach(qData => {
-                          if (qData.quarter >= 1 && qData.quarter <= 4) {
-                            quarterlyTotals[qData.quarter] = qData.actual_total;
-                            quarterlyPayments[qData.quarter] = qData.payment_count;
-                          }
-                        });
-                        
-                        return (
-                          <>
-                            <td className="px-4 py-3">
-                              <span className={`text-right ${quarterlyPayments[1] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
-                                ${Math.round(quarterlyTotals[1]).toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`text-right ${quarterlyPayments[2] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
-                                ${Math.round(quarterlyTotals[2]).toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`text-right ${quarterlyPayments[3] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
-                                ${Math.round(quarterlyTotals[3]).toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`text-right ${quarterlyPayments[4] > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
-                                ${Math.round(quarterlyTotals[4]).toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right font-medium">
-                              ${Math.round(client.actual_total).toLocaleString()}
-                            </td>
-                          </>
-                        );
-                      })()}
-                    </tr>
-
+                      )}
+                    </div>
+                    
                     {/* Payment Details (Quarterly View Only) */}
-                    {viewMode === 'quarterly' && expandedClients.has(client.client_id) && paymentDetails.has(client.client_id) && (
-                      <tr>
-                        <td colSpan={8} className="px-4 py-2 bg-gray-50">
-                          <div className="pl-16 space-y-1 text-sm text-gray-600">
-                            {paymentDetails.get(client.client_id)?.map((payment, idx) => {
-                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                              const period = payment.applied_period_type === 'monthly' 
-                                ? months[payment.applied_period - 1]
-                                : `Q${payment.applied_period}`;
-                              
-                              return (
-                                <div key={idx}>
-                                  └─ {period}: {payment.payment_id === null ? (
-                                    <span className="text-gray-400">
-                                      ${Math.round(payment.expected_fee || 0).toLocaleString()}
-                                    </span>
+                    {viewMode === 'quarterly' && expandedClients.has(client.client_id) && (
+                      <div className="bg-gray-50 px-4 pb-4">
+                        {paymentDetails.get(client.client_id)?.map((payment, idx) => (
+                          <div key={idx} className="ml-7 mt-2 p-3 bg-white rounded border border-gray-200">
+                            <div className="flex justify-between items-center text-sm">
+                              <div className="flex items-center space-x-4">
+                                <span className="text-gray-600">
+                                  {payment.payment_id ? (
+                                    <>
+                                      {new Date(payment.received_date!).toLocaleDateString()} - 
+                                      {payment.method} - ${payment.actual_fee.toLocaleString()}
+                                    </>
                                   ) : (
-                                    <span>
-                                      ${Math.round(payment.actual_fee).toLocaleString()}
-                                    </span>
+                                    <span className="text-red-600">Missing Payment</span>
                                   )}
-                                </div>
-                              );
-                            })}
-                            {clientNotes.has(`${client.client_id}-${currentYear}-${currentQuarter}`) && (
-                              <div className="mt-2">
-                                └─ Note: "{clientNotes.get(`${client.client_id}-${currentYear}-${currentQuarter}`)}"
+                                </span>
                               </div>
-                            )}
+                              {payment.payment_id && (
+                                <button
+                                  onClick={() => updatePostedStatus(payment.payment_id!, !payment.posted_to_hwm)}
+                                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
+                                >
+                                  {payment.posted_to_hwm ? (
+                                    <CheckSquare className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <Square className="h-4 w-4" />
+                                  )}
+                                  <span>Posted</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </td>
-                      </tr>
+                        ))}
+                      </div>
                     )}
-                  </React.Fragment>
+                  </div>
                 ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Note Edit Modal */}
-      {editingNote && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-medium mb-4">Edit Note</h3>
-            <textarea
-              className="w-full h-32 p-3 border border-gray-300 rounded-md"
-              value={editingNote.note}
-              onChange={(e) => setEditingNote({ ...editingNote, note: e.target.value })}
-              placeholder="Enter note..."
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setEditingNote(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveNote}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
