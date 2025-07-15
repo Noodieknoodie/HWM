@@ -193,6 +193,15 @@
           "actions": ["read"]
         }
       ]
+    },
+    "client_quarter_markers": {
+      "source": "dbo.client_quarter_markers",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read", "create", "update"]
+        }
+      ]
     }
   }
 }
