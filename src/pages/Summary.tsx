@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { dataApiClient } from '@/api/client';
 import { Alert } from '@/components/Alert';
+import { apiCache, cacheKeys } from '@/utils/cache';
 
 // Interfaces for the new page-ready views
 interface QuarterlyPageData {
@@ -324,10 +325,23 @@ const Summary: React.FC = () => {
       // Load payment details if not already loaded (only for quarterly view)
       if (viewMode === 'quarterly' && !paymentDetails.has(clientId)) {
         try {
-          console.log(`Loading payment details for client ${clientId}, year ${currentYear}, quarter ${currentQuarter}`);
-          const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
-          console.log(`Received ${details.length} payment details:`, details);
-          setPaymentDetails(prev => new Map(prev).set(clientId, details));
+          const cacheKey = cacheKeys.paymentDetails(clientId, currentYear, currentQuarter);
+          
+          // Check cache first
+          const cached = apiCache.get<QuarterlySummaryDetail[]>(cacheKey);
+          if (cached) {
+            console.log(`Using cached payment details for client ${clientId}`);
+            setPaymentDetails(prev => new Map(prev).set(clientId, cached));
+          } else {
+            console.log(`Loading payment details for client ${clientId}, year ${currentYear}, quarter ${currentQuarter}`);
+            const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
+            console.log(`Received ${details.length} payment details:`, details);
+            
+            // Cache for 5 minutes
+            apiCache.set(cacheKey, details, 5 * 60 * 1000);
+            
+            setPaymentDetails(prev => new Map(prev).set(clientId, details));
+          }
         } catch (err) {
           console.error(`Failed to load payment details for client ${clientId}:`, err);
         }
@@ -555,13 +569,6 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Show amber dot for variance >10%
-  const getVarianceIndicator = (variancePercent: number | null | undefined) => {
-    if (variancePercent !== null && variancePercent !== undefined && Math.abs(variancePercent) > 10) {
-      return <span className="text-amber-500 ml-1">•</span>;
-    }
-    return null;
-  };
 
   // Calculate totals
   const totals = (() => {
@@ -780,9 +787,9 @@ const Summary: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {(() => {
-                          const data = provider.providerData as QuarterlyPageData;
-                          const posted = data.clients_posted;
-                          const total = data.total_clients;
+                          // Calculate posted count from actual client is_posted values
+                          const posted = provider.clients.filter(c => (c as QuarterlyPageData).is_posted).length;
+                          const total = provider.clients.length;
                           const percentage = total > 0 ? (posted / total) * 100 : 0;
                           
                           // Show fraction with a visual indicator
@@ -904,7 +911,6 @@ const Summary: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             ${Math.round((client as QuarterlyPageData).client_actual).toLocaleString()}
-                            {getVarianceIndicator((client as QuarterlyPageData).client_variance_percent)}
                           </td>
                           <td className="px-4 py-3 text-right">
                             ${Math.round((client as QuarterlyPageData).client_variance).toLocaleString()}
@@ -937,7 +943,6 @@ const Summary: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-right font-medium">
                             ${Math.round((client as AnnualPageData).client_annual_total).toLocaleString()}
-                            {getVarianceIndicator((client as AnnualPageData).client_annual_variance_percent)}
                           </td>
                         </>
                       )}

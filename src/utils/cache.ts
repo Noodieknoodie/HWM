@@ -110,4 +110,6 @@ export const cacheKeys = {
     `quarterly_summary_${clientId}_${year}_${quarter}`,
   clients: () => 'clients_all',
   contacts: (clientId: number) => `contacts_${clientId}`,
+  paymentDetails: (clientId: number, year: number, quarter: number) => 
+    `payment_details_${clientId}_${year}_${quarter}`,
 };
