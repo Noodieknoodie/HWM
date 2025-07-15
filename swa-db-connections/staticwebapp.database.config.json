@@ -23,6 +23,19 @@
     }
   },
   "entities": {
+    "comprehensive_payment_summary": {
+      "source": {
+        "object": "dbo.comprehensive_payment_summary",
+        "type": "view",
+        "key-fields": ["client_id", "year", "quarter", "period"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
     "clients": {
       "source": "dbo.clients",
       "permissions": [

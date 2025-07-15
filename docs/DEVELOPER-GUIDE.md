@@ -309,283 +309,94 @@ This means:
 **The views handle all rate calculations correctly based on payment_schedule!**
 
 ---
-
-## 🔄 KEY API ENDPOINTS
-
-```typescript
-// Sidebar - all clients with status
-GET /api/clients
-→ SELECT * FROM sidebar_clients_view ORDER BY display_name
-
-// Dashboard - everything for one client  
-GET /api/dashboard/{client_id}
-→ SELECT * FROM dashboard_view WHERE client_id = ?
-
-// Payment form - unpaid periods
-GET /api/periods?client_id={id}
-→ SELECT * FROM payment_form_periods_view 
-  WHERE client_id = ? AND is_paid = 0
-  ORDER BY year DESC, period DESC
-
-// Payment form - default values
-GET /api/payment-defaults/{client_id}  
-→ SELECT * FROM payment_form_defaults_view WHERE client_id = ?
-
-// Payment history
-GET /api/payments?client_id={id}
-→ SELECT * FROM payment_history_view 
-  WHERE client_id = ? 
-  ORDER BY received_date DESC
-
-// Create payment
-POST /api/payments
-{
-  contract_id: number,      // REQUIRED from dashboard_view
-  client_id: number,        
-  received_date: string,
-  actual_fee: number,
-  total_assets: number?,    // Optional for flat fee
-  expected_fee: number,     // Current calculation
-  method: string,
-  applied_period_type: string,
-  applied_period: number,
-  applied_year: number,
-  notes: string?
-}
-
-// Quarterly summary - COMPLETE DATA IN ONE QUERY
-GET /api/quarterly-page-data?year={year}&quarter={quarter}
-→ SELECT * FROM quarterly_page_data 
-  WHERE applied_year = ? AND quarter = ?
-  ORDER BY provider_name, display_name
-
-// Annual summary - COMPLETE DATA IN ONE QUERY  
-GET /api/annual-page-data?year={year}
-→ SELECT * FROM annual_page_data
-  WHERE applied_year = ?
-  ORDER BY provider_name, display_name
-
-// Quarterly notes update
-PUT /api/quarterly-notes/{client_id}/{year}/{quarter}
-→ UPDATE quarterly_notes SET notes = ?, last_updated = GETDATE(), updated_by = ?
-  WHERE client_id = ? AND year = ? AND quarter = ?
-
-// Update posted status for entire quarter
-PUT /api/payments/quarter-posted
-{
-  client_id: number,
-  year: number,
-  quarter: number,
-  posted: boolean
-}
-→ UPDATE payments 
-  SET posted_to_hwm = ?
-  WHERE client_id = ? 
-    AND applied_year = ?
-    AND applied_period IN (quarter months)
 ```
+# Retirement Plan Fee Tracking Database Schema
 
----
+## Core Business Model
+Financial advisory firm tracks quarterly/monthly fees from retirement plan providers (401k/403b). 
+Arrears billing model: Always billing for previous period.
 
-## 💡 BUSINESS LOGIC & DATA NOTES
+## Key Tables & Relationships
 
-### Dashboard View Magic
-The `dashboard_view` consolidates everything needed for the dashboard into one efficient query:
-- Client info + Contract details + Payment status + Contact info
-- AUM with source indicator (recorded vs estimated from payment)
-- Pre-calculated display values (current_period_display, formatted rates)
-- Expected fee for current period
-- Rates correctly calculated based on payment_schedule
+### clients (PK: client_id)
+- display_name, full_name, ima_signed_date
 
-### Expected Fee Calculation
-The `calculate_expected_fee` function uses intelligent 3-tier fallback:
-1. Try current period's AUM (if available)
-2. Fall back to most recent AUM from any prior payment
-3. Fall back to last payment amount (assumes stable AUM)
+### contracts (PK: contract_id, FK: client_id)
+- provider_name (e.g., 'John Hancock', 'Voya', 'Empower')
+- payment_schedule: 'monthly'|'quarterly'
+- fee_type: 'percentage'|'flat'
+- percent_rate (stored at payment frequency) | flat_rate
+- num_people (plan participants)
 
-This ensures percentage-based clients always have expected fees calculated, even when providers like Ascensus or Principal don't record AUM.
+### payments (PK: payment_id, FKs: contract_id, client_id)
+- received_date, total_assets (AUM), actual_fee
+- applied_year, applied_period, applied_period_type
+- posted_to_hwm (bool)
+- method, notes
 
-### Rate Display
-Database stores raw rates at payment frequency:
-- Monthly client: 0.0007 (0.07% monthly)
-- Quarterly client: 0.0025 (0.25% quarterly)
+### Supporting Tables
+- contacts (FK: client_id): contact_type='Primary', name, phone, addresses
+- payment_periods: period_type, year, period (1-12|1-4), dates
+- quarterly_notes (composite PK: client_id, year, quarter)
+- client_quarter_markers (composite PK: client_id, year, quarter): is_posted flag
 
-Views provide display-ready rates with proper scaling:
-- `monthly_rate`: Shows monthly equivalent for all clients
-- `quarterly_rate`: Shows quarterly equivalent for all clients  
-- `annual_rate`: Shows annual equivalent for all clients
-- Frontend just adds % symbol or formats as currency
+## Critical Business Logic
 
-### Billing in Arrears
-- Current date: July 2025
-- Monthly clients: Billing for June 2025
-- Quarterly clients: Billing for Q2 2025 (April-June)
-- The `current_period_display` field handles this automatically
+### Rate Storage Pattern
+Rates stored at payment frequency in contracts:
+- Monthly clients: rate is monthly (×12 for annual)
+- Quarterly clients: rate is quarterly (×4 for annual)
 
-### AUM Source Indicator
-- `aum_source = 'recorded'`: Actual AUM was entered
-- `aum_source = 'estimated'`: Calculated from payment ÷ rate
-- UI shows asterisk (*) for estimated values
-
-### Payment Status Logic
-Backend provides status in `sidebar_clients_view`:
-- `compliance_status = 'green'`: All caught up
-- `compliance_status = 'yellow'`: Payment due
-
-UI displays this subtly (gray dot or no indicator) rather than colored circles.
-
-### Period Selection
-`payment_form_periods_view` provides:
-- Only periods where client was active
-- Only unpaid periods (is_paid = 0)
-- Formatted display text (e.g., "June 2025" or "Q2 2025")
+### Expected Fee Calculation (calculate_expected_fee function)
+1. Flat: Simply return flat_rate
+2. Percentage: Try in order:
+   - AUM from specific period payment
+   - Most recent AUM before period
+   - Last payment amount as fallback
 
 ### Variance Thresholds
-Backend calculates variance_status but UI displays subtly:
-- All variance amounts shown as plain text
-- Amber dot (•) added only when variance exceeds 10%
-- No colored backgrounds or text
+- exact: <$0.01 difference
+- acceptable: ≤5%
+- warning: ≤15%
+- alert: >15%
 
-### Summary Page Efficiency
-The new views eliminate N+1 queries:
-- `quarterly_page_data`: Everything for quarterly view
-- `annual_page_data`: Everything for annual view
-- Notes included in main query
-- Provider aggregations pre-calculated
-- All clients shown (even with 0 payments)
+### Current Period Logic
+Arrears model means "current" = previous completed period:
+- Monthly: If Jan, then Dec prior year; else current month -1
+- Quarterly: If Q1, then Q4 prior year; else current quarter -1
 
----
+## Key View Patterns
 
-## 🚀 VIEW RELATIONSHIPS
+### Dashboard Views
+- dashboard_view: Current status, rates at all frequencies, AUM (recorded/estimated)
+- payment_status_base: Core logic for Due/Paid determination
+- sidebar_clients_view: Simple compliance status (green/yellow)
 
+### Summary Hierarchy
+1. quarterly_summary_aggregated: Base quarterly aggregation
+2. quarterly_summary_enhanced: +notes, +rate calculations
+3. provider_quarterly_summary: Provider-level rollup
+4. quarterly_page_data: Complete quarterly page data
+
+### Annual Views
+- annual_summary_by_client: Quarterly breakdown, annual totals
+- provider_annual_summary: Provider-level annual rollup
+- annual_page_data: Complete annual page with both levels
+
+### Operational Views
+- comprehensive_payment_summary: Full payment matrix with variance
+- payment_history_view: Individual payments with calculations
+- client_period_matrix: All expected periods per client/contract
+
+## Data Patterns & Constraints
+- Quarters derived from months: Q1(1-3), Q2(4-6), Q3(7-9), Q4(10-12)
+- Period display: Monthly="January 2025", Quarterly="Q1 2025"
+- AUM estimation: For percentage fees without recorded assets, derive from payment/rate
+- Posted tracking: Both individual payments and quarterly markers
+
+## Notable Implementation Details
+- No browser storage in artifacts (React state only)
+- Heavy use of CASE statements for period/schedule branching
+- Variance calculations respect NULL/zero expected fees
+- All monetary amounts ROUND(,2), percentages ROUND(,1 or 4)
 ```
-dashboard_view (master view)
-    ├── All 4 dashboard cards
-    ├── Client header info
-    └── Contract ID for payments
-
-sidebar_clients_view
-    └── Client list with status
-
-payment_form_periods_view
-    └── Dropdown options
-
-payment_form_defaults_view
-    └── Suggested AUM
-
-payment_history_view
-    └── Payment table with variance
-
-quarterly_page_data ← NEW!
-    └── Complete quarterly summary (providers + clients + notes)
-    
-annual_page_data ← NEW!
-    └── Complete annual summary with quarterly breakdown
-    
-quarterly_notes
-    └── Client notes by quarter (included in page data views)
-
-calculate_expected_fee (function)
-    └── Intelligent 3-tier fallback for expected fees
-```
-
----
-
-## 🛠️ IMPLEMENTATION PATTERNS
-
-### Form Handling
-
-**Payment Form Validation**
-```typescript
-const validatePayment = (payment) => {
-  const errors = {};
-  
-  // Required fields
-  if (!payment.received_date) errors.received_date = 'Required';
-  if (!payment.actual_fee) errors.actual_fee = 'Required';
-  if (!payment.method) errors.method = 'Required';
-  if (!payment.applied_period) errors.applied_period = 'Required';
-  
-  // AUM required for percentage-based fees
-  if (contract.fee_type === 'percentage' && !payment.total_assets) {
-    errors.total_assets = 'AUM required for percentage-based fees';
-  }
-  
-  return errors;
-};
-```
-
-### Rate Display
-```typescript
-// Rates are already correctly calculated in the views
-// based on payment_schedule - just display them!
-const formatRateDisplay = (contract) => {
-  if (contract.fee_type === 'percentage') {
-    return `${contract.monthly_rate}% / ${contract.quarterly_rate}% / ${contract.annual_rate}%`;
-  }
-  return `$${contract.flat_rate.toLocaleString()}`;
-};
-```
-
-### Period Formatting
-```typescript
-const formatPeriod = (period: number, type: string, year: number) => {
-  if (type === 'monthly') {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                   'July', 'August', 'September', 'October', 'November', 'December'];
-    return `${months[period - 1]} ${year}`;
-  }
-  
-  if (type === 'quarterly') {
-    return `Q${period} ${year}`;
-  }
-  
-  return `${year}`;
-};
-```
-
-### Variance Display (Subtle)
-```typescript
-const getVarianceDisplay = (amount: number, variancePercent: number | null) => {
-  const showDot = variancePercent && Math.abs(variancePercent) > 10;
-  return (
-    <span className="text-gray-900">
-      {formatCurrency(amount)}
-      {showDot && <span className="text-amber-500 ml-1">•</span>}
-    </span>
-  );
-};
-```
-
----
-
-## 🎨 Style Guidelines
-
-The application follows a minimalist, professional design approach suitable for financial software. Key principles:
-
-### Color Scheme
-- **Primary Blue**: `bg-blue-600` / `hover:bg-blue-700` for all primary actions
-- **Text Hierarchy**: `text-gray-900` (primary), `text-gray-600` (secondary), `text-gray-500` (muted)
-- **Borders**: Consistent `border-gray-200` throughout
-- **No color-based status indicators** - Status is conveyed through text and subtle indicators
-
-### Spacing Standards
-- Cards: `p-6`
-- Table cells: `px-6 py-4`
-- Buttons: `px-4 py-2 rounded-md`
-- Page containers: `px-4 sm:px-6 lg:px-8 py-8`
-
-### Typography
-- Page headers: `text-2xl font-bold text-gray-900` with gradient underline
-- Section headers: `text-lg font-semibold text-gray-900`
-- Card headers: `text-sm font-semibold text-gray-600`
-
-### Status Display Philosophy
-- **Recording Status, Not Payment Problems**: The UI reflects whether payments have been recorded in our system, not whether clients have payment issues
-- **Minimal Visual Noise**: Gray dots for pending entries, no indicator for completed
-- **Subtle Variance Indicators**: Numbers in gray with optional amber dot for >10% variance
-
-### Component Patterns
-See `src/styles/reference.tsx` for standardized component patterns and reusable style classes.
-
-This approach creates a calm, professional interface that lets the data speak for itself without unnecessary visual urgency.

@@ -1,0 +1,18 @@
+ ✓ TESTS/business-logic/payment-calculations.test.ts (4 tests) 3ms
+ ✓ TESTS/integration/expected-fee.test.ts (8 tests) 4ms
+ ✓ TESTS/business-logic/variance-thresholds.test.ts (6 tests) 3ms
+ ✓ TESTS/integration/n1-fix-verification.test.ts (5 tests) 5ms
+ ✓ TESTS/integration/api-performance.test.ts (6 tests) 5ms
+ ✓ TESTS/business-logic/compliance-status.test.ts (6 tests) -9200063ms
+   ✓ Payment Status Logic - Understanding Check > Payment Status Determination > should mark as Due when no payments exist  9200067ms
+ ✓ TESTS/business-logic/real-data-insights.test.ts (7 tests) 4ms
+ ✓ TESTS/components/payment-form-validation.test.ts (18 tests) 6ms
+ ✓ TESTS/integration/api-data-flow.test.ts (3 tests) 4ms
+ ✓ TESTS/integration/cache-layer.test.ts (9 tests) 10ms
+ ✓ TESTS/components/error-boundary.test.tsx (10 tests) 87ms
+
+ Test Files  11 passed (11)
+      Tests  82 passed (82)
+   Start at  00:29:33
+   Duration  18.84s (transform 1.62s, setup 35.68s, collect 5.00s, tests 131ms, environment 123.76s, prepare 9.78s)
+
