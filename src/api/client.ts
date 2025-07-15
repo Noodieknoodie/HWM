@@ -263,6 +263,31 @@ export class DataApiClient {
     return result;
   }
 
+  // Client quarter marker methods (for posted checkbox)
+  async updateClientQuarterMarker(clientId: number, year: number, quarter: number, isPosted: boolean) {
+    // First check if marker exists
+    const existing = await this.request(`client_quarter_markers?$filter=client_id eq ${clientId} and year eq ${year} and quarter eq ${quarter}`);
+    
+    if (existing && Array.isArray(existing) && existing.length > 0) {
+      // Update existing marker
+      return await this.request(`client_quarter_markers/client_id/${clientId}/year/${year}/quarter/${quarter}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_posted: isPosted }),
+      });
+    } else {
+      // Create new marker
+      return await this.request('client_quarter_markers', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          client_id: clientId, 
+          year, 
+          quarter, 
+          is_posted: isPosted 
+        }),
+      });
+    }
+  }
+
   // Contact Management
   async getContacts(clientId: number): Promise<Contact[]> {
     const response = await this.request<Contact[]>(`contacts?$filter=client_id eq ${clientId}&$orderby=contact_type,contact_name`);
