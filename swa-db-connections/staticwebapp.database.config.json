@@ -45,6 +45,15 @@
         }
       ]
     },
+    "clients_all": {
+      "source": "dbo.clients_all",
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["create", "update"]
+        }
+      ]
+    },
     "contracts": {
       "source": "dbo.contracts",
       "permissions": [

@@ -215,3 +215,15 @@ Result: Successfully fixed the typo:
 3. Updated the contracts table to correct the spelling: UPDATE contracts SET provider_name='Principal' WHERE contract_id=24
 4. Verified the fix - now only "Principal" appears in both views with all three clients (Tony's Coffee $2,072, United Way $5,656, Youth Dynamics $1,081) correctly grouped together
 5. The duplicate entries with $0 and negative variance were artifacts of the grouping issue caused by the spelling difference
+
+---
+
+# Summary Page Posted Fraction Fix | 2025-07-15 | Commit: 43e0fff
+Description: Fixed posted to HWM fraction resetting to 0/x on page refresh and removed amber dot indicators
+Reason: Database view counts fully_posted instead of is_posted, causing incorrect posted counts. Also removed unnecessary amber dots per user request.
+Files Touched: src/pages/Summary.tsx, src/utils/cache.ts
+Result: 
+- Implemented frontend workaround to calculate posted counts from actual client is_posted values
+- Removed getVarianceIndicator function and all amber dot displays
+- Added caching for payment details to improve performance
+- All tests pass, build successful

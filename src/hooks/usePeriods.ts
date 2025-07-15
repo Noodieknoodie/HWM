@@ -39,13 +39,17 @@ export function usePeriods(clientId: number | null) {
   }, [clientId]);
   
   // Transform to match expected format
-  const formattedPeriods = periods.map(p => ({
-    value: `${p.year}-${p.period}`,
-    label: p.display_text,
-    period: p.period,
-    year: p.year,
-    period_type: p.display_text.includes('Q') ? 'quarterly' : 'monthly'
-  }));
+  // Filter to prevent years that would violate database constraints
+  const currentYear = new Date().getFullYear();
+  const formattedPeriods = periods
+    .filter(p => p.year >= 2018 && p.year <= currentYear + 1)
+    .map(p => ({
+      value: `${p.year}-${p.period}`,
+      label: p.display_text,
+      period: p.period,
+      year: p.year,
+      period_type: p.display_text.includes('Q') ? 'quarterly' : 'monthly'
+    }));
   
   return {
     periods: formattedPeriods,

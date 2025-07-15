@@ -1,4 +1,4 @@
--- Generated: 2025-07-14 23:09:14
+-- Generated: 2025-07-15 10:57:43
 -- ===== TABLES =====
 -- Table: client_quarter_markers
 CREATE TABLE [dbo].[client_quarter_markers] (
@@ -13,20 +13,22 @@ CREATE TABLE [dbo].[client_quarter_markers] (
     CONSTRAINT [CK_client_quarter_markers_year] CHECK ([year]>=(2019) AND [year]<=(2100))
 );
 ALTER TABLE [dbo].[client_quarter_markers] ADD CONSTRAINT [FK_client_quarter_markers_clients]
-    FOREIGN KEY (client_id) REFERENCES [dbo].[clients] (client_id);
--- Table: clients
-CREATE TABLE [dbo].[clients] (
+    FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
+-- Table: clients_all
+CREATE TABLE [dbo].[clients_all] (
     [client_id] int IDENTITY(1,1) NOT NULL,
     [display_name] nvarchar(255) NOT NULL,
     [full_name] nvarchar(255),
     [ima_signed_date] date,
+    [is_deleted] bit NOT NULL DEFAULT ((0)),
+    [deleted_date] datetime,
     CONSTRAINT [PK_clients] PRIMARY KEY (client_id)
 );
 -- Sample data (3 rows from end of 2024 or latest available):
--- client_id | display_name | full_name | ima_signed_date
--- 17 | 'Nordic Museum' | 'NATIONAL NORDIC MUSEUM' | 2024-03-11
--- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17
--- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19
+-- client_id | display_name | full_name | ima_signed_date | is_deleted | deleted_date
+-- 17 | 'Nordic Museum' | 'NATIONAL NORDIC MUSEUM' | 2024-03-11 | False | NULL
+-- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17 | False | NULL
+-- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19 | False | NULL
 -- Table: contacts
 CREATE TABLE [dbo].[contacts] (
     [contact_id] int IDENTITY(1,1) NOT NULL,
@@ -41,8 +43,7 @@ CREATE TABLE [dbo].[contacts] (
     CONSTRAINT [PK_contacts] PRIMARY KEY (contact_id)
 );
 ALTER TABLE [dbo].[contacts] ADD CONSTRAINT [FK_contacts_clients]
-    FOREIGN KEY (client_id) REFERENCES [dbo].[clients] (client_id)
-    ON DELETE CASCADE;
+    FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
 -- Sample data (3 rows):
 -- contact_id | client_id | contact_type | contact_name | phone | email | fax | physical_address | mailing_address
 -- 1 | 1 | 'Primary' | 'Donald Jay' | '253-395-9551' | 'djay@asamerica.com' | NULL | '3500 West Vally HWY, Ste B-106, Auburn, WA 98001' | '3500 West Vally HWY, Ste B-106, Auburn, WA 98001'
@@ -61,11 +62,12 @@ CREATE TABLE [dbo].[contracts] (
     [payment_schedule] nvarchar(50),
     [num_people] int,
     [notes] nvarchar(MAX),
-    CONSTRAINT [PK_contracts] PRIMARY KEY (contract_id)
+    CONSTRAINT [PK_contracts] PRIMARY KEY (contract_id),
+    CONSTRAINT [CK_contracts_positive_rates] CHECK ([fee_type]='percentage' AND [percent_rate]>(0) OR [fee_type]='flat' AND [flat_rate]>(0)),
+    CONSTRAINT [CK_contracts_valid_schedule] CHECK ([payment_schedule]='quarterly' OR [payment_schedule]='monthly')
 );
 ALTER TABLE [dbo].[contracts] ADD CONSTRAINT [FK_contracts_clients]
-    FOREIGN KEY (client_id) REFERENCES [dbo].[clients] (client_id)
-    ON DELETE CASCADE;
+    FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
 -- Sample data (3 rows from end of 2024 or latest available):
 -- contract_id | client_id | contract_number | provider_name | contract_start_date | fee_type | percent_rate | flat_rate | payment_schedule | num_people | notes
 -- 5 | 5 | '231393' | 'Ascensus Trust Company' | 2019-05-01 | 'flat' | NULL | 3000.0 | 'quarterly' | 93 | NULL
@@ -103,11 +105,13 @@ CREATE TABLE [dbo].[payments] (
     [applied_year] int,
     [posted_to_hwm] bit NOT NULL DEFAULT ((0)),
     CONSTRAINT [PK_payments] PRIMARY KEY (payment_id),
+    CONSTRAINT [CK_payments_positive_amounts] CHECK ([actual_fee]>(0) AND ([total_assets] IS NULL OR [total_assets]>=(0))),
+    CONSTRAINT [CK_payments_no_future_dates] CHECK ([received_date]<=CONVERT([date],getdate())),
+    CONSTRAINT [CK_payments_valid_year] CHECK ([applied_year]>=(2018) AND [applied_year]<=(datepart(year,getdate())+(1))),
     CONSTRAINT [chk_applied_period] CHECK ([applied_period_type]='monthly' AND ([applied_period]>=(1) AND [applied_period]<=(12)) OR [applied_period_type]='quarterly' AND ([applied_period]>=(1) AND [applied_period]<=(4)))
 );
 ALTER TABLE [dbo].[payments] ADD CONSTRAINT [FK_payments_clients]
-    FOREIGN KEY (client_id) REFERENCES [dbo].[clients] (client_id)
-    ON DELETE CASCADE;
+    FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
 ALTER TABLE [dbo].[payments] ADD CONSTRAINT [FK_payments_contracts]
     FOREIGN KEY (contract_id) REFERENCES [dbo].[contracts] (contract_id);
 -- Sample data (3 rows from end of 2024 or latest available):
@@ -126,11 +130,8 @@ CREATE TABLE [dbo].[quarterly_notes] (
     CONSTRAINT [PK__quarterl__62C392A836C8B248] PRIMARY KEY (client_id, year, quarter)
 );
 ALTER TABLE [dbo].[quarterly_notes] ADD CONSTRAINT [FK__quarterly__clien__589C25F3]
-    FOREIGN KEY (client_id) REFERENCES [dbo].[clients] (client_id);
+    FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
 -- ===== VIEWS =====
--- View: annual_page_data
--- Complete annual page data provides all information needed for the annual summary page
--- Shows quarterly breakdown and annual totals in a single query
 CREATE VIEW [dbo].[annual_page_data] AS
 SELECT 
     -- Provider-level aggregates
@@ -303,6 +304,15 @@ WHERE pp.period_type = ct.payment_schedule
 -- 5 | 'BDR Interactive' | 'BUSINESS DEVELOPMENT RESOURCES & OPPORTUNITIES IN | 5 | 'Ascensus Trust Company' | 'quarterly' | 'flat' | NULL | 3000.0 | 2019-05-01 | 2019 | 3 | 'quarterly' | 3 | 'Q3 2019' | 2025 | 6 | 2025 | 2
 -- 5 | 'BDR Interactive' | 'BUSINESS DEVELOPMENT RESOURCES & OPPORTUNITIES IN | 5 | 'Ascensus Trust Company' | 'quarterly' | 'flat' | NULL | 3000.0 | 2019-05-01 | 2019 | 4 | 'quarterly' | 4 | 'Q4 2019' | 2025 | 6 | 2025 | 2
 -- 5 | 'BDR Interactive' | 'BUSINESS DEVELOPMENT RESOURCES & OPPORTUNITIES IN | 5 | 'Ascensus Trust Company' | 'quarterly' | 'flat' | NULL | 3000.0 | 2019-05-01 | 2020 | 1 | 'quarterly' | 1 | 'Q1 2020' | 2025 | 6 | 2025 | 2
+-- View: clients
+-- 2. Create filtered view with original name
+CREATE VIEW clients AS 
+SELECT * FROM clients_all WHERE is_deleted = 0;
+-- Sample data (3 rows from end of 2024 or latest available):
+-- client_id | display_name | full_name | ima_signed_date | is_deleted | deleted_date
+-- 17 | 'Nordic Museum' | 'NATIONAL NORDIC MUSEUM' | 2024-03-11 | False | NULL
+-- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17 | False | NULL
+-- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19 | False | NULL
 -- View: comprehensive_payment_summary
 -- 3C: Comprehensive Payment Summary (unchanged)
 CREATE VIEW [dbo].[comprehensive_payment_summary] AS
@@ -1062,90 +1072,15 @@ GROUP BY
 -- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 0 | 4 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0
 -- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2020 | 0 | 4 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0
 -- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2021 | 0 | 4 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0
--- ===== STORED PROCEDURES =====
--- ===== FUNCTIONS =====
--- Function: calculate_expected_fee (SQL_SCALAR_FUNCTION)
--- 3B: Calculate Expected Fee Function (unchanged)
-CREATE FUNCTION [dbo].[calculate_expected_fee](
-    @client_id INT,
-    @fee_type NVARCHAR(50),
-    @percent_rate FLOAT,
-    @flat_rate FLOAT,
-    @period_type NVARCHAR(10),
-    @year INT,
-    @period INT
-)
-RETURNS FLOAT
-AS
-BEGIN
-    DECLARE @expected_fee FLOAT = NULL;
-    
-    IF @fee_type = 'flat'
-    BEGIN
-        SET @expected_fee = @flat_rate;
-    END
-    ELSE IF @fee_type = 'percentage' AND @percent_rate IS NOT NULL
-    BEGIN
-        -- First try: Get AUM from the specific period payment
-        SELECT @expected_fee = ROUND(total_assets * @percent_rate, 2)
-        FROM payments 
-        WHERE client_id = @client_id 
-            AND applied_year = @year 
-            AND applied_period = @period
-            AND applied_period_type = @period_type
-            AND total_assets IS NOT NULL;
-        
-        -- Second try: Get most recent AUM before this period
-        IF @expected_fee IS NULL
-        BEGIN
-            SELECT TOP 1 @expected_fee = ROUND(total_assets * @percent_rate, 2)
-            FROM payments
-            WHERE client_id = @client_id
-                AND total_assets IS NOT NULL
-                AND (applied_year < @year OR 
-                     (applied_year = @year AND applied_period < @period))
-            ORDER BY applied_year DESC, applied_period DESC;
-        END
-        
-        -- Third try: Use last payment amount as fallback
-        IF @expected_fee IS NULL
-        BEGIN
-            DECLARE @last_payment FLOAT;
-            SELECT TOP 1 @last_payment = actual_fee
-            FROM payments
-            WHERE client_id = @client_id
-                AND actual_fee IS NOT NULL
-                AND (applied_year < @year OR 
-                     (applied_year = @year AND applied_period < @period))
-            ORDER BY applied_year DESC, applied_period DESC;
-            
-            IF @last_payment IS NOT NULL AND @percent_rate > 0
-            BEGIN
-                SET @expected_fee = ROUND(@last_payment, 2);
-            END
-        END
-    END
-    
-    RETURN @expected_fee;
-END;
-GO
--- Sample usage:
--- SELECT [dbo].[calculate_expected_fee](1, 'TestValue', 100.00, 100.00, 'TestValue', 1, 1) AS Result;
--- Expected result type: float
 -- ===== INDEXES =====
-CREATE NONCLUSTERED INDEX [IX_client_quarter_markers_year_quarter] ON [dbo].[client_quarter_markers] ([year], [quarter]) INCLUDE ([client_id], [is_posted]);
-CREATE NONCLUSTERED INDEX [idx_contacts_client_id] ON [dbo].[contacts] ([client_id]);
-CREATE NONCLUSTERED INDEX [idx_contacts_type] ON [dbo].[contacts] ([client_id], [contact_type]);
-CREATE NONCLUSTERED INDEX [idx_contracts_client_id] ON [dbo].[contracts] ([client_id]);
-CREATE NONCLUSTERED INDEX [idx_contracts_provider] ON [dbo].[contracts] ([provider_name]);
-CREATE NONCLUSTERED INDEX [idx_payment_periods_dates] ON [dbo].[payment_periods] ([period_type], [start_date], [end_date]);
-CREATE NONCLUSTERED INDEX [idx_payments_client_id] ON [dbo].[payments] ([client_id]);
-CREATE NONCLUSTERED INDEX [idx_payments_contract_id] ON [dbo].[payments] ([contract_id]);
-CREATE NONCLUSTERED INDEX [idx_payments_date] ON [dbo].[payments] ([client_id], [received_date]);
-CREATE NONCLUSTERED INDEX [idx_payments_period_lookup] ON [dbo].[payments] ([client_id], [applied_year], [applied_period]) INCLUDE ([actual_fee], [total_assets], [received_date]);
+CREATE NONCLUSTERED INDEX [IX_client_quarter_markers_year_quarter] ON [dbo].[client_quarter_markers] (year, quarter) INCLUDE (client_id, is_posted);
+CREATE NONCLUSTERED INDEX [idx_contacts_client_id] ON [dbo].[contacts] (client_id);
+CREATE NONCLUSTERED INDEX [idx_contacts_type] ON [dbo].[contacts] (client_id, contact_type);
+CREATE NONCLUSTERED INDEX [idx_contracts_client_id] ON [dbo].[contracts] (client_id);
+CREATE NONCLUSTERED INDEX [idx_contracts_provider] ON [dbo].[contracts] (provider_name);
+CREATE NONCLUSTERED INDEX [idx_payment_periods_dates] ON [dbo].[payment_periods] (period_type, start_date, end_date);
+CREATE NONCLUSTERED INDEX [idx_payments_client_id] ON [dbo].[payments] (client_id);
+CREATE NONCLUSTERED INDEX [idx_payments_contract_id] ON [dbo].[payments] (contract_id);
+CREATE NONCLUSTERED INDEX [idx_payments_date] ON [dbo].[payments] (client_id, received_date);
+CREATE NONCLUSTERED INDEX [idx_payments_period_lookup] ON [dbo].[payments] (client_id, applied_year, applied_period) INCLUDE (actual_fee, total_assets, received_date);
 -- ===== TRIGGERS =====
--- ===== SEQUENCES =====
--- No sequences found
--- ===== SYNONYMS =====
--- No synonyms found
--- ===== USER-DEFINED TYPES =====
