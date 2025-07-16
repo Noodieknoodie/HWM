@@ -227,3 +227,17 @@ Result:
 - Removed getVarianceIndicator function and all amber dot displays
 - Added caching for payment details to improve performance
 - All tests pass, build successful
+
+---
+
+# Database Schema Frontend Update | 2025-07-16 | Commit: 8f8f66d
+Description: Updated frontend to match new database schema changes that removed posted_to_hwm and replaced compliance_status with payment_status
+Reason: Database was updated to use semantic values (Due/Paid) instead of presentation logic (green/yellow), implementing proper separation of concerns
+Files Touched: src/stores/useAppStore.ts, src/components/Sidebar.tsx, src/components/ClientSearch.tsx, src/pages/Summary.tsx
+Result: 
+- Updated Client interface in all components to use payment_status: 'Due' | 'Paid'
+- Updated StatusIcon component to show gray dot for 'Due' status
+- Updated ClientSearch hover colors: green for 'Paid', yellow for 'Due'
+- Removed unused posted_to_hwm field from QuarterlySummaryDetail interface
+- All TypeScript checks pass, build successful
+- Frontend now properly separates data concerns from presentation concerns
