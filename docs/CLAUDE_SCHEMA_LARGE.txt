@@ -1,4 +1,4 @@
--- Generated: 2025-07-16 01:22:56
+-- Generated: 2025-07-16 16:50:30
 -- ===== TABLES =====
 -- Table: client_quarter_markers
 CREATE TABLE [dbo].[client_quarter_markers] (
@@ -131,6 +131,18 @@ CREATE TABLE [dbo].[quarterly_notes] (
 );
 ALTER TABLE [dbo].[quarterly_notes] ADD CONSTRAINT [FK__quarterly__clien__589C25F3]
     FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
+-- Table: variance_thresholds
+CREATE TABLE [dbo].[variance_thresholds] (
+    [threshold_type] varchar(20) NOT NULL,
+    [max_percent] decimal(5,2) NOT NULL,
+    [display_order] int NOT NULL,
+    [description] nvarchar(100),
+    [modified_date] datetime NOT NULL DEFAULT (getdate()),
+    [modified_by] nvarchar(100) DEFAULT (suser_sname()),
+    CONSTRAINT [PK_variance_thresholds] PRIMARY KEY (threshold_type),
+    CONSTRAINT [CK_variance_thresholds_positive] CHECK ([max_percent]>=(0)),
+    CONSTRAINT [CK_variance_thresholds_order] CHECK ([display_order]>(0))
+);
 -- ===== VIEWS =====
 -- View: annual_page_data
 -- Section 5I: Recreate annual_page_data
@@ -312,7 +324,7 @@ SELECT * FROM clients_all WHERE is_deleted = 0;
 -- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17 | False | NULL
 -- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19 | False | NULL
 -- View: comprehensive_payment_summary
--- Section 5B: Recreate comprehensive_payment_summary
+-- STEP 6: Update comprehensive_payment_summary to use the function
 CREATE VIEW [dbo].[comprehensive_payment_summary] AS
 SELECT 
     cpm.client_id,
@@ -334,7 +346,6 @@ SELECT
     p.total_assets,
     p.method,
     p.notes,
-    -- removed posted_to_hwm here
     dbo.calculate_expected_fee(
         cpm.client_id,
         cpm.fee_type,
@@ -369,16 +380,12 @@ SELECT
         END,
         1
     ) as variance_percent,
-    CASE 
-        WHEN p.payment_id IS NULL THEN 'no_payment'
-        WHEN dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period) IS NULL THEN 'unknown'
-        WHEN ABS(p.actual_fee - dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period)) < 0.01 THEN 'exact'
-        WHEN ABS(((p.actual_fee - dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period)) / 
-                  dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period)) * 100) <= 5 THEN 'acceptable'
-        WHEN ABS(((p.actual_fee - dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period)) / 
-                  dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period)) * 100) <= 15 THEN 'warning'
-        ELSE 'alert'
-    END as variance_status
+    -- REPLACED: Now using our centralized function
+    dbo.get_variance_status(
+        p.actual_fee,
+        dbo.calculate_expected_fee(cpm.client_id, cpm.fee_type, cpm.percent_rate, cpm.flat_rate, cpm.period_type, cpm.year, cpm.period),
+        CASE WHEN p.payment_id IS NULL THEN 0 ELSE 1 END
+    ) as variance_status
 FROM client_period_matrix cpm
 LEFT JOIN payments p ON 
     p.client_id = cpm.client_id 
@@ -610,7 +617,7 @@ WHERE pp.end_date <= GETDATE()  -- Not future periods
 -- 1 | 2019 | 5 | 'May 2019' | 1
 -- 1 | 2019 | 6 | 'June 2019' | 1
 -- View: payment_history_view
--- Section 5A: Recreate payment_history_view
+-- STEP 5: Update payment_history_view to use the function
 CREATE VIEW [dbo].[payment_history_view] AS
 SELECT 
     p.payment_id,
@@ -669,20 +676,12 @@ SELECT
         ELSE ((p.actual_fee - dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) 
               / dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) * 100
     END AS variance_percent,
-    CASE 
-        WHEN dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period) IS NULL 
-            OR dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period) = 0 
-        THEN 'unknown'
-        WHEN ABS(p.actual_fee - dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) < 0.01 
-        THEN 'exact'
-        WHEN ABS(((p.actual_fee - dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) 
-                  / dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) * 100) <= 5 
-        THEN 'acceptable'
-        WHEN ABS(((p.actual_fee - dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) 
-                  / dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) * 100) <= 15 
-        THEN 'warning'
-        ELSE 'alert'
-    END AS variance_status
+    -- REPLACED: Now using our centralized function
+    dbo.get_variance_status(
+        p.actual_fee,
+        dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period),
+        1  -- Always has payment in this view
+    ) AS variance_status
 FROM payments p
 JOIN contracts ct ON p.contract_id = ct.contract_id;
 -- Sample data (3 rows from end of 2024 or latest available):
@@ -849,7 +848,7 @@ LEFT JOIN client_quarter_markers cqm
 -- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | 0 | 0 | NULL | 0 | False | 2019 | 2 | 'client'
 -- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | 0 | 0 | NULL | 0 | False | 2019 | 3 | 'client'
 -- View: quarterly_summary_aggregated
--- Section 5C: Recreate quarterly_summary_aggregated
+-- STEP 4: Update quarterly_summary_aggregated to use the function
 CREATE VIEW [dbo].[quarterly_summary_aggregated] AS
 SELECT 
     provider_name,
@@ -873,16 +872,14 @@ SELECT
         WHEN COALESCE(SUM(expected_fee), 0) = 0 THEN NULL
         ELSE ROUND(((COALESCE(SUM(actual_fee), 0) - COALESCE(SUM(expected_fee), 0)) / ABS(COALESCE(SUM(expected_fee), 0))) * 100, 1)
     END as variance_percent,
-    CASE 
-        WHEN COUNT(payment_id) = 0 THEN 'no_payment'
-        WHEN COALESCE(SUM(expected_fee), 0) = 0 THEN 'unknown'
-        WHEN ABS(COALESCE(SUM(actual_fee), 0) - COALESCE(SUM(expected_fee), 0)) < 0.01 THEN 'exact'
-        WHEN ABS(((COALESCE(SUM(actual_fee), 0) - COALESCE(SUM(expected_fee), 0)) / COALESCE(SUM(expected_fee), 0)) * 100) <= 5 THEN 'acceptable'
-        WHEN ABS(((COALESCE(SUM(actual_fee), 0) - COALESCE(SUM(expected_fee), 0)) / COALESCE(SUM(expected_fee), 0)) * 100) <= 15 THEN 'warning'
-        ELSE 'alert'
-    END as variance_status,
-    0 as posted_count,  -- Always 0 since we removed posted_to_hwm
-    0 as fully_posted,  -- Always 0 since we removed posted_to_hwm
+    -- REPLACED: Now using our centralized function
+    dbo.get_variance_status(
+        COALESCE(SUM(actual_fee), 0),
+        COALESCE(SUM(expected_fee), 0),
+        CASE WHEN COUNT(payment_id) = 0 THEN 0 ELSE 1 END
+    ) as variance_status,
+    0 as posted_count,
+    0 as fully_posted,
     MAX(total_assets) as last_aum
 FROM comprehensive_payment_summary
 GROUP BY 
@@ -985,7 +982,7 @@ FROM yearly_data y1
 LEFT JOIN yearly_data y2 ON y1.client_id = y2.client_id 
     AND y1.[year] = y2.[year] + 1;
 -- View: yearly_summaries_view
--- Section 5J: Recreate yearly_summaries_view
+-- STEP 7: Update yearly_summaries_view to use the function
 CREATE VIEW [dbo].[yearly_summaries_view] AS
 SELECT 
     provider_name,
@@ -1005,22 +1002,18 @@ SELECT
         WHEN SUM(expected_total) = 0 THEN NULL
         ELSE ROUND(((SUM(actual_total) - SUM(expected_total)) / ABS(SUM(expected_total))) * 100, 2)
     END as variance_percent,
-    -- Variance status thresholds: exact match, 5% acceptable, 15% warning, else alert
-    CASE 
-        WHEN SUM(payment_count) = 0 THEN 'no_payment'
-        WHEN SUM(expected_total) = 0 THEN 'unknown'
-        WHEN ABS(SUM(actual_total) - SUM(expected_total)) < 0.01 THEN 'exact'
-        WHEN ABS(((SUM(actual_total) - SUM(expected_total)) / SUM(expected_total)) * 100) <= 5 THEN 'acceptable'
-        WHEN ABS(((SUM(actual_total) - SUM(expected_total)) / SUM(expected_total)) * 100) <= 15 THEN 'warning'
-        ELSE 'alert'
-    END as variance_status,
+    -- REPLACED: Now using our centralized function
+    dbo.get_variance_status(
+        SUM(actual_total),
+        SUM(expected_total),
+        CASE WHEN SUM(payment_count) = 0 THEN 0 ELSE 1 END
+    ) as variance_status,
     SUM(posted_count) as posted_count,
     CASE 
         WHEN SUM(payment_count) = 0 THEN 0
         WHEN SUM(posted_count) = SUM(payment_count) THEN 1
         ELSE 0
     END as fully_posted,
-    -- Quarterly breakdowns for annual view
     MAX(CASE WHEN quarter = 1 THEN actual_total ELSE 0 END) as q1_actual,
     MAX(CASE WHEN quarter = 2 THEN actual_total ELSE 0 END) as q2_actual,
     MAX(CASE WHEN quarter = 3 THEN actual_total ELSE 0 END) as q3_actual,
@@ -1104,6 +1097,51 @@ GO
 -- Sample usage:
 -- SELECT [dbo].[calculate_expected_fee](1, 'TestValue', 100.00, 100.00, 'TestValue', 1, 1) AS Result;
 -- Expected result type: float
+-- Function: get_variance_status (SQL_SCALAR_FUNCTION)
+-- STEP 2: Create the get_variance_status function
+CREATE FUNCTION [dbo].[get_variance_status]
+(
+    @actual_fee FLOAT,
+    @expected_fee FLOAT,
+    @has_payment BIT = 1
+)
+RETURNS VARCHAR(20)
+WITH SCHEMABINDING
+AS
+BEGIN
+    -- Handle special cases first
+    IF @has_payment = 0 RETURN 'no_payment';
+    IF @expected_fee IS NULL OR @expected_fee = 0 RETURN 'unknown';
+    
+    DECLARE @variance_amount FLOAT = ABS(@actual_fee - @expected_fee);
+    DECLARE @variance_percent FLOAT;
+    DECLARE @status VARCHAR(20) = 'alert'; -- Default if no threshold matches
+    
+    -- Check exact match first (dollar amount threshold)
+    DECLARE @exact_threshold FLOAT;
+    SELECT @exact_threshold = max_percent FROM dbo.variance_thresholds WHERE threshold_type = 'exact';
+    
+    IF @variance_amount < @exact_threshold
+    BEGIN
+        RETURN 'exact';
+    END
+    
+    -- Calculate percentage variance
+    SET @variance_percent = (@variance_amount / ABS(@expected_fee)) * 100;
+    
+    -- Check percentage thresholds in order
+    SELECT TOP 1 @status = threshold_type
+    FROM dbo.variance_thresholds
+    WHERE threshold_type != 'exact'  -- Already checked exact
+      AND @variance_percent <= max_percent
+    ORDER BY display_order;
+    
+    RETURN @status;
+END;
+GO
+-- Sample usage:
+-- SELECT [dbo].[get_variance_status](100.00, 100.00, 1) AS Result;
+-- Expected result type: varchar
 -- ===== INDEXES =====
 CREATE NONCLUSTERED INDEX [IX_client_quarter_markers_year_quarter] ON [dbo].[client_quarter_markers] ([year], [quarter]) INCLUDE ([client_id], [is_posted]);
 CREATE NONCLUSTERED INDEX [idx_contacts_client_id] ON [dbo].[contacts] ([client_id]);
