@@ -7,7 +7,7 @@ interface Client {
   display_name: string;
   full_name: string;
   provider_name?: string;
-  compliance_status?: 'green' | 'yellow';
+  payment_status?: 'Due' | 'Paid';
 }
 
 interface ClientSearchProps {
@@ -120,9 +120,9 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className={
-                    client.compliance_status === 'green'
+                    client.payment_status === 'Paid'
                       ? 'text-green-500'
-                      : 'text-yellow-500' // Binary: green or yellow only
+                      : 'text-yellow-500' // Binary: Paid (green) or Due (yellow)
                   }
                 >
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

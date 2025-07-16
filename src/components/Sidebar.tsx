@@ -9,7 +9,7 @@ interface Client {
   display_name: string;
   full_name: string;
   provider_name?: string;
-  compliance_status?: 'green' | 'yellow';
+  payment_status?: 'Due' | 'Paid';
 }
 
 const Sidebar: React.FC = () => {
@@ -60,15 +60,15 @@ const Sidebar: React.FC = () => {
   
   const groupedClients = groupClientsByProvider();
   
-  // Simple gray dot for items with pending entries (yellow status)
-  const StatusIcon: React.FC<{ status?: 'green' | 'yellow' }> = ({ status }) => {
-    // Only show gray dot for items with pending entries (yellow status)
-    if (status === 'yellow') {
+  // Simple gray dot for items with pending entries (Due status)
+  const StatusIcon: React.FC<{ status?: 'Due' | 'Paid' }> = ({ status }) => {
+    // Only show gray dot for items with pending entries (Due status)
+    if (status === 'Due') {
       return (
         <span className="w-2 h-2 bg-gray-400 rounded-full inline-block"></span>
       );
     }
-    // Return nothing for green status (all caught up)
+    // Return nothing for Paid status (all caught up)
     return null;
   };
   
@@ -142,7 +142,7 @@ const Sidebar: React.FC = () => {
                   >
                     <span className="truncate flex-grow">{client.display_name}</span>
                     <span className="ml-2 flex-shrink-0">
-                      <StatusIcon status={client.compliance_status} />
+                      <StatusIcon status={client.payment_status} />
                     </span>
                   </button>
                 ))}

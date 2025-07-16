@@ -125,7 +125,6 @@ interface QuarterlySummaryDetail {
   expected_fee: number | null;
   total_assets: number | null;
   method: string | null;
-  posted_to_hwm: boolean;
   variance_status: string | null;
 }
 
