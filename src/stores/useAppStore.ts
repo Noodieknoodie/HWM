@@ -6,7 +6,7 @@ interface Client {
   display_name: string;
   full_name: string;
   provider_name?: string;
-  compliance_status?: 'green' | 'yellow';
+  payment_status?: 'Due' | 'Paid';
 }
 
 interface AppState {
