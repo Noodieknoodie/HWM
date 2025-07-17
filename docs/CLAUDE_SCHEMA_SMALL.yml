@@ -1,12 +1,12 @@
-# TABLES
+# Payment Management System Schema
 
 client_quarter_markers:
   type: table
-  purpose: tracks quarterly posting status per client
+  purpose: tracks quarterly posting status for client payments
   fields:
     - client_id, year, quarter  # PK composite
-    - is_posted: bit default 0
-    - created_date, modified_date: datetime default getdate()
+    - is_posted: bit(0)
+    - created_date, modified_date: datetime(getdate())
   constraints:
     - quarter: 1-4
     - year: 2019-2100
@@ -19,278 +19,279 @@ clients_all:
     - client_id: identity PK
     - display_name, full_name: nvarchar(255)
     - ima_signed_date: date
-    - is_deleted: bit default 0
-    - deleted_date: datetime
-  patterns:
-    clients_view: "filters WHERE is_deleted = 0"
-
+    - is_deleted: bit(0), deleted_date
+  
 contacts:
   type: table
-  purpose: client contact information
+  purpose: client contact information by type
   fields:
     - contact_id: identity PK
-    - client_id, contact_type  # FK to clients_all
-    - contact_name, phone, email, fax: nvarchar
+    - client_id, contact_type  # type: Primary, etc
+    - contact_name, phone, email, fax
     - physical_address, mailing_address: nvarchar(500)
-
+  
 contracts:
   type: table
-  purpose: client billing contracts
+  purpose: client payment contracts and rates
   fields:
     - contract_id: identity PK
     - client_id, contract_number, provider_name
-    - contract_start_date: date
+    - contract_start_date, num_people
     - fee_type: percentage | flat
-    - percent_rate, flat_rate: float (one must be >0)
-    - payment_schedule: monthly | quarterly
-    - num_people: int
-    - notes: nvarchar(MAX)
-  warnings:
-    - rates stored at payment frequency (monthly=monthly rate, quarterly=quarterly rate)
+    - percent_rate, flat_rate  # mutually exclusive
+    - payment_schedule: quarterly | monthly
+    - notes: MAX
+  constraints:
+    - positive rates based on fee_type
+    - CASCADE delete with client
 
 payment_periods:
   type: table
-  purpose: defines billing periods
+  purpose: defines monthly/quarterly billing periods
   fields:
     - period_type, year, period  # PK composite
     - period_name: "December 2024" | "Q4 2024"
-    - start_date, end_date: date
-    - is_current: bit default 0
-
+    - start_date, end_date
+    - is_current: bit(0)
+  
 payments:
   type: table
-  purpose: actual payment records
+  purpose: actual payment records with period application
   fields:
     - payment_id: identity PK
-    - contract_id, client_id  # FKs
-    - received_date: date (no future)
-    - total_assets, actual_fee: float (fee >0)
-    - method, notes: nvarchar
+    - contract_id, client_id
+    - received_date, total_assets, actual_fee
+    - method, notes: MAX
     - applied_period_type, applied_period, applied_year
   constraints:
-    - period: 1-12 monthly, 1-4 quarterly
-    - year: 2018-current+1
+    - positive amounts, no future dates
+    - period validation by type
 
 quarterly_notes:
   type: table
-  purpose: quarterly commentary per client
+  purpose: client-specific quarterly commentary
   fields:
     - client_id, year, quarter  # PK composite
-    - notes: nvarchar(MAX)
-    - last_updated: datetime
-    - updated_by: nvarchar(255)
+    - notes: MAX
+    - last_updated, updated_by
 
 variance_thresholds:
   type: table
-  purpose: defines variance tolerance levels
+  purpose: configurable variance alert levels
   fields:
-    - threshold_type: varchar(20) PK
-    - max_percent: decimal(5,2) >=0
-    - display_order: int >0
-    - description: nvarchar(100)
+    - threshold_type: PK (exact, acceptable, warning, alert)
+    - max_percent: decimal(5,2)
+    - display_order, description
     - modified_date, modified_by
 
-# FUNCTIONS
-
-calculate_expected_fee:
-  type: function
-  purpose: calculates expected fee for period
-  params: client_id, fee_type, percent_rate, flat_rate, period_type, year, period
-  logic:
-    - flat: return flat_rate
-    - percentage: get AUM from current period only * percent_rate
-    - no AUM found: return NULL
-
-get_variance_status:
-  type: function
-  purpose: categorizes variance severity
-  params: actual_fee, expected_fee, has_payment
-  returns: exact | acceptable | warning | critical | alert | no_payment | unknown
-  logic:
-    - no payment: 'no_payment'
-    - no expected: 'unknown'
-    - check thresholds table ordered by display_order
-
-# VIEWS
+# === VIEWS ===
 
 clients:
   type: view
-  purpose: active clients only
+  purpose: active clients only filter
   sources: [clients_all WHERE is_deleted = 0]
-  
-dashboard_view:
-  type: view
-  purpose: current client status and rates
-  sources: [clients c, contracts ct, contacts con, LastPayment lp]
-  fields:
-    - client basics: client_id, display_name, full_name, ima_signed_date
-    - provider_name, num_people, contact info
-    - payment_schedule, fee_type
-    - current_period_display: "MMMM YYYY | Q# YYYY by schedule"
-    - payment_status: Due | Paid based on arrears billing
-    - last_payment_date, last_payment_amount
-    - aum: recorded or estimated from fee/rate
-    - monthly_rate, quarterly_rate, annual_rate: converted from stored frequency
-    - expected_fee: current period calculation
-  patterns:
-    rate_conversion: "monthly stays, quarterly/3 for monthly equiv"
-    status: "compares last applied period to current-1"
 
 payment_status_base:
   type: view
-  purpose: reusable payment status logic
+  purpose: centralized payment status calculation
+  sources: [clients, contracts, payments]
   fields:
-    - client_id, payment_schedule
-    - last_applied_period/year/type from latest payment
-    - current_period/year: always previous (arrears)
+    - last payment period/year/type
+    - current billable period (arrears: -1 month/quarter)
     - payment_status: Due | Paid
-
-comprehensive_payment_summary:
-  type: view
-  purpose: all periods with payment details
-  sources: [client_period_matrix cpm, payments p]
-  fields:
-    - all cpm fields plus payment details
-    - expected_fee: @calculate_expected_fee()
-    - variance_amount: actual - @expected_fee
-    - variance_percent: (@variance_amount / @expected_fee) * 100
-    - variance_status: @get_variance_status()
+  patterns:
+    status: "Due if no payment OR payment < current period"
 
 client_period_matrix:
   type: view
-  purpose: all valid billing periods per client
-  sources: [clients c, contracts ct, payment_periods pp]
-  logic:
-    - cross join periods matching payment_schedule
-    - filter: period >= contract_start, <= today
-    - derive quarter from month for monthly clients
+  purpose: all valid payment periods per client
+  sources: [clients, contracts, payment_periods]
+  fields:
+    - client/contract basics
+    - year, period, quarter mapping
+    - period_display: "MMM YYYY | Q# YYYY"
+    - current period context vars
+  patterns:
+    quarter_mapping: "months 1-3->Q1, 4-6->Q2, etc"
+
+comprehensive_payment_summary:
+  type: view
+  purpose: payment details with variance calculations
+  sources: [client_period_matrix cpm, payments p]
+  fields:
+    - all cpm fields
+    - payment details when exists
+    - @expected_fee: calculate_expected_fee()
+    - variance_amount: actual - @expected
+    - variance_percent: (variance/@expected)*100
+    - variance_status: get_variance_status()
 
 quarterly_summary_aggregated:
-  type: view
-  purpose: quarterly totals per client
-  sources: [comprehensive_payment_summary, client_quarter_markers cqm]
+  type: view  
+  purpose: quarterly payment aggregations by client
+  sources: [comprehensive_payment_summary, client_quarter_markers]
   fields:
     - client/contract identifiers
-    - payment_count, expected_payment_count: 3 monthly, 1 quarterly
-    - actual_total, expected_total: SUM() with COALESCE
-    - variance, variance_percent
-    - variance_status: @get_variance_status on totals
-    - posted_count: uses cqm.is_posted
-    - fully_posted: all payments posted
+    - applied_year, quarter
+    - payment_count vs expected_payment_count
+    - actual_total, expected_total, variance, variance_percent
+    - variance_status: get_variance_status()
+    - posted_count, fully_posted from markers
     - last_aum: MAX(total_assets)
+  patterns:
+    expected_count: "monthly=3, quarterly=1"
 
 quarterly_summary_enhanced:
   type: view
-  purpose: adds notes and calculated rates
+  purpose: quarterly summary with notes and rates
   sources: [quarterly_summary_aggregated qsa, quarterly_notes qn]
   fields:
-    - all qsa.* plus quarterly_notes
-    - has_notes: LEN(notes) > 0
-    - quarterly_rate, annual_rate: converted from stored frequency
-    - payment_status_display: "actual/expected counts"
-
-annual_summary_by_client:
-  type: view
-  purpose: yearly rollup with quarterly breakdown
-  sources: [quarterly_summary_aggregated grouped by year]
-  fields:
-    - q1-q4_actual, q1-q4_payments: quarterly SUMs
-    - annual_total, annual_expected, total_payments
-    - annual_rate: respects payment frequency
-    - annual_variance, annual_variance_percent
-    - fully_posted: all payments posted
+    - all qsa fields
+    - quarterly_notes, has_notes flag
+    - @quarterly_rate, @annual_rate calculations
+    - payment_status_display: "actual/expected"
 
 provider_quarterly_summary:
   type: view
-  purpose: provider-level quarterly totals
-  sources: [quarterly_summary_aggregated grouped by provider/year/quarter]
+  purpose: provider-level quarterly aggregates
+  sources: [quarterly_summary_aggregated]
   fields:
-    - client_count: DISTINCT clients
-    - provider totals: actual, expected, variance
+    - provider_name, year, quarter
+    - client_count, totals, variance
     - clients_posted/total_clients
-    - posted_display: "X/Y clients"
+    - posted_display: "X/Y"
+
+quarterly_page_data:
+  type: view
+  purpose: combined provider+client quarterly data
+  sources: [quarterly_summary_enhanced qse, provider_quarterly_summary ps, client_quarter_markers]
+  fields:
+    - provider aggregates with "provider_" prefix
+    - client details with "client_" prefix
+    - is_posted from markers
+    - row_type: 'client'
+
+annual_summary_by_client:
+  type: view
+  purpose: yearly client aggregations
+  sources: [quarterly_summary_aggregated]
+  fields:
+    - q1-q4 breakdowns (actual, payments)
+    - annual_total, annual_expected
+    - @annual_rate calculations
+    - annual_variance, annual_variance_percent
+    - fully_posted: all payments posted
 
 provider_annual_summary:
   type: view
   purpose: provider yearly totals
-  sources: [annual_summary_by_client grouped by provider/year]
+  sources: [annual_summary_by_client]
   fields:
-    - client_count, q1-q4_total, annual_total
-
-quarterly_page_data:
-  type: view
-  purpose: combined provider+client quarterly display
-  sources: [quarterly_summary_enhanced qse, provider_quarterly_summary ps, client_quarter_markers cqm]
-  fields:
-    - provider-level aggregates with ps.* prefix
-    - client-level details from qse
-    - is_posted from cqm
-    - row_type: 'client'
+    - provider_name, year
+    - client_count
+    - q1-q4 totals, annual_total
 
 annual_page_data:
   type: view
   purpose: combined provider+client annual display
   sources: [annual_summary_by_client asbc, provider_annual_summary pas]
   fields:
-    - provider aggregates: client_count, quarterly/annual totals
-    - client details: rates, quarterly actuals/payments, variance
+    - provider totals with "provider_" prefix
+    - client details with "client_" prefix
     - row_type: 'client'
+
+dashboard_view:
+  type: view
+  purpose: current status and rate info for all clients
+  sources: [clients c, contracts ct, contacts con, LastPayment CTE]
+  fields:
+    - client/contact/provider basics
+    - current_period_display: arrears format
+    - payment_status: Due | Paid
+    - last payment info
+    - aum: recorded or estimated from percentage
+    - @monthly_rate, @quarterly_rate, @annual_rate
+    - expected_fee for current period
+  patterns:
+    rate_conversions: "respect payment frequency"
+    aum_estimation: "fee/percent_rate when assets null"
 
 payment_history_view:
   type: view
   purpose: payment records with calculations
   sources: [payments p, contracts ct]
   fields:
-    - payment details plus provider_name
-    - period_display: "MMM YYYY | Q# YYYY"
-    - expected_fee: @calculate_expected_fee
+    - payment details
+    - period_display: formatted period
     - display_aum: recorded or estimated
-    - is_aum_estimated: flag
-    - variance calculations: blocked when AUM estimated
-    - variance_status: 'unknown' when estimated
+    - @expected_fee via function
+    - variance calculations (blocked if AUM estimated)
+    - variance_status: 'unknown' if estimated
+  warnings:
+    - variance not calculated when AUM is estimated
+
+sidebar_clients_view:
+  type: view
+  purpose: simplified client list with status
+  sources: [clients c, contracts ct, payment_status_base ps]
+  fields:
+    - client_id, display_name, full_name
+    - provider_name
+    - payment_status
 
 payment_form_defaults_view:
   type: view
-  purpose: defaults for payment entry form
+  purpose: payment entry form suggestions
+  sources: [clients, contracts, payment_status_base, last AUM subquery]
   fields:
-    - contract details, suggested_aum from last recorded
-    - current_period/year, payment_status
+    - contract details
+    - suggested_aum from last recorded
+    - current period/year/status
 
 payment_form_periods_view:
   type: view
   purpose: available periods for payment entry
+  sources: [clients, contracts, payment_periods, payments]
   fields:
-    - year, period, display_text by schedule
-    - is_paid: payment exists
-
-sidebar_clients_view:
-  type: view
-  purpose: client list with status
-  sources: [clients c, contracts ct, payment_status_base ps]
-  fields:
-    - client_id, display_name, full_name
-    - provider_name, payment_status
+    - client_id, year, period
+    - display_text: period formatted
+    - is_paid flag
+  constraints:
+    - periods <= today, >= first payment
 
 yearly_summaries_view:
   type: view
-  purpose: annual summaries with quarterly detail
-  sources: [quarterly_summary_aggregated grouped by year]
+  purpose: annual summaries from quarterly data
+  sources: [quarterly_summary_aggregated]
   fields:
-    - payment/expected counts, totals, variance
-    - variance_status: @get_variance_status
-    - quarterly breakdowns: q1-q4 actual/payments
-    - fully_posted: all posted
+    - yearly aggregations
+    - q1-q4 breakdowns
+    - variance_status via function
+    - fully_posted when all posted
 
-# INDEXES
-- client_quarter_markers: [year, quarter] INCLUDE is_posted
-- contacts: client_id, [client_id, contact_type]
-- contracts: client_id, provider_name
-- payment_periods: [period_type, start_date, end_date]
-- payments: client_id, contract_id, [client_id, received_date], period lookups
+# === FUNCTIONS ===
 
-# PATTERNS
-arrears_billing: "always bill for previous period (month-1 or quarter-1)"
-rate_storage: "rates stored at payment frequency, views convert as needed"
-variance_thresholds: "exact < acceptable < warning < critical < alert"
-posted_tracking: "client_quarter_markers.is_posted controls quarterly status"
-aum_estimation: "percentage payments without AUM: fee/rate = estimated AUM"
+calculate_expected_fee:
+  type: function
+  purpose: determine expected payment amount
+  params: client_id, fee_type, percent_rate, flat_rate, period_type, year, period
+  returns: float
+  logic:
+    - flat: return flat_rate
+    - percentage: get AUM for exact period, calc rate*AUM
+    - no AUM: return NULL
+  warnings:
+    - only uses AUM from exact period match
+
+get_variance_status:
+  type: function
+  purpose: categorize payment variance severity
+  params: actual_fee, expected_fee, has_payment
+  returns: varchar(20)
+  logic:
+    - no_payment: when has_payment=0
+    - unknown: when expected null/zero
+    - exact: variance < exact_threshold
+    - check % thresholds ordered by display_order
+  patterns:
+    thresholds: "exact->acceptable->warning->alert"

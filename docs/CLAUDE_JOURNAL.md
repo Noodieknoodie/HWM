@@ -399,4 +399,234 @@ See `export_files_dump.py` and `export_implementation_dump.txt` for complete fil
   The core flow works but the data transformation is completely broken due to mismatched field names between what the UI expects and what the database views provide.
 
 
-  {{FIXME}}
+## EXPORT FEATURE CRITICAL FIXES [2025-01-17T14:45:00Z]: Field Mapping and Performance Issues
+
+### Context
+Zeus performed runtime simulation of export functionality and discovered critical field mapping errors between ExportDataPage component and SQL views. The export feature appears to work but produces empty/incorrect CSV files due to mismatched field names.
+
+### SPRINT 1: Fix Quarterly Summary Field Mappings
+// Delegated to: SUBAGENT FieldMapper
+
+#### The Issue
+ExportDataPage.tsx lines 131-137 map fields that don't exist in quarterly_page_data view. User exports CSV but gets incorrect data or empty columns because the component expects different field names than what the database provides.
+
+#### Why This Matters
+- Data Integrity: Exports show $0 or empty values instead of actual data
+- User Trust: Broken exports make the entire feature unusable
+- Business Impact: Can't generate quarterly reports for stakeholders
+
+#### Expected Solution
+- Map correct fields from quarterly_page_data view
+- Fix rate formatting (percentage vs decimal)
+- Ensure variance calculations work correctly
+
+#### Dependencies & Files Touched
+Frontend: src/components/export/ExportDataPage.tsx (EDIT - lines 131-137)
+Database View: quarterly_page_data (READ-ONLY reference)
+
+#### Implementation
+```typescript
+// CURRENT BROKEN CODE (lines 131-137):
+rate: row.fee_type === 'Percentage' ? `${row.fee_percentage}%` : `$${row.fee_flat}`,
+expected: row.expected_fee || 0,
+actual: row.amount_received || 0,
+
+// FIXED CODE:
+rate: row.fee_type === 'percentage' ? `${(row.percent_rate * 100).toFixed(4)}%` : `$${row.flat_rate}`,
+expected: row.client_expected || 0,
+actual: row.client_actual || 0,
+variance: row.client_variance || 0,
+variancePercent: row.client_variance_percent || 0,
+status: row.variance_status || 'N/A'
+```
+
+Test: Export Quarterly Summary → Open CSV → Verify data matches UI display
+---
+
+### SPRINT 2: Fix Annual Summary Field Mappings
+// Delegated to: SUBAGENT AnnualFixer
+
+#### The Issue
+Same field mapping problems in Annual Summary export (lines 180-189). Additionally, annual view has different quarterly total field names that need proper mapping.
+
+#### Why This Matters
+- Year-end reporting broken
+- Can't track annual trends
+- Q1-Q4 breakdowns show as $0
+
+#### Expected Solution
+- Map annual_page_data view fields correctly
+- Fix quarterly totals (q1_actual, q2_actual, etc.)
+- Ensure provider grouping works
+
+#### Dependencies & Files Touched
+Frontend: src/components/export/ExportDataPage.tsx (EDIT - lines 180-189)
+Database View: annual_page_data (READ-ONLY reference)
+
+#### Implementation
+```typescript
+// CURRENT BROKEN CODE:
+annualRate: row.fee_type === 'Percentage' ? `${row.fee_percentage}%` : `$${row.fee_flat}`,
+q1: row.q1_total || 0,
+q2: row.q2_total || 0,
+
+// FIXED CODE:
+annualRate: row.fee_type === 'percentage' ? `${row.annual_rate}%` : `$${row.annual_rate}`,
+q1: row.q1_actual || 0,
+q2: row.q2_actual || 0,
+q3: row.q3_actual || 0,
+q4: row.q4_actual || 0,
+total: row.client_annual_total || 0
+```
+
+Test: Export Annual Summary → Verify quarterly breakdowns sum to total
+---
+
+### SPRINT 3: Fix Payment History Field Mappings
+// Delegated to: SUBAGENT PaymentFixer
+
+#### The Issue
+Client Payment History export (lines 234-246) uses completely wrong field names from payment_history_view. Most critical data like amounts and periods are broken.
+
+#### Why This Matters
+- Payment audit trails unusable
+- Can't verify historical payments
+- Compliance reporting broken
+
+#### Expected Solution
+- Map payment_history_view fields correctly
+- Fix date formatting
+- Handle estimated vs recorded AUM properly
+
+#### Dependencies & Files Touched
+Frontend: src/components/export/ExportDataPage.tsx (EDIT - lines 234-246)
+Database View: payment_history_view (READ-ONLY reference)
+
+#### Implementation
+```typescript
+// CURRENT BROKEN CODE:
+period: `${payment.period_label} ${payment.applied_year}`,
+paymentMethod: payment.payment_method || 'N/A',
+amount: payment.amount,
+aum: includeAum ? payment.aum : undefined,
+
+// FIXED CODE:
+period: payment.period_display,
+paymentMethod: payment.method || 'N/A',
+amount: payment.actual_fee,
+aum: includeAum ? payment.display_aum : undefined,
+expectedFee: payment.expected_fee || 0,
+variance: includeVariance ? payment.variance_amount : undefined,
+variancePercent: includeVariance ? payment.variance_percent : undefined,
+status: includeVariance ? payment.variance_status : undefined
+```
+
+Test: Export Payment History → Verify amounts match payment records
+---
+
+### SPRINT 4: Implement Date Range Filtering
+// Delegated to: SUBAGENT DateFilter
+
+#### The Issue
+Date range picker UI exists but doesn't filter data. User selects custom date range but gets ALL historical data anyway.
+
+#### Why This Matters
+- Exports too large for specific reporting periods
+- Can't generate monthly/quarterly statements
+- Performance issues with full history
+
+#### Expected Solution
+- Add date filtering to getPayments() API call
+- Update payment_history_view query with date range
+- Show selected range in export filename
+
+#### Dependencies & Files Touched
+Frontend: src/components/export/ExportDataPage.tsx (EDIT - line 223)
+Frontend: src/api/client.ts (EDIT - getPayments method)
+
+#### Implementation
+```typescript
+// Add date filtering to API call:
+const payments = await apiClient.getPayments(
+  clientId,
+  undefined, // year
+  dateRangeType === 'custom' && date?.from ? date.from : undefined,
+  dateRangeType === 'custom' && date?.to ? date.to : undefined
+);
+
+// Update API client to accept date range:
+async getPayments(clientId: number, year?: number, startDate?: Date, endDate?: Date) {
+  let filter = `client_id eq ${clientId}`;
+  if (startDate) {
+    filter += ` and received_date ge ${startDate.toISOString().split('T')[0]}`;
+  }
+  if (endDate) {
+    filter += ` and received_date le ${endDate.toISOString().split('T')[0]}`;
+  }
+  return this.request(`payment_history_view?$filter=${filter}&$orderby=received_date desc`);
+}
+```
+
+Test: Select custom date range → Export → Verify only payments in range included
+---
+
+### SPRINT 5: Fix System Data Export Performance
+// Delegated to: SUBAGENT BatchOptimizer
+
+#### The Issue
+System data exports make N+1 queries (one per client) causing 30+ API calls for contracts/contacts export. No batching = poor performance and potential timeouts.
+
+#### Why This Matters
+- Export takes 30+ seconds for medium datasets
+- Risk of timeout errors
+- Poor user experience with no progress indicator
+
+#### Expected Solution
+- Create batch endpoints or use existing views
+- Show real record counts instead of estimates
+- Add loading progress indicator
+
+#### Dependencies & Files Touched
+Frontend: src/components/export/ExportDataPage.tsx (EDIT - lines 298-343)
+Backend: Consider new batch endpoints (DISCUSS)
+
+#### Implementation
+```typescript
+// Instead of looping through clients:
+case 'contracts':
+  // Use a single query to get all contracts with client names
+  data = await apiClient.request('contracts?$expand=client');
+  filename = 'contracts';
+  break;
+
+case 'contacts':
+  // Single query with client info
+  data = await apiClient.request('contacts?$expand=client');
+  filename = 'contacts';
+  break;
+
+// Update record counts to use actual data:
+{ name: "Contracts", count: contractsData.length, key: "contracts" },
+{ name: "Contacts", count: contactsData.length, key: "contacts" },
+```
+
+Test: Export System Data → Monitor network tab → Verify single API call
+---
+
+## Validation Checklist
+- [ ] Quarterly Summary: Exported CSV shows correct amounts, rates, and variance
+- [ ] Annual Summary: Q1-Q4 values populated and sum to annual total
+- [ ] Payment History: All payment details exported with correct amounts
+- [ ] Date Range: Custom date filter actually limits exported data
+- [ ] System Data: Exports complete in <5 seconds with accurate counts
+- [ ] Excel Export: Implement proper xlsx export or remove button
+- [ ] Error Handling: Show user-friendly messages for export failures
+
+## Implementation Order
+1. Fix field mappings (Critical - exports unusable without this)
+2. Implement date filtering (High - users expect this to work)
+3. Optimize system data exports (Medium - performance issue)
+4. Add proper Excel export (Low - CSV works as fallback)
+
+#### Implementation Status: PENDING
+// Zeus Review: Critical bugs identified. Exports look functional but produce garbage data. Must fix field mappings immediately.
