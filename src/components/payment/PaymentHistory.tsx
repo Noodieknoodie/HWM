@@ -167,7 +167,9 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                     {formatCurrency(payment.expected_fee)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {payment.variance_amount !== undefined && payment.variance_amount !== null ? (
+                    {payment.is_aum_estimated ? (
+                      <span className="text-gray-500 italic">N/A - Est. AUM</span>
+                    ) : payment.variance_amount !== undefined && payment.variance_amount !== null ? (
                       <span className="text-gray-900">
                         {formatCurrency(payment.variance_amount)}
                         {payment.variance_percent !== undefined && payment.variance_percent !== null && (
@@ -183,8 +185,15 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                       <span className="text-gray-400">N/A</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(payment.total_assets)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {payment.display_aum !== null && payment.display_aum !== undefined ? (
+                      <span className={payment.is_aum_estimated ? 'text-gray-500 italic' : 'text-gray-900'}>
+                        {formatCurrency(payment.display_aum)}
+                        {payment.is_aum_estimated && <span className="text-gray-400 ml-1">*</span>}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">--</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">

@@ -25,6 +25,8 @@ export interface DashboardViewData {
   aum: number | null;
   aum_estimated: number | null;
   aum_source: 'recorded' | 'estimated' | null;
+  display_aum?: number | null;
+  is_aum_estimated?: boolean;
   
   // Payment info
   last_payment_date: string | null;

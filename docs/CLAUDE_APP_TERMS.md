@@ -4,6 +4,24 @@
 This application is for the operations employees at my company, Hohimer Wealth Management. My company manages the assets within the 401k plans that our clients offer to their employees. This app is a simple tool to help us organize and streamline the entry process, move away from risky Excel sheets, modernize our workflow, and help Dodd, our compliance officer, not have to scramble so much. These payments are typically paid via checks received from providers (like John Hancock, VOYA, etc.), and sometimes a single check is for multiple clients at once, though that detail doesn't really matter for this project. Regardless, I hope this helps put you in the right state of mind as you spearhead finishing this up. The user is smart enough to be dangerous in coding but is too excited by the advent of agentic coding tools (such as yourself) to dedicate his time to learning. He relies on your judgment, and you can expect to be the one doing all the coding in this project, so please don't suggest things you'll regret having to build yourself.
 
 
+/// NOTE ///
+<UPDATE>
+All database modifications are now complete:
+
+✅ calculate_expected_fee - Only uses current period AUM
+✅ Variance thresholds - Properly configured in table
+✅ Posted status - Using client_quarter_markers correctly
+✅ AUM estimation - Tracking and blocking variance for estimates
+✅ Legacy cleanup - No compliance_status references found
+
+The database is now properly handling all the business rules from the app terms. The frontend will need updates to:
+
+Display estimated AUM differently (gray/italic with asterisk)
+Show "N/A - Est. AUM" for variance when is_aum_estimated = 1
+Use the new display_aum field instead of total_assets
+</UPDATE>
+
+
 # Terminology Index
 
 ## 1. System Overview

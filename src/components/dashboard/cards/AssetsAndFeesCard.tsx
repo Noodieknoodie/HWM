@@ -42,9 +42,14 @@ export const AssetsAndFeesCard: React.FC<AssetsAndFeesCardProps> = ({ dashboardD
   ];
   
   // Format AUM with asterisk if estimated
-  const aumDisplay = dashboardData.aum 
-    ? `${formatCurrency(dashboardData.aum, 0)}${dashboardData.aum_source === 'estimated' ? '*' : ''}`
-    : 'N/A';
+  const aumDisplay = dashboardData.aum ? (
+    <span className={dashboardData.aum_source === 'estimated' ? 'text-gray-500 italic' : ''}>
+      {formatCurrency(dashboardData.aum, 0)}
+      {dashboardData.aum_source === 'estimated' && <span className="text-gray-400 ml-1">*</span>}
+    </span>
+  ) : (
+    <span className="text-gray-400">N/A</span>
+  );
 
   return (
     <GridAlignedCard

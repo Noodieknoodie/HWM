@@ -28,6 +28,8 @@ export interface Payment {
   variance_amount?: number | null;
   variance_percent?: number | null;
   variance_status?: string;
+  display_aum?: number | null;
+  is_aum_estimated?: boolean;
 }
 
 export interface PaymentCreateData {

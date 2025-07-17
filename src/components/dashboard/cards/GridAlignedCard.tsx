@@ -17,8 +17,15 @@ export const GridAlignedCard: React.FC<GridAlignedCardProps> = ({
   action 
 }) => {
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 flex flex-col h-full">
-      <h3 className="font-semibold text-sm mb-3 text-gray-600">{title}</h3>
+    <div className="bg-white rounded-lg p-6 border border-gray-200 flex flex-col h-full relative">
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="font-semibold text-sm text-gray-600">{title}</h3>
+        {action && (
+          <div className="ml-2">
+            {action}
+          </div>
+        )}
+      </div>
       <div className="min-h-[4rem] flex flex-col justify-center border-b pb-3 mb-3">
         {mainValueLabel && <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{mainValueLabel}</p>}
         {typeof mainValue === "string" ? (
@@ -35,11 +42,6 @@ export const GridAlignedCard: React.FC<GridAlignedCardProps> = ({
           </div>
         ))}
       </div>
-      {action && (
-        <div className="mt-4 pt-3 border-t">
-          {action}
-        </div>
-      )}
     </div>
   );
 };

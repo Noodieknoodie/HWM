@@ -1,4 +1,4 @@
--- Generated: 2025-07-16 16:50:30
+-- Generated: 2025-07-17 02:22:53
 -- ===== TABLES =====
 -- Table: client_quarter_markers
 CREATE TABLE [dbo].[client_quarter_markers] (
@@ -193,7 +193,6 @@ JOIN provider_annual_summary pas
 -- 'Ascensus' | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 19 | 'Opportunity Interactive' | 'quarterly' | 'flat' | NULL | 2000.0 | 8000.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0 | 0.0 | 8000.0 | -8000.0 | -100.0 | 0 | 0 | 4 | 2019 | 'client'
 -- 'Ascensus Trust Company' | 2 | 0.0 | 1648.35 | 2956.44 | 4750.0 | 9354.79 | 5 | 'BDR Interactive' | 'quarterly' | 'flat' | NULL | 3000.0 | 12000.0 | 0.0 | 0.0 | 2500.0 | 2500.0 | 0 | 0 | 1 | 1 | 5000.0 | 6000.0 | -1000.0 | -16.67 | 0 | 2 | 2 | 2019 | 'client'
 -- View: annual_summary_by_client
--- Section 5G: Recreate annual_summary_by_client
 CREATE VIEW [dbo].[annual_summary_by_client] AS
 WITH QuarterlyData AS (
     SELECT 
@@ -218,6 +217,7 @@ WITH QuarterlyData AS (
         SUM(expected_total) as annual_expected,
         SUM(payment_count) as total_payments,
         SUM(expected_payment_count) as total_expected_payments,
+        -- FIXED: Now summing actual posted counts from quarterly_summary_aggregated
         SUM(posted_count) as total_posted_count
     FROM quarterly_summary_aggregated
     GROUP BY provider_name, client_id, display_name, payment_schedule, 
@@ -245,7 +245,7 @@ SELECT
             ROUND((annual_total - annual_expected) / annual_expected * 100, 2)
         ELSE NULL
     END as annual_variance_percent,
-    -- Annual posted status - all payments must be posted
+    -- FIXED: Annual posted status - all payments must be posted
     CASE 
         WHEN total_payments = 0 THEN 0
         WHEN total_posted_count = total_payments THEN 1
@@ -618,7 +618,6 @@ WHERE pp.end_date <= GETDATE()  -- Not future periods
 -- 1 | 2019 | 5 | 'May 2019' | 1
 -- 1 | 2019 | 6 | 'June 2019' | 1
 -- View: payment_history_view
--- STEP 5: Update payment_history_view to use the function
 CREATE VIEW [dbo].[payment_history_view] AS
 SELECT 
     p.payment_id,
@@ -661,35 +660,61 @@ SELECT
         WHEN p.applied_period_type = 'quarterly' THEN 
             'Q' + CAST(p.applied_period AS VARCHAR) + ' ' + CAST(p.applied_year AS VARCHAR)
     END AS period_display,
-    p.actual_fee - dbo.calculate_expected_fee(
-        p.client_id,
-        ct.fee_type,
-        ct.percent_rate,
-        ct.flat_rate,
-        p.applied_period_type,
-        p.applied_year,
-        p.applied_period
-    ) AS variance_amount,
+    
+    -- NEW: Add AUM estimation tracking
     CASE 
+        WHEN p.total_assets IS NOT NULL THEN p.total_assets
+        WHEN ct.fee_type = 'percentage' AND ct.percent_rate > 0 AND p.actual_fee > 0 
+            THEN p.actual_fee / ct.percent_rate
+        ELSE NULL
+    END as display_aum,
+    
+    CASE 
+        WHEN p.total_assets IS NOT NULL THEN 0
+        WHEN ct.fee_type = 'percentage' AND ct.percent_rate > 0 AND p.actual_fee > 0 THEN 1
+        ELSE 0
+    END as is_aum_estimated,
+    
+    -- MODIFIED: Block variance calculations when AUM is estimated
+    CASE 
+        WHEN p.total_assets IS NULL AND ct.fee_type = 'percentage' THEN NULL
+        ELSE p.actual_fee - dbo.calculate_expected_fee(
+            p.client_id,
+            ct.fee_type,
+            ct.percent_rate,
+            ct.flat_rate,
+            p.applied_period_type,
+            p.applied_year,
+            p.applied_period
+        )
+    END AS variance_amount,
+    
+    CASE 
+        WHEN p.total_assets IS NULL AND ct.fee_type = 'percentage' THEN NULL
         WHEN dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period) = 0 
             OR dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period) IS NULL 
         THEN NULL
         ELSE ((p.actual_fee - dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) 
               / dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) * 100
     END AS variance_percent,
-    -- REPLACED: Now using our centralized function
-    dbo.get_variance_status(
-        p.actual_fee,
-        dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period),
-        1  -- Always has payment in this view
-    ) AS variance_status
+    
+    -- MODIFIED: Show special status for estimated AUM
+    CASE 
+        WHEN p.total_assets IS NULL AND ct.fee_type = 'percentage' THEN 'unknown'
+        ELSE dbo.get_variance_status(
+            p.actual_fee,
+            dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period),
+            1
+        )
+    END AS variance_status
+
 FROM payments p
 JOIN contracts ct ON p.contract_id = ct.contract_id;
 -- Sample data (3 rows from end of 2024 or latest available):
--- payment_id | contract_id | client_id | received_date | total_assets | expected_fee | actual_fee | method | notes | applied_period_type | applied_period | applied_year | provider_name | period_display | variance_amount | variance_percent | variance_status
--- 1065 | 10 | 10 | 2024-12-17 | 3008463.47 | 2006.65 | 2005.63 | 'Check' | NULL | 'monthly' | 11 | 2024 | 'Empower' | 'Nov 2024' | -1.0199999999999818 | -0.05083098696832939 | 'acceptable'
--- 1082 | 34 | 28 | 2024-12-17 | 2009948.21 | 1340.64 | 1339.97 | 'Check' | NULL | 'monthly' | 11 | 2024 | 'Empower' | 'Nov 2024' | -0.6700000000000728 | -0.04997613080320389 | 'acceptable'
--- 1056 | 1 | 1 | 2024-12-06 | 1395147.37 | 976.6 | 926.68 | 'Check' | 'John Hancock payment' | 'monthly' | 11 | 2024 | 'John Hancock' | 'Nov 2024' | -49.92000000000007 | -5.111611714110185 | 'warning'
+-- payment_id | contract_id | client_id | received_date | total_assets | expected_fee | actual_fee | method | notes | applied_period_type | applied_period | applied_year | provider_name | period_display | display_aum | is_aum_estimated | variance_amount | variance_percent | variance_status
+-- 1065 | 10 | 10 | 2024-12-17 | 3008463.47 | 2006.65 | 2005.63 | 'Check' | NULL | 'monthly' | 11 | 2024 | 'Empower' | 'Nov 2024' | 3008463.47 | 0 | -1.0199999999999818 | -0.05083098696832939 | 'acceptable'
+-- 1082 | 34 | 28 | 2024-12-17 | 2009948.21 | 1340.64 | 1339.97 | 'Check' | NULL | 'monthly' | 11 | 2024 | 'Empower' | 'Nov 2024' | 2009948.21 | 0 | -0.6700000000000728 | -0.04997613080320389 | 'acceptable'
+-- 1056 | 1 | 1 | 2024-12-06 | 1395147.37 | 976.6 | 926.68 | 'Check' | 'John Hancock payment' | 'monthly' | 11 | 2024 | 'John Hancock' | 'Nov 2024' | 1395147.37 | 0 | -49.92000000000007 | -5.111611714110185 | 'warning'
 -- View: payment_status_base
 -- =====================================================
 -- Create a base view for payment status calculation
@@ -774,8 +799,8 @@ GROUP BY provider_name, applied_year;
 -- Sample data (3 rows):
 -- provider_name | year | client_count | q1_total | q2_total | q3_total | q4_total | annual_total
 -- 'Ascensus' | 2019 | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0
--- 'Ascensus Trust Company' | 2019 | 2 | 0.0 | 1648.35 | 2956.44 | 4750.0 | 9354.79
--- 'Capital Group / American Funds' | 2019 | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0
+-- 'Ascensus' | 2020 | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0
+-- 'Ascensus' | 2021 | 2 | 2000.0 | 2000.0 | 2000.0 | 2000.0 | 8000.0
 -- View: provider_quarterly_summary
 -- Section 5E: Recreate provider_quarterly_summary
 CREATE VIEW [dbo].[provider_quarterly_summary] AS
@@ -845,22 +870,21 @@ LEFT JOIN client_quarter_markers cqm
     AND cqm.quarter = qse.quarter;
 -- Sample data (3 rows):
 -- provider_name | provider_client_count | provider_actual_total | provider_expected_total | provider_variance | clients_posted | total_clients | provider_posted_display | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | quarterly_rate | client_expected | client_actual | client_variance | client_variance_percent | variance_status | payment_count | expected_payment_count | payment_status_display | fully_posted | has_notes | quarterly_notes | posted_count | is_posted | applied_year | quarter | row_type
--- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | 0 | 0 | NULL | 0 | False | 2019 | 1 | 'client'
--- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | 0 | 0 | NULL | 0 | False | 2019 | 2 | 'client'
--- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | 0 | 0 | NULL | 0 | False | 2019 | 3 | 'client'
+-- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | False | 0 | NULL | 0 | False | 2019 | 1 | 'client'
+-- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 19 | 'Opportunity Interactive' | 'quarterly' | 'flat' | NULL | 2000.0 | 2000.0 | 2000.0 | 0.0 | -2000.0 | -100.0 | 'no_payment' | 0 | 1 | '0/1' | False | 0 | NULL | 0 | False | 2019 | 1 | 'client'
+-- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | False | 0 | NULL | 0 | False | 2019 | 2 | 'client'
 -- View: quarterly_summary_aggregated
--- STEP 4: Update quarterly_summary_aggregated to use the function
 CREATE VIEW [dbo].[quarterly_summary_aggregated] AS
 SELECT 
     provider_name,
-    client_id,
+    cps.client_id,
     display_name,
     payment_schedule,
     fee_type,
     percent_rate,
     flat_rate,
-    year as applied_year,
-    quarter,
+    cps.year as applied_year,
+    cps.quarter,
     COUNT(CASE WHEN payment_id IS NOT NULL THEN 1 END) as payment_count,
     CASE 
         WHEN payment_schedule = 'monthly' THEN 3
@@ -873,31 +897,40 @@ SELECT
         WHEN COALESCE(SUM(expected_fee), 0) = 0 THEN NULL
         ELSE ROUND(((COALESCE(SUM(actual_fee), 0) - COALESCE(SUM(expected_fee), 0)) / ABS(COALESCE(SUM(expected_fee), 0))) * 100, 1)
     END as variance_percent,
-    -- REPLACED: Now using our centralized function
     dbo.get_variance_status(
         COALESCE(SUM(actual_fee), 0),
         COALESCE(SUM(expected_fee), 0),
         CASE WHEN COUNT(payment_id) = 0 THEN 0 ELSE 1 END
     ) as variance_status,
-    0 as posted_count,
-    0 as fully_posted,
+    -- FIXED: Now using actual posted status from client_quarter_markers
+    CASE 
+        WHEN COUNT(payment_id) = 0 THEN 0
+        WHEN cqm.is_posted = 1 THEN COUNT(payment_id)
+        ELSE 0
+    END as posted_count,
+    ISNULL(cqm.is_posted, 0) as fully_posted,
     MAX(total_assets) as last_aum
-FROM comprehensive_payment_summary
+FROM comprehensive_payment_summary cps
+LEFT JOIN client_quarter_markers cqm 
+    ON cps.client_id = cqm.client_id 
+    AND cps.year = cqm.year 
+    AND cps.quarter = cqm.quarter
 GROUP BY 
     provider_name,
-    client_id,
+    cps.client_id,
     display_name,
     payment_schedule,
     fee_type,
     percent_rate,
     flat_rate,
-    year,
-    quarter;
+    cps.year,
+    cps.quarter,
+    cqm.is_posted;
 -- Sample data (3 rows):
 -- provider_name | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | applied_year | quarter | payment_count | expected_payment_count | actual_total | expected_total | variance | variance_percent | variance_status | posted_count | fully_posted | last_aum
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 1 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | NULL
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 2 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | NULL
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 3 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | NULL
+-- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 1 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | False | NULL
+-- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 2 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | False | NULL
+-- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 3 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | False | NULL
 -- View: quarterly_summary_enhanced
 -- Section 5D: Recreate quarterly_summary_enhanced
 CREATE VIEW [dbo].[quarterly_summary_enhanced] AS
@@ -1041,7 +1074,7 @@ GROUP BY
 -- ===== STORED PROCEDURES =====
 -- ===== FUNCTIONS =====
 -- Function: calculate_expected_fee (SQL_SCALAR_FUNCTION)
-CREATE   FUNCTION [dbo].[calculate_expected_fee]
+CREATE FUNCTION [dbo].[calculate_expected_fee]
 (
     @client_id INT,
     @fee_type NVARCHAR(50),
@@ -1062,34 +1095,24 @@ BEGIN
     END
     ELSE IF @fee_type = 'percentage' AND @percent_rate IS NOT NULL AND @percent_rate > 0
     BEGIN
-        -- Get AUM for the period
+        -- Get AUM for CURRENT PERIOD ONLY
         DECLARE @aum FLOAT;
         
-        -- Try to get AUM from the specific period
         SELECT TOP 1 @aum = total_assets
         FROM payments
         WHERE client_id = @client_id 
           AND applied_year = @year 
           AND applied_period = @period
+          AND applied_period_type = @period_type
           AND total_assets IS NOT NULL
         ORDER BY received_date DESC;
         
-        -- If no AUM for period, get most recent
-        IF @aum IS NULL
-        BEGIN
-            SELECT TOP 1 @aum = total_assets
-            FROM payments
-            WHERE client_id = @client_id 
-              AND total_assets IS NOT NULL
-              AND (applied_year < @year OR (applied_year = @year AND applied_period < @period))
-            ORDER BY applied_year DESC, applied_period DESC, received_date DESC;
-        END
-        
-        -- Calculate fee
+        -- If AUM found, calculate fee. If not, return NULL.
         IF @aum IS NOT NULL
         BEGIN
             SET @expected_fee = ROUND(@aum * @percent_rate, 2);
         END
+        -- REMOVED: No more looking backwards for old AUM
     END
     
     RETURN @expected_fee;

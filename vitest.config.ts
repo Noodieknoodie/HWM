@@ -1,17 +1,16 @@
-import { defineConfig } from 'vitest/config'
-import path from 'path'
-import { TDDGuardReporter } from 'tdd-guard/vitest-reporter'
+import path from "path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: './TESTS/setup/test-setup.ts',
-    reporters: ['default', new TDDGuardReporter()],
+    environment: "jsdom",
+    setupFiles: "./TESTS/setup/test-setup.ts",
+    reporters: ["default"],
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});
