@@ -1,0 +1,1788 @@
+#### src/components/ui/multi-select.tsx ####
+"use client"
+
+import * as React from "react"
+import { X, ChevronsUpDown } from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ScrollArea } from "@/components/ui/scroll-area"
+
+type Option = Record<"value" | "label", string> & Record<string, string>
+
+interface MultiSelectProps {
+  options: Option[]
+  selected: string[]
+  onChange: React.Dispatch<React.SetStateAction<string[]>>
+  placeholder?: string
+  className?: string
+  groupBy?: string
+}
+
+export function MultiSelect({
+  options,
+  selected,
+  onChange,
+  placeholder = "Select options...",
+  className,
+  groupBy,
+}: MultiSelectProps) {
+  const [open, setOpen] = React.useState(false)
+
+  const handleSelect = (value: string) => {
+    onChange(selected.includes(value) ? selected.filter((s) => s !== value) : [...selected, value])
+  }
+
+  const selectedObjects = selected.map((s) => options.find((opt) => opt.value === s)).filter(Boolean) as Option[]
+
+  const groupedOptions = React.useMemo(() => {
+    if (!groupBy) return null
+    return options.reduce(
+      (acc, option) => {
+        const group = option[groupBy] || "Other"
+        if (!acc[group]) {
+          acc[group] = []
+        }
+        acc[group].push(option)
+        return acc
+      },
+      {} as Record<string, Option[]>,
+    )
+  }, [options, groupBy])
+
+  const handleSelectGroup = (group: string) => {
+    if (!groupedOptions) return
+    const groupOptions = groupedOptions[group].map((opt) => opt.value)
+    const allSelected = groupOptions.every((opt) => selected.includes(opt))
+
+    if (allSelected) {
+      // Deselect all in group
+      onChange(selected.filter((s) => !groupOptions.includes(s)))
+    } else {
+      // Select all in group
+      onChange([...new Set([...selected, ...groupOptions])])
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={`w-full justify-between ${className}`}
+        >
+          <div className="flex flex-wrap gap-1 items-center py-1">
+            {selectedObjects.length > 0 ? (
+              selectedObjects.map((option) => (
+                <Badge
+                  key={option.value}
+                  variant="secondary"
+                  className="mr-1"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    handleSelect(option.value)
+                  }}
+                >
+                  {option.label}
+                  <X className="ml-1 h-3 w-3 cursor-pointer" />
+                </Badge>
+              ))
+            ) : (
+              <span className="text-muted-foreground font-normal">{placeholder}</span>
+            )}
+          </div>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+        <ScrollArea className="max-h-72">
+          <div className="p-2">
+            {groupedOptions
+              ? Object.entries(groupedOptions).map(([group, groupOptions]) => {
+                  const allSelectedInGroup = groupOptions.every((opt) => selected.includes(opt.value))
+                  const someSelectedInGroup = groupOptions.some((opt) => selected.includes(opt.value))
+
+                  return (
+                    <div key={group} className="mb-2">
+                      <div className="flex items-center space-x-2 px-2 py-1.5">
+                        <Checkbox
+                          id={`select-all-${group}`}
+                          checked={allSelectedInGroup ? true : someSelectedInGroup ? "indeterminate" : false}
+                          onCheckedChange={() => handleSelectGroup(group)}
+                        />
+                        <Label htmlFor={`select-all-${group}`} className="font-semibold cursor-pointer">
+                          {group}
+                        </Label>
+                      </div>
+                      <div className="pl-4">
+                        {groupOptions.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2 px-2 py-1.5">
+                            <Checkbox
+                              id={option.value}
+                              checked={selected.includes(option.value)}
+                              onCheckedChange={() => handleSelect(option.value)}
+                            />
+                            <Label htmlFor={option.value} className="w-full font-normal cursor-pointer">
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })
+              : options.map((option) => (
+                  <div key={option.value} className="flex items-center space-x-2 px-2 py-1.5">
+                    <Checkbox
+                      id={option.value}
+                      checked={selected.includes(option.value)}
+                      onCheckedChange={() => handleSelect(option.value)}
+                    />
+                    <Label htmlFor={option.value} className="w-full font-normal cursor-pointer">
+                      {option.label}
+                    </Label>
+                  </div>
+                ))}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+#### src/components/export/ExportDataPage.tsx ####
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { FileText, FileSpreadsheet, CalendarIcon, Loader2 } from "lucide-react"
+import type { DateRange } from "react-day-picker"
+import { format } from "date-fns"
+import { MultiSelect } from "@/components/ui/multi-select"
+import { useDataApiClient } from "@/api/client"
+import { 
+  exportToCSV, 
+  exportToExcel, 
+  formatQuarterlySummaryCSV, 
+  formatPaymentHistoryCSV,
+  type QuarterlySummaryData,
+  type PaymentHistoryData 
+} from "@/utils/exportUtils"
+
+type ExportState = {
+  [key: string]: boolean
+}
+
+interface Client {
+  client_id: number;
+  display_name: string;
+  provider_name: string;
+}
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
+
+const quarters = [
+  { value: "1", label: "Q1" },
+  { value: "2", label: "Q2" },
+  { value: "3", label: "Q3" },
+  { value: "4", label: "Q4" },
+]
+
+const quarterlyPeriods = years.flatMap((year) =>
+  quarters.map((quarter) => ({
+    value: `${year}-${quarter.value}`,
+    label: `${quarter.label} ${year}`,
+    year: parseInt(year),
+    quarter: parseInt(quarter.value)
+  })),
+)
+
+export default function ExportDataPage() {
+  const apiClient = useDataApiClient();
+  const [loading, setLoading] = useState<ExportState>({})
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientOptions, setClientOptions] = useState<Array<{ value: string; label: string; provider: string }>>([]);
+
+  // State for Quarterly Summary
+  const [startPeriod, setStartPeriod] = useState(`${currentYear}-3`)
+  const [endPeriod, setEndPeriod] = useState(`${currentYear}-4`)
+
+  // State for Annual Summary
+  const [selectedYears, setSelectedYears] = useState<string[]>([String(currentYear)])
+
+  // State for Client Payment History
+  const [clientSelectionType, setClientSelectionType] = useState("all")
+  const [selectedClients, setSelectedClients] = useState<string[]>([])
+  const [dateRangeType, setDateRangeType] = useState("allTime")
+  const [date, setDate] = useState<DateRange | undefined>(undefined)
+  const [includeDetails, setIncludeDetails] = useState(true)
+  const [includeVariance, setIncludeVariance] = useState(false)
+  const [includeAum, setIncludeAum] = useState(true)
+
+  // Fetch clients on mount
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const clientData = await apiClient.getClients() as Client[];
+        setClients(clientData);
+        
+        // Transform to options for MultiSelect
+        const options = clientData.map((client: Client) => ({
+          value: String(client.client_id),
+          label: client.display_name,
+          provider: client.provider_name || 'Unknown'
+        }));
+        setClientOptions(options);
+      } catch (error) {
+        console.error('Failed to fetch clients:', error);
+      }
+    };
+    fetchClients();
+  }, []);
+
+  // Export Quarterly Summary
+  const handleQuarterlyExport = async (format: 'csv' | 'excel') => {
+    const key = `quarterly-${format}`;
+    setLoading((prev) => ({ ...prev, [key]: true }));
+    
+    try {
+      // Parse periods
+      const start = quarterlyPeriods.find(p => p.value === startPeriod);
+      const end = quarterlyPeriods.find(p => p.value === endPeriod);
+      
+      if (!start || !end) return;
+      
+      // Fetch data for each period
+      const periods: string[] = [];
+      const allData: QuarterlySummaryData[] = [];
+      
+      // Iterate through periods
+      for (let year = start.year; year <= end.year; year++) {
+        const startQ = year === start.year ? start.quarter : 1;
+        const endQ = year === end.year ? end.quarter : 4;
+        
+        for (let quarter = startQ; quarter <= endQ; quarter++) {
+          periods.push(`Q${quarter} ${year}`);
+          
+          // Fetch data for this quarter
+          const data = await apiClient.getQuarterlyPageData(year, quarter) as any[];
+          
+          // Transform to export format
+          const transformed = data.map((row: any) => ({
+            provider: row.provider_name,
+            client: row.display_name,
+            paymentSchedule: row.payment_schedule || 'N/A',
+            feeType: row.fee_type || 'N/A',
+            rate: row.fee_type === 'Percentage' ? `${row.fee_percentage}%` : `$${row.fee_flat}`,
+            expected: row.expected_fee || 0,
+            actual: row.amount_received || 0,
+            variance: (row.amount_received || 0) - (row.expected_fee || 0),
+            variancePercent: row.expected_fee ? ((row.amount_received || 0) - row.expected_fee) / row.expected_fee * 100 : 0,
+            status: row.payment_status || 'N/A'
+          }));
+          
+          allData.push(...transformed);
+        }
+      }
+      
+      if (format === 'csv') {
+        const csv = formatQuarterlySummaryCSV(allData, periods);
+        const filename = `quarterly_summary_${startPeriod}_to_${endPeriod}`;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        exportToExcel(allData, `quarterly_summary_${startPeriod}_to_${endPeriod}`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  // Export Annual Summary
+  const handleAnnualExport = async (format: 'csv' | 'excel') => {
+    const key = `annual-${format}`;
+    setLoading((prev) => ({ ...prev, [key]: true }));
+    
+    try {
+      const allData: any[] = [];
+      
+      for (const year of selectedYears) {
+        const yearNum = parseInt(year);
+        const data = await apiClient.getAnnualPageData(yearNum) as any[];
+        
+        // Transform to export format
+        const transformed = data.map((row: any) => ({
+          year: year,
+          provider: row.provider_name,
+          client: row.display_name,
+          paymentSchedule: row.payment_schedule || 'N/A',
+          annualRate: row.fee_type === 'Percentage' ? `${row.fee_percentage}%` : `$${row.fee_flat}`,
+          q1: row.q1_total || 0,
+          q2: row.q2_total || 0,
+          q3: row.q3_total || 0,
+          q4: row.q4_total || 0,
+          total: row.annual_total || 0
+        }));
+        
+        allData.push(...transformed);
+      }
+      
+      if (format === 'csv') {
+        exportToCSV(allData, `annual_summary_${selectedYears.join('_')}`);
+      } else {
+        exportToExcel(allData, `annual_summary_${selectedYears.join('_')}`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  // Export Client Payment History
+  const handleClientExport = async (format: 'csv' | 'excel') => {
+    const key = `client-${format}`;
+    setLoading((prev) => ({ ...prev, [key]: true }));
+    
+    try {
+      const clientIds = clientSelectionType === 'all' 
+        ? clients.map(c => c.client_id)
+        : selectedClients.map(id => parseInt(id));
+      
+      const historyData: PaymentHistoryData[] = [];
+      
+      for (const clientId of clientIds) {
+        const client = clients.find(c => c.client_id === clientId);
+        if (!client) continue;
+        
+        // Get client's payment history
+        const payments = await apiClient.getPayments(clientId) as any[];
+        const contractData = await apiClient.getClientContracts(clientId) as any[];
+        const currentContract = contractData[0]; // Assume first is current
+        
+        const transformed: PaymentHistoryData = {
+          clientName: client.display_name,
+          provider: client.provider_name,
+          paymentSchedule: currentContract?.payment_schedule || 'N/A',
+          currentRate: currentContract?.fee_type === 'Percentage' 
+            ? `${currentContract.fee_percentage}%` 
+            : `$${currentContract?.fee_flat || 'N/A'}`,
+          payments: payments.map((payment: any) => ({
+            date: new Date(payment.received_date).toLocaleDateString('en-US'),
+            period: `${payment.period_label} ${payment.applied_year}`,
+            paymentMethod: payment.payment_method || 'N/A',
+            amount: payment.amount,
+            aum: includeAum ? payment.aum : undefined,
+            expectedFee: payment.expected_fee || 0,
+            variance: includeVariance ? (payment.amount - (payment.expected_fee || 0)) : undefined,
+            variancePercent: includeVariance && payment.expected_fee 
+              ? ((payment.amount - payment.expected_fee) / payment.expected_fee * 100) 
+              : undefined,
+            status: includeVariance ? payment.payment_status : undefined
+          }))
+        };
+        
+        historyData.push(transformed);
+      }
+      
+      if (format === 'csv') {
+        const csv = formatPaymentHistoryCSV(historyData, {
+          includeDetails,
+          includeVariance,
+          includeAum
+        });
+        const filename = `payment_history_${format}_${Date.now()}`;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // For Excel, flatten the data
+        const flatData = historyData.flatMap(client => 
+          client.payments.map(payment => ({
+            clientName: client.clientName,
+            provider: client.provider,
+            paymentSchedule: client.paymentSchedule,
+            currentRate: client.currentRate,
+            ...payment
+          }))
+        );
+        exportToExcel(flatData, `payment_history_${Date.now()}`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  // Export System Data
+  const handleSystemExport = async (type: string, format: 'csv' | 'excel') => {
+    const key = `${type}-${format}`;
+    setLoading((prev) => ({ ...prev, [key]: true }));
+    
+    try {
+      let data: any[] = [];
+      let filename = '';
+      
+      switch (type) {
+        case 'contracts':
+          // Fetch all contracts
+          const contractPromises = clients.map(client => 
+            apiClient.getClientContracts(client.client_id)
+              .then(contracts => (contracts as any[]).map((c: any) => ({
+                ...c,
+                client_name: client.display_name,
+                provider: client.provider_name
+              })))
+          );
+          const allContracts = await Promise.all(contractPromises);
+          data = allContracts.flat();
+          filename = 'contracts';
+          break;
+          
+        case 'clients':
+          data = clients;
+          filename = 'clients';
+          break;
+          
+        case 'contacts':
+          // Fetch all contacts
+          const contactPromises = clients.map(client => 
+            apiClient.getContacts(client.client_id)
+              .then(contacts => (contacts as any[]).map((c: any) => ({
+                ...c,
+                client_name: client.display_name
+              })))
+          );
+          const allContacts = await Promise.all(contactPromises);
+          data = allContacts.flat();
+          filename = 'contacts';
+          break;
+      }
+      
+      if (format === 'csv') {
+        exportToCSV(data, filename);
+      } else {
+        exportToExcel(data, filename);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const ExportActions = ({ baseKey, onExport }: { baseKey: string; onExport: (format: 'csv' | 'excel') => void }) => (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <Button
+        variant="outline"
+        onClick={() => onExport('csv')}
+        disabled={loading[`${baseKey}-csv`]}
+        className="w-full sm:w-auto"
+      >
+        {loading[`${baseKey}-csv`] ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <FileText className="mr-2 h-4 w-4" />
+        )}
+        Export to CSV
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => onExport('excel')}
+        disabled={loading[`${baseKey}-excel`]}
+        className="w-full sm:w-auto"
+      >
+        {loading[`${baseKey}-excel`] ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+        )}
+        Export to Excel
+      </Button>
+    </div>
+  )
+
+  return (
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Export Center</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Generate and download reports and raw system data.</p>
+        </header>
+
+        <div className="space-y-12">
+          {/* Section: Summary Reports */}
+          <section>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b pb-3 mb-6">
+              Summary Reports
+            </h2>
+            <div className="space-y-8">
+              {/* Quarterly Summary */}
+              <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="p-6">
+                  <h3 className="font-medium text-lg mb-4">Quarterly Summary</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Start Period</Label>
+                      <Select value={startPeriod} onValueChange={setStartPeriod}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {quarterlyPeriods.map((p) => (
+                            <SelectItem key={`start-${p.value}`} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>End Period</Label>
+                      <Select value={endPeriod} onValueChange={setEndPeriod}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {quarterlyPeriods.map((p) => (
+                            <SelectItem key={`end-${p.value}`} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t dark:border-slate-800">
+                  <ExportActions baseKey="quarterly" onExport={handleQuarterlyExport} />
+                </div>
+              </div>
+              {/* Annual Summary */}
+              <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="p-6">
+                  <h3 className="font-medium text-lg mb-4">Annual Summary</h3>
+                  <div className="space-y-1.5">
+                    <Label>Select Year(s)</Label>
+                    <ToggleGroup
+                      type="multiple"
+                      value={selectedYears}
+                      onValueChange={setSelectedYears}
+                      className="flex-wrap justify-start"
+                    >
+                      {years.map((year) => (
+                        <ToggleGroupItem key={year} value={year} aria-label={`Toggle ${year}`}>
+                          {year}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  </div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t dark:border-slate-800">
+                  <ExportActions baseKey="annual" onExport={handleAnnualExport} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section: Detail Reports */}
+          <section>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b pb-3 mb-6">
+              Detail Reports
+            </h2>
+            <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="p-6">
+                <h3 className="font-medium text-lg mb-6">Client Payment History</h3>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                      <Label>Clients</Label>
+                      <RadioGroup
+                        value={clientSelectionType}
+                        onValueChange={setClientSelectionType}
+                        className="flex items-center space-x-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="all" id="allClients" />
+                          <Label htmlFor="allClients" className="font-normal">
+                            All Clients
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="select" id="selectClients" />
+                          <Label htmlFor="selectClients" className="font-normal">
+                            Select Clients
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                      {clientSelectionType === "select" && (
+                        <div className="pt-2">
+                          <MultiSelect
+                            options={clientOptions}
+                            selected={selectedClients}
+                            onChange={setSelectedClients}
+                            placeholder="Select clients..."
+                            groupBy="provider"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date Range</Label>
+                      <RadioGroup
+                        value={dateRangeType}
+                        onValueChange={setDateRangeType}
+                        className="flex items-center space-x-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="allTime" id="allTime" />
+                          <Label htmlFor="allTime" className="font-normal">
+                            All Time
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="custom" id="custom" />
+                          <Label htmlFor="custom" className="font-normal">
+                            Custom
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                      {dateRangeType === "custom" && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id="date"
+                              variant={"outline"}
+                              className="w-full justify-start text-left font-normal mt-2"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {date?.from ? (
+                                date.to ? (
+                                  `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
+                                ) : (
+                                  format(date.from, "LLL dd, y")
+                                )
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              initialFocus
+                              mode="range"
+                              defaultMonth={date?.from}
+                              selected={date}
+                              onSelect={setDate}
+                              numberOfMonths={2}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label>Include in Report</Label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="details"
+                          checked={includeDetails}
+                          onCheckedChange={(c: boolean) => setIncludeDetails(c)}
+                        />
+                        <Label htmlFor="details" className="font-normal">
+                          Payment details
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="variance"
+                          checked={includeVariance}
+                          onCheckedChange={(c: boolean) => setIncludeVariance(c)}
+                        />
+                        <Label htmlFor="variance" className="font-normal">
+                          Variance analysis
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="aum" checked={includeAum} onCheckedChange={(c: boolean) => setIncludeAum(c)} />
+                        <Label htmlFor="aum" className="font-normal">
+                          AUM data
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t dark:border-slate-800">
+                <ExportActions baseKey="client" onExport={handleClientExport} />
+              </div>
+            </div>
+          </section>
+
+          {/* Section: System Data */}
+          <section>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b pb-3 mb-6">System Data</h2>
+            <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="p-4">
+                <div className="flow-root">
+                  <div className="-m-2 divide-y divide-slate-100 dark:divide-slate-800">
+                    {[
+                      { name: "Contracts", count: clients.length * 2, key: "contracts" },
+                      { name: "Clients", count: clients.length, key: "clients" },
+                      { name: "Contacts", count: clients.length * 3, key: "contacts" },
+                    ].map((item) => (
+                      <div key={item.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 p-2">
+                        <span className="font-medium truncate">{item.name}</span>
+                        <span className="text-sm text-muted-foreground">{item.count} records</span>
+                        <div className="flex gap-1 justify-self-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSystemExport(item.key, 'csv')}
+                            disabled={loading[`${item.key}-csv`]}
+                          >
+                            <FileText className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">CSV</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSystemExport(item.key, 'excel')}
+                            disabled={loading[`${item.key}-excel`]}
+                          >
+                            <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Excel</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+#### src/utils/exportUtils.ts ####
+// Export utilities for HWM application
+
+export interface ExportOptions {
+  format: 'csv' | 'excel';
+  filename: string;
+}
+
+export interface QuarterlySummaryData {
+  provider: string;
+  client: string;
+  paymentSchedule: string;
+  feeType: string;
+  rate: string;
+  expected: number;
+  actual: number;
+  variance: number;
+  variancePercent: number;
+  status: string;
+}
+
+export interface AnnualSummaryData {
+  provider: string;
+  client: string;
+  paymentSchedule: string;
+  annualRate: string;
+  q1: number;
+  q2: number;
+  q3: number;
+  q4: number;
+  total: number;
+}
+
+export interface PaymentHistoryData {
+  clientName: string;
+  provider: string;
+  paymentSchedule: string;
+  currentRate: string;
+  payments: Array<{
+    date: string;
+    period: string;
+    paymentMethod: string;
+    amount: number;
+    aum?: number;
+    expectedFee: number;
+    variance?: number;
+    variancePercent?: number;
+    status?: string;
+  }>;
+}
+
+// CSV Export utilities
+export function exportToCSV(data: any[], filename: string) {
+  let csv = '';
+  
+  if (data.length === 0) {
+    downloadFile('No data to export', `${filename}.csv`, 'text/csv');
+    return;
+  }
+
+  // Get headers from first object
+  const headers = Object.keys(data[0]);
+  csv += headers.join(',') + '\n';
+
+  // Add data rows
+  data.forEach(row => {
+    const values = headers.map(header => {
+      const value = row[header];
+      // Handle values that contain commas or quotes
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value ?? '';
+    });
+    csv += values.join(',') + '\n';
+  });
+
+  downloadFile(csv, `${filename}.csv`, 'text/csv');
+}
+
+// Quarterly Summary CSV formatter
+export function formatQuarterlySummaryCSV(data: QuarterlySummaryData[], periods: string[]): string {
+  let csv = '';
+  
+  periods.forEach((period, index) => {
+    if (index > 0) csv += '\n';
+    
+    csv += `=== ${period.toUpperCase().replace('-', ' ')} PAYMENT SUMMARY ===\n`;
+    csv += 'Provider,Client,Payment Schedule,Fee Type,Rate,Expected,Actual,Variance,Variance %,Status\n';
+    
+    const periodData = data; // Period filtering happens at data fetch level
+    
+    // Group by provider
+    const providers = [...new Set(periodData.map(d => d.provider))];
+    
+    providers.forEach(provider => {
+      const providerData = periodData.filter(d => d.provider === provider);
+      const totals = {
+        expected: providerData.reduce((sum, d) => sum + d.expected, 0),
+        actual: providerData.reduce((sum, d) => sum + d.actual, 0),
+        variance: providerData.reduce((sum, d) => sum + d.variance, 0)
+      };
+      
+      csv += `${provider},,,,,` +
+        `$${totals.expected.toFixed(0)},` +
+        `$${totals.actual.toFixed(0)},` +
+        `$${totals.variance.toFixed(0)},` +
+        `${((totals.variance / totals.expected) * 100).toFixed(2)}%,\n`;
+      
+      providerData.forEach(row => {
+        csv += `,${row.client},${row.paymentSchedule},${row.feeType},${row.rate},` +
+          `$${row.expected.toFixed(0)},` +
+          `$${row.actual.toFixed(0)},` +
+          `$${row.variance.toFixed(0)},` +
+          `${row.variancePercent.toFixed(2)}%,` +
+          `${row.status}\n`;
+      });
+    });
+  });
+  
+  return csv;
+}
+
+// Client Payment History CSV formatter
+export function formatPaymentHistoryCSV(data: PaymentHistoryData[], options: {
+  includeDetails: boolean;
+  includeVariance: boolean;
+  includeAum: boolean;
+}): string {
+  let csv = '';
+  
+  data.forEach((client, index) => {
+    if (index > 0) csv += '\n';
+    
+    csv += `=== PAYMENT HISTORY: ${client.clientName} ===\n`;
+    csv += `Provider: ${client.provider} | Payment Schedule: ${client.paymentSchedule} | Current Rate: ${client.currentRate}\n\n`;
+    
+    // Build headers based on options
+    let headers = 'Date,Period,Payment Method,Amount';
+    if (options.includeAum) headers += ',AUM';
+    headers += ',Expected Fee';
+    if (options.includeVariance) headers += ',Variance,Variance %,Status';
+    csv += headers + '\n';
+    
+    // Add payment rows
+    client.payments.forEach(payment => {
+      let row = `${payment.date},${payment.period},${payment.paymentMethod},$${payment.amount.toFixed(2)}`;
+      if (options.includeAum) row += `,${payment.aum ? '$' + payment.aum.toFixed(0) : 'N/A'}`;
+      row += `,$${payment.expectedFee.toFixed(2)}`;
+      if (options.includeVariance && payment.variance !== undefined) {
+        row += `,$${payment.variance.toFixed(2)},${payment.variancePercent?.toFixed(2)}%,${payment.status}`;
+      }
+      csv += row + '\n';
+    });
+  });
+  
+  return csv;
+}
+
+// Excel export placeholder (would need a library like xlsx)
+export function exportToExcel(data: any[], filename: string) {
+  // For now, just export as CSV
+  console.warn('Excel export not yet implemented, exporting as CSV instead');
+  exportToCSV(data, filename);
+}
+
+// Helper to download file
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+#### components.json ####
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/index.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  }
+}
+
+#### src/lib/utils.ts ####
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+#### src/components/ui/button.tsx ####
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-md px-3 text-xs",
+        lg: "h-10 rounded-md px-8",
+        icon: "h-9 w-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+
+
+#### src/components/ui/badge.tsx ####
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
+        outline: "text-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
+}
+
+export { Badge, badgeVariants }
+
+
+#### src/components/ui/checkbox.tsx ####
+import * as React from "react"
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { cn } from "@/lib/utils"
+import { CheckIcon } from "@radix-ui/react-icons"
+
+const Checkbox = React.forwardRef<
+  React.ElementRef<typeof CheckboxPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <CheckboxPrimitive.Root
+    ref={ref}
+    className={cn(
+      "peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+      className
+    )}
+    {...props}
+  >
+    <CheckboxPrimitive.Indicator
+      className={cn("flex items-center justify-center text-current")}
+    >
+      <CheckIcon className="h-4 w-4" />
+    </CheckboxPrimitive.Indicator>
+  </CheckboxPrimitive.Root>
+))
+Checkbox.displayName = CheckboxPrimitive.Root.displayName
+
+export { Checkbox }
+
+
+#### src/components/ui/label.tsx ####
+"use client"
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+)
+
+const Label = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+    VariantProps<typeof labelVariants>
+>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(labelVariants(), className)}
+    {...props}
+  />
+))
+Label.displayName = LabelPrimitive.Root.displayName
+
+export { Label }
+
+
+#### src/components/ui/popover.tsx ####
+import * as React from "react"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
+
+import { cn } from "@/lib/utils"
+
+const Popover = PopoverPrimitive.Root
+
+const PopoverTrigger = PopoverPrimitive.Trigger
+
+const PopoverAnchor = PopoverPrimitive.Anchor
+
+const PopoverContent = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
+>(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+  <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Content
+      ref={ref}
+      align={align}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-popover-content-transform-origin]",
+        className
+      )}
+      {...props}
+    />
+  </PopoverPrimitive.Portal>
+))
+PopoverContent.displayName = PopoverPrimitive.Content.displayName
+
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }
+
+
+#### src/components/ui/select.tsx ####
+"use client"
+
+import * as React from "react"
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { cn } from "@/lib/utils"
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons"
+
+const Select = SelectPrimitive.Root
+
+const SelectGroup = SelectPrimitive.Group
+
+const SelectValue = SelectPrimitive.Value
+
+const SelectTrigger = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <SelectPrimitive.Icon asChild>
+      <ChevronDownIcon className="h-4 w-4 opacity-50" />
+    </SelectPrimitive.Icon>
+  </SelectPrimitive.Trigger>
+))
+SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+
+const SelectScrollUpButton = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollUpButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center py-1",
+      className
+    )}
+    {...props}
+  >
+    <ChevronUpIcon className="h-4 w-4" />
+  </SelectPrimitive.ScrollUpButton>
+))
+SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
+
+const SelectScrollDownButton = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollDownButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center py-1",
+      className
+    )}
+    {...props}
+  >
+    <ChevronDownIcon className="h-4 w-4" />
+  </SelectPrimitive.ScrollDownButton>
+))
+SelectScrollDownButton.displayName =
+  SelectPrimitive.ScrollDownButton.displayName
+
+const SelectContent = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
+>(({ className, children, position = "popper", ...props }, ref) => (
+  <SelectPrimitive.Portal>
+    <SelectPrimitive.Content
+      ref={ref}
+      className={cn(
+        "relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]",
+        position === "popper" &&
+          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+        className
+      )}
+      position={position}
+      {...props}
+    >
+      <SelectScrollUpButton />
+      <SelectPrimitive.Viewport
+        className={cn(
+          "p-1",
+          position === "popper" &&
+            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+        )}
+      >
+        {children}
+      </SelectPrimitive.Viewport>
+      <SelectScrollDownButton />
+    </SelectPrimitive.Content>
+  </SelectPrimitive.Portal>
+))
+SelectContent.displayName = SelectPrimitive.Content.displayName
+
+const SelectLabel = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+    {...props}
+  />
+))
+SelectLabel.displayName = SelectPrimitive.Label.displayName
+
+const SelectItem = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
+>(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
+      <SelectPrimitive.ItemIndicator>
+        <CheckIcon className="h-4 w-4" />
+      </SelectPrimitive.ItemIndicator>
+    </span>
+    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+  </SelectPrimitive.Item>
+))
+SelectItem.displayName = SelectPrimitive.Item.displayName
+
+const SelectSeparator = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    {...props}
+  />
+))
+SelectSeparator.displayName = SelectPrimitive.Separator.displayName
+
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+}
+
+
+#### src/components/ui/calendar.tsx ####
+import * as React from "react"
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "lucide-react"
+import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+
+import { cn } from "@/lib/utils"
+import { Button, buttonVariants } from "@/components/ui/button"
+
+function Calendar({
+  className,
+  classNames,
+  showOutsideDays = true,
+  captionLayout = "label",
+  buttonVariant = "ghost",
+  formatters,
+  components,
+  ...props
+}: React.ComponentProps<typeof DayPicker> & {
+  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+}) {
+  const defaultClassNames = getDefaultClassNames()
+
+  return (
+    <DayPicker
+      showOutsideDays={showOutsideDays}
+      className={cn(
+        "bg-background group/calendar p-3 [--cell-size:2rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+        String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
+        String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
+        className
+      )}
+      captionLayout={captionLayout}
+      formatters={{
+        formatMonthDropdown: (date) =>
+          date.toLocaleString("default", { month: "short" }),
+        ...formatters,
+      }}
+      classNames={{
+        root: cn("w-fit", defaultClassNames.root),
+        months: cn(
+          "relative flex flex-col gap-4 md:flex-row",
+          defaultClassNames.months
+        ),
+        month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
+        nav: cn(
+          "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1",
+          defaultClassNames.nav
+        ),
+        button_previous: cn(
+          buttonVariants({ variant: buttonVariant }),
+          "h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50",
+          defaultClassNames.button_previous
+        ),
+        button_next: cn(
+          buttonVariants({ variant: buttonVariant }),
+          "h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50",
+          defaultClassNames.button_next
+        ),
+        month_caption: cn(
+          "flex h-[--cell-size] w-full items-center justify-center px-[--cell-size]",
+          defaultClassNames.month_caption
+        ),
+        dropdowns: cn(
+          "flex h-[--cell-size] w-full items-center justify-center gap-1.5 text-sm font-medium",
+          defaultClassNames.dropdowns
+        ),
+        dropdown_root: cn(
+          "has-focus:border-ring border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] relative rounded-md border",
+          defaultClassNames.dropdown_root
+        ),
+        dropdown: cn(
+          "bg-popover absolute inset-0 opacity-0",
+          defaultClassNames.dropdown
+        ),
+        caption_label: cn(
+          "select-none font-medium",
+          captionLayout === "label"
+            ? "text-sm"
+            : "[&>svg]:text-muted-foreground flex h-8 items-center gap-1 rounded-md pl-2 pr-1 text-sm [&>svg]:size-3.5",
+          defaultClassNames.caption_label
+        ),
+        table: "w-full border-collapse",
+        weekdays: cn("flex", defaultClassNames.weekdays),
+        weekday: cn(
+          "text-muted-foreground flex-1 select-none rounded-md text-[0.8rem] font-normal",
+          defaultClassNames.weekday
+        ),
+        week: cn("mt-2 flex w-full", defaultClassNames.week),
+        week_number_header: cn(
+          "w-[--cell-size] select-none",
+          defaultClassNames.week_number_header
+        ),
+        week_number: cn(
+          "text-muted-foreground select-none text-[0.8rem]",
+          defaultClassNames.week_number
+        ),
+        day: cn(
+          "group/day relative aspect-square h-full w-full select-none p-0 text-center [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md",
+          defaultClassNames.day
+        ),
+        range_start: cn(
+          "bg-accent rounded-l-md",
+          defaultClassNames.range_start
+        ),
+        range_middle: cn("rounded-none", defaultClassNames.range_middle),
+        range_end: cn("bg-accent rounded-r-md", defaultClassNames.range_end),
+        today: cn(
+          "bg-accent text-accent-foreground rounded-md data-[selected=true]:rounded-none",
+          defaultClassNames.today
+        ),
+        outside: cn(
+          "text-muted-foreground aria-selected:text-muted-foreground",
+          defaultClassNames.outside
+        ),
+        disabled: cn(
+          "text-muted-foreground opacity-50",
+          defaultClassNames.disabled
+        ),
+        hidden: cn("invisible", defaultClassNames.hidden),
+        ...classNames,
+      }}
+      components={{
+        Root: ({ className, rootRef, ...props }) => {
+          return (
+            <div
+              data-slot="calendar"
+              ref={rootRef}
+              className={cn(className)}
+              {...props}
+            />
+          )
+        },
+        Chevron: ({ className, orientation, ...props }) => {
+          if (orientation === "left") {
+            return (
+              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
+            )
+          }
+
+          if (orientation === "right") {
+            return (
+              <ChevronRightIcon
+                className={cn("size-4", className)}
+                {...props}
+              />
+            )
+          }
+
+          return (
+            <ChevronDownIcon className={cn("size-4", className)} {...props} />
+          )
+        },
+        DayButton: CalendarDayButton,
+        WeekNumber: ({ children, ...props }) => {
+          return (
+            <td {...props}>
+              <div className="flex size-[--cell-size] items-center justify-center text-center">
+                {children}
+              </div>
+            </td>
+          )
+        },
+        ...components,
+      }}
+      {...props}
+    />
+  )
+}
+
+function CalendarDayButton({
+  className,
+  day,
+  modifiers,
+  ...props
+}: React.ComponentProps<typeof DayButton>) {
+  const defaultClassNames = getDefaultClassNames()
+
+  const ref = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    if (modifiers.focused) ref.current?.focus()
+  }, [modifiers.focused])
+
+  return (
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="icon"
+      data-day={day.date.toLocaleDateString()}
+      data-selected-single={
+        modifiers.selected &&
+        !modifiers.range_start &&
+        !modifiers.range_end &&
+        !modifiers.range_middle
+      }
+      data-range-start={modifiers.range_start}
+      data-range-end={modifiers.range_end}
+      data-range-middle={modifiers.range_middle}
+      className={cn(
+        "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 flex aspect-square h-auto w-full min-w-[--cell-size] flex-col gap-1 font-normal leading-none data-[range-end=true]:rounded-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] [&>span]:text-xs [&>span]:opacity-70",
+        defaultClassNames.day,
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Calendar, CalendarDayButton }
+
+
+#### src/components/ui/radio-group.tsx ####
+"use client"
+
+import * as React from "react"
+import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
+import { cn } from "@/lib/utils"
+import { DotFilledIcon } from "@radix-ui/react-icons"
+
+const RadioGroup = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
+>(({ className, ...props }, ref) => {
+  return (
+    <RadioGroupPrimitive.Root
+      className={cn("grid gap-2", className)}
+      {...props}
+      ref={ref}
+    />
+  )
+})
+RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
+
+const RadioGroupItem = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
+>(({ className, ...props }, ref) => {
+  return (
+    <RadioGroupPrimitive.Item
+      ref={ref}
+      className={cn(
+        "aspect-square h-4 w-4 rounded-full border border-primary text-primary shadow focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
+        <DotFilledIcon className="h-3.5 w-3.5 fill-primary" />
+      </RadioGroupPrimitive.Indicator>
+    </RadioGroupPrimitive.Item>
+  )
+})
+RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName
+
+export { RadioGroup, RadioGroupItem }
+
+
+#### src/components/ui/toggle-group.tsx ####
+import * as React from "react"
+import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+import { type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+import { toggleVariants } from "@/components/ui/toggle"
+
+const ToggleGroupContext = React.createContext<
+  VariantProps<typeof toggleVariants>
+>({
+  size: "default",
+  variant: "default",
+})
+
+const ToggleGroup = React.forwardRef<
+  React.ElementRef<typeof ToggleGroupPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
+    VariantProps<typeof toggleVariants>
+>(({ className, variant, size, children, ...props }, ref) => (
+  <ToggleGroupPrimitive.Root
+    ref={ref}
+    className={cn("flex items-center justify-center gap-1", className)}
+    {...props}
+  >
+    <ToggleGroupContext.Provider value={{ variant, size }}>
+      {children}
+    </ToggleGroupContext.Provider>
+  </ToggleGroupPrimitive.Root>
+))
+
+ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
+
+const ToggleGroupItem = React.forwardRef<
+  React.ElementRef<typeof ToggleGroupPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
+    VariantProps<typeof toggleVariants>
+>(({ className, children, variant, size, ...props }, ref) => {
+  const context = React.useContext(ToggleGroupContext)
+
+  return (
+    <ToggleGroupPrimitive.Item
+      ref={ref}
+      className={cn(
+        toggleVariants({
+          variant: context.variant || variant,
+          size: context.size || size,
+        }),
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </ToggleGroupPrimitive.Item>
+  )
+})
+
+ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
+
+export { ToggleGroup, ToggleGroupItem }
+
+
+#### src/components/ui/toggle.tsx ####
+"use client"
+
+import * as React from "react"
+import * as TogglePrimitive from "@radix-ui/react-toggle"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const toggleVariants = cva(
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default: "bg-transparent",
+        outline:
+          "border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground",
+      },
+      size: {
+        default: "h-9 px-2 min-w-9",
+        sm: "h-8 px-1.5 min-w-8",
+        lg: "h-10 px-2.5 min-w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+const Toggle = React.forwardRef<
+  React.ElementRef<typeof TogglePrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> &
+    VariantProps<typeof toggleVariants>
+>(({ className, variant, size, ...props }, ref) => (
+  <TogglePrimitive.Root
+    ref={ref}
+    className={cn(toggleVariants({ variant, size, className }))}
+    {...props}
+  />
+))
+
+Toggle.displayName = TogglePrimitive.Root.displayName
+
+export { Toggle, toggleVariants }
+
+
+#### src/components/ui/scroll-area.tsx ####
+import * as React from "react"
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+
+import { cn } from "@/lib/utils"
+
+const ScrollArea = React.forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
+>(({ className, children, ...props }, ref) => (
+  <ScrollAreaPrimitive.Root
+    ref={ref}
+    className={cn("relative overflow-hidden", className)}
+    {...props}
+  >
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+      {children}
+    </ScrollAreaPrimitive.Viewport>
+    <ScrollBar />
+    <ScrollAreaPrimitive.Corner />
+  </ScrollAreaPrimitive.Root>
+))
+ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
+
+const ScrollBar = React.forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
+>(({ className, orientation = "vertical", ...props }, ref) => (
+  <ScrollAreaPrimitive.ScrollAreaScrollbar
+    ref={ref}
+    orientation={orientation}
+    className={cn(
+      "flex touch-none select-none transition-colors",
+      orientation === "vertical" &&
+        "h-full w-2.5 border-l border-l-transparent p-[1px]",
+      orientation === "horizontal" &&
+        "h-2.5 flex-col border-t border-t-transparent p-[1px]",
+      className
+    )}
+    {...props}
+  >
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
+  </ScrollAreaPrimitive.ScrollAreaScrollbar>
+))
+ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
+
+export { ScrollArea, ScrollBar }
+
+
+#### src/pages/Export.tsx ####
+// src/pages/Export.tsx
+import React from 'react';
+import ExportDataPage from '@/components/export/ExportDataPage';
+
+const Export: React.FC = () => {
+  return <ExportDataPage />;
+};
+
+export default Export;
+
