@@ -74,15 +74,15 @@ export const AssetsAndFeesCard: React.FC<AssetsAndFeesCardProps> = ({ dashboardD
         <EditContractModal
           isOpen={isEditContractModalOpen}
           onClose={() => setIsEditContractModalOpen(false)}
-          contract={{
+          clientId={dashboardData.client_id}
+          clientName={dashboardData.display_name || 'Client'}
+          currentContract={{
             contract_id: dashboardData.contract_id,
-            client_id: dashboardData.client_id,
-            provider_name: dashboardData.provider_name || '',
             contract_number: dashboardData.contract_number,
-            contract_start_date: dashboardData.contract_start_date || '',
+            provider_name: dashboardData.provider_name || '',
             fee_type: dashboardData.fee_type,
-            percentage_fee_rate: dashboardData.percentage_fee_rate,
-            flat_fee_rate: dashboardData.flat_fee_rate,
+            percent_rate: dashboardData.fee_type === 'percentage' ? dashboardData.monthly_rate : null,
+            flat_rate: dashboardData.fee_type === 'flat' ? dashboardData.monthly_rate : null,
             payment_schedule: dashboardData.payment_schedule
           }}
           onSuccess={() => {

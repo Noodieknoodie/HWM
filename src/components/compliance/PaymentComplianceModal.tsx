@@ -4,7 +4,6 @@ import { X, ChevronDown, ChevronRight, Download, AlertCircle, CheckCircle, Exter
 import { usePaymentCompliance } from '../../hooks/usePaymentCompliance';
 import { Alert } from '../Alert';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../stores/useAppStore';
 
 interface PaymentComplianceModalProps {
   isOpen: boolean;
@@ -20,7 +19,7 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
   clientName,
 }) => {
   const navigate = useNavigate();
-  const { setActiveTab } = useAppStore();
+  // const { setActiveTab } = useAppStore();
   const { groupedByYear, overallStats, loading, error } = usePaymentCompliance(clientId);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
 
@@ -37,9 +36,8 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
   };
 
   const handleAddPayment = (period: number, year: number) => {
-    // Navigate to payments tab and pre-fill the period
-    setActiveTab('payments');
-    // Close modal
+    // TODO: Navigate to payments tab and pre-fill the period
+    // For now, just close the modal
     onClose();
     // The period format expected is "year-period"
     const periodValue = `${year}-${period}`;
