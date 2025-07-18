@@ -1,135 +1,65 @@
-## Export Data Flow Verification
+# Fix Export Field Mappings
 
-### 📊 **Quarterly Summary Export**
+## See:
 
-**UI Headers**: `['Client', 'Frequency', 'Quarterly Rate', 'Expected', 'Actual', 'Variance', 'Posted', 'Notes']`
+`src/components/export/ExportDataPage.tsx`
 
-**Flow Check**:
+## Refer to source of truth:
 
-- ✓ API Call: `getQuarterlyPageData(year, quarter)`
-- ✓ DB View: `quarterly_page_data` returns correct data
-- ❌ Field Mapping:
-  
-  ```typescript
-  // Code expects:
-  row.fee_percentage / row.fee_flat
-  row.expected_fee
-  row.amount_received
-  row.payment_status
-  
-  // DB returns:
-  row.percent_rate / row.flat_rate     
-  row.client_expected
-  row.client_actual
-  row.variance_status
-  ```
-- ❌ Provider totals use wrong fields (`provider_expected_total` not `expected_fee`)
-- ✓ Posted status correctly maps `is_posted`
-- ✓ Notes correctly maps `quarterly_notes`
+- `src/pages/Summary.tsx` (quarterly_page_data, annual_page_data interfaces)
+- `src/components/payment/PaymentHistory.tsx` (payment_history_view fields)
+- `src/hooks/useClientDashboard.ts` (contract fields)
 
-**Result**: ❌ FAIL - Field mismatches will show undefined values
+## Issue:
 
------
+22 mismatched field names causing undefined values in exports
 
-### 📊 **Annual Summary Export**
+## Task:
 
-**UI Headers**: `['Client', 'Frequency', 'Annual Rate', 'Q1 {year}', 'Q2 {year}', 'Q3 {year}', 'Q4 {year}', 'Total']`
+### Quarterly Export (~line 115-125)
 
-**Flow Check**:
+Find → Replace:
 
-- ✓ API Call: `getAnnualPageData(year)`
-- ✓ DB View: `annual_page_data` returns correct data
-- ❌ Field Mapping:
-  
-  ```typescript
-  // Code expects:
-  row.fee_percentage / row.fee_flat
-  row.q1_total, q2_total, etc.
-  
-  // DB returns:
-  row.percent_rate / row.flat_rate
-  row.q1_actual, q2_actual, etc.
-  ```
-- ❌ Annual rate field name is `annual_rate` not calculated
-- ✓ Client totals correctly map `client_annual_total`
+- `fee_percentage` → `quarterly_rate`
+- `fee_flat` → `quarterly_rate`
+- `expected_fee` → `client_expected`
+- `amount_received` → `client_actual`
+- `payment_status` → `variance_status`
 
-**Result**: ❌ FAIL - Quarterly columns will be undefined
+Remove string formatting:
 
------
+- `row.fee_type === 'Percentage' ? \`${row.fee_percentage}%` : `$${row.fee_flat}``→`row.quarterly_rate`
 
-### 📊 **Client Payment History Export**
+### Annual Export (~line 140-150)
 
-**UI Headers**: `'Date,Period,Payment Method,Amount' + (includeAum ? ',AUM' : '') + ',Expected Fee' + (includeVariance ? ',Variance,Variance %,Status' : '')`
+Find → Replace:
 
-**Flow Check**:
+- `fee_percentage` → `annual_rate`
+- `fee_flat` → `annual_rate`
+- `q1_total` → `q1_actual`
+- `q2_total` → `q2_actual`
+- `q3_total` → `q3_actual`
+- `q4_total` → `q4_actual`
+- `annual_total` → `client_annual_total`
 
-- ✓ API Call: `getPayments(clientId)` for each selected client
-- ✓ DB View: `payment_history_view` returns payment data
-- ❌ Contract data fetch expects wrong fields:
-  
-  ```typescript
-  // Code expects:
-  currentContract.fee_percentage
-  currentContract.fee_flat
-  
-  // DB returns:
-  currentContract.percent_rate
-  currentContract.flat_rate
-  ```
-- ❌ Payment mapping issues:
-  
-  ```typescript
-  // Code expects:
-  payment.amount
-  payment.aum
-  payment.payment_method
-  payment.period_label
-  payment.payment_status
-  
-  // DB returns:
-  payment.actual_fee (not amount)
-  payment.display_aum (not aum)
-  payment.method (not payment_method)
-  payment.period_display (calculated, not period_label)
-  payment.variance_status (not payment_status)
-  ```
+Remove string formatting:
 
-**Result**: ❌ FAIL - Multiple field mismatches
+- `row.fee_type === 'Percentage' ? \`${row.fee_percentage}%` : `$${row.fee_flat}``→`row.annual_rate`
 
------
+### Client History Export (~line 235-255)
 
-### 📊 **System Data Exports**
+Find → Replace:
 
-**Contracts Export**:
+- `currentContract.fee_percentage` → `currentContract.percent_rate * 100`
+- `currentContract.fee_flat` → `currentContract.flat_rate`
+- `payment.period_label` → `payment.period_display`
+- `payment.payment_method` → `payment.method`
+- `payment.amount` → `payment.actual_fee`
+- `payment.aum` → `payment.display_aum`
+- `payment.payment_status` → `payment.variance_status`
 
-- ✓ API Call: `getClientContracts(clientId)` for each client
-- ✓ Data aggregation logic
-- ✓ Direct table export (no transformation needed)
+Remove string formatting:
 
-**Result**: ✓ PASS
+- `currentContract?.fee_type === 'Percentage' ? \`${currentContract.fee_percentage}%` : `$${currentContract?.fee_flat || ‘N/A’}``→`currentContract?.fee_type === ‘percentage’ ? currentContract.percent_rate * 100 : currentContract.flat_rate`
 
-**Clients Export**:
 
-- ✓ API Call: Uses already loaded `clients` state
-- ✓ Direct export of sidebar_clients_view data
-
-**Result**: ✓ PASS
-
-**Contacts Export**:
-
-- ✓ API Call: `getContacts(clientId)` for each client
-- ✓ Data aggregation with client names
-- ✓ Direct table export
-
-**Result**: ✓ PASS
-
------
-
-## Summary
-
-- ❌ **Quarterly Summary**: Broken field mappings
-- ❌ **Annual Summary**: Broken field mappings
-- ❌ **Client Payment History**: Multiple broken mappings
-- ✓ **System Data Exports**: All working correctly
-
-The system data exports work because they export raw table data without transformation. The summary reports fail because they expect different field names than what the database views provide.​​​​​​​​​​​​​​​​
