@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { FileText, FileSpreadsheet, CalendarIcon, Loader2 } from "lucide-react"
+import { FileText, FileSpreadsheet, Calendar as CalendarIcon, Loader2 } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
 import { MultiSelect } from "@/components/ui/multi-select"
@@ -128,12 +128,12 @@ export default function ExportDataPage() {
             client: row.display_name,
             paymentSchedule: row.payment_schedule || 'N/A',
             feeType: row.fee_type || 'N/A',
-            rate: row.fee_type === 'Percentage' ? `${row.fee_percentage}%` : `$${row.fee_flat}`,
-            expected: row.expected_fee || 0,
-            actual: row.amount_received || 0,
-            variance: (row.amount_received || 0) - (row.expected_fee || 0),
-            variancePercent: row.expected_fee ? ((row.amount_received || 0) - row.expected_fee) / row.expected_fee * 100 : 0,
-            status: row.payment_status || 'N/A'
+            rate: row.quarterly_rate,  // Raw number for both CSV & Excel
+            expected: row.client_expected || 0,
+            actual: row.client_actual || 0,
+            variance: row.client_variance || 0,  // Stop calculating
+            variancePercent: row.client_variance_percent || 0,  // Stop calculating
+            status: row.variance_status || 'N/A'
           }));
           
           allData.push(...transformed);
@@ -180,12 +180,12 @@ export default function ExportDataPage() {
           provider: row.provider_name,
           client: row.display_name,
           paymentSchedule: row.payment_schedule || 'N/A',
-          annualRate: row.fee_type === 'Percentage' ? `${row.fee_percentage}%` : `$${row.fee_flat}`,
-          q1: row.q1_total || 0,
-          q2: row.q2_total || 0,
-          q3: row.q3_total || 0,
-          q4: row.q4_total || 0,
-          total: row.annual_total || 0
+          annualRate: row.annual_rate,  // Raw number for both CSV & Excel
+          q1: row.q1_actual || 0,
+          q2: row.q2_actual || 0,
+          q3: row.q3_actual || 0,
+          q4: row.q4_actual || 0,
+          total: row.client_annual_total || 0
         }));
         
         allData.push(...transformed);
@@ -228,21 +228,19 @@ export default function ExportDataPage() {
           clientName: client.display_name,
           provider: client.provider_name,
           paymentSchedule: currentContract?.payment_schedule || 'N/A',
-          currentRate: currentContract?.fee_type === 'Percentage' 
-            ? `${currentContract.fee_percentage}%` 
-            : `$${currentContract?.fee_flat || 'N/A'}`,
+          currentRate: currentContract?.fee_type === 'percentage'  // lowercase!
+            ? currentContract.percent_rate * 100  // Convert to display percentage
+            : currentContract?.flat_rate || 0,
           payments: payments.map((payment: any) => ({
             date: new Date(payment.received_date).toLocaleDateString('en-US'),
-            period: `${payment.period_label} ${payment.applied_year}`,
-            paymentMethod: payment.payment_method || 'N/A',
-            amount: payment.amount,
-            aum: includeAum ? payment.aum : undefined,
+            period: payment.period_display || `${payment.applied_period} ${payment.applied_year}`,
+            paymentMethod: payment.method || 'N/A',
+            amount: payment.actual_fee,
+            aum: includeAum ? payment.display_aum : undefined,
             expectedFee: payment.expected_fee || 0,
-            variance: includeVariance ? (payment.amount - (payment.expected_fee || 0)) : undefined,
-            variancePercent: includeVariance && payment.expected_fee 
-              ? ((payment.amount - payment.expected_fee) / payment.expected_fee * 100) 
-              : undefined,
-            status: includeVariance ? payment.payment_status : undefined
+            variance: includeVariance ? payment.variance_amount : undefined,  // Use DB field
+            variancePercent: includeVariance ? payment.variance_percent : undefined,  // Use DB field
+            status: includeVariance ? payment.variance_status : undefined
           }))
         };
         
@@ -374,265 +372,274 @@ export default function ExportDataPage() {
   )
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="bg-slate-50 min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-[1600px] mx-auto">
         <header className="mb-10">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Export Center</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Export Center</h1>
           <p className="mt-2 text-lg text-muted-foreground">Generate and download reports and raw system data.</p>
         </header>
 
-        <div className="space-y-12">
-          {/* Section: Summary Reports */}
-          <section>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b pb-3 mb-6">
-              Summary Reports
-            </h2>
-            <div className="space-y-8">
-              {/* Quarterly Summary */}
-              <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
-                <div className="p-6">
-                  <h3 className="font-medium text-lg mb-4">Quarterly Summary</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Start Period</Label>
-                      <Select value={startPeriod} onValueChange={setStartPeriod}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a period" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {quarterlyPeriods.map((p) => (
-                            <SelectItem key={`start-${p.value}`} value={p.value}>
-                              {p.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>End Period</Label>
-                      <Select value={endPeriod} onValueChange={setEndPeriod}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a period" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {quarterlyPeriods.map((p) => (
-                            <SelectItem key={`end-${p.value}`} value={p.value}>
-                              {p.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_450px] gap-8">
+          {/* Main content column */}
+          <div className="space-y-12">
+            {/* Section: Summary Reports */}
+            <section>
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-3 mb-6">
+                Summary Reports
+              </h2>
+              <div className="space-y-8">
+                {/* Quarterly Summary */}
+                <div className="bg-white rounded-lg border border-slate-200">
+                  <div className="p-6">
+                    <h3 className="font-medium text-lg mb-4">Quarterly Summary</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Start Period</Label>
+                        <Select value={startPeriod} onValueChange={setStartPeriod}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a period" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {quarterlyPeriods.map((p) => (
+                              <SelectItem key={`start-${p.value}`} value={p.value}>
+                                {p.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>End Period</Label>
+                        <Select value={endPeriod} onValueChange={setEndPeriod}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a period" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {quarterlyPeriods.map((p) => (
+                              <SelectItem key={`end-${p.value}`} value={p.value}>
+                                {p.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t dark:border-slate-800">
-                  <ExportActions baseKey="quarterly" onExport={handleQuarterlyExport} />
-                </div>
-              </div>
-              {/* Annual Summary */}
-              <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
-                <div className="p-6">
-                  <h3 className="font-medium text-lg mb-4">Annual Summary</h3>
-                  <div className="space-y-1.5">
-                    <Label>Select Year(s)</Label>
-                    <ToggleGroup
-                      type="multiple"
-                      value={selectedYears}
-                      onValueChange={setSelectedYears}
-                      className="flex-wrap justify-start"
-                    >
-                      {years.map((year) => (
-                        <ToggleGroupItem key={year} value={year} aria-label={`Toggle ${year}`}>
-                          {year}
-                        </ToggleGroupItem>
-                      ))}
-                    </ToggleGroup>
+                  <div className="bg-slate-50 px-6 py-4 border-t">
+                    <ExportActions baseKey="quarterly" onExport={handleQuarterlyExport} />
                   </div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t dark:border-slate-800">
-                  <ExportActions baseKey="annual" onExport={handleAnnualExport} />
+                {/* Annual Summary */}
+                <div className="bg-white rounded-lg border border-slate-200">
+                  <div className="p-6">
+                    <h3 className="font-medium text-lg mb-4">Annual Summary</h3>
+                    <div className="space-y-1.5">
+                      <Label>Select Year(s)</Label>
+                      <ToggleGroup
+                        type="multiple"
+                        value={selectedYears}
+                        onValueChange={setSelectedYears}
+                        className="flex-wrap justify-start"
+                      >
+                        {years.map((year) => (
+                          <ToggleGroupItem key={year} value={year} aria-label={`Toggle ${year}`}>
+                            {year}
+                          </ToggleGroupItem>
+                        ))}
+                      </ToggleGroup>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 px-6 py-4 border-t">
+                    <ExportActions baseKey="annual" onExport={handleAnnualExport} />
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Section: Detail Reports */}
-          <section>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b pb-3 mb-6">
-              Detail Reports
-            </h2>
-            <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
-              <div className="p-6">
-                <h3 className="font-medium text-lg mb-6">Client Payment History</h3>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    <div className="space-y-2">
-                      <Label>Clients</Label>
-                      <RadioGroup
-                        value={clientSelectionType}
-                        onValueChange={setClientSelectionType}
-                        className="flex items-center space-x-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="all" id="allClients" />
-                          <Label htmlFor="allClients" className="font-normal">
-                            All Clients
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="select" id="selectClients" />
-                          <Label htmlFor="selectClients" className="font-normal">
-                            Select Clients
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                      {clientSelectionType === "select" && (
-                        <div className="pt-2">
-                          <MultiSelect
-                            options={clientOptions}
-                            selected={selectedClients}
-                            onChange={setSelectedClients}
-                            placeholder="Select clients..."
-                            groupBy="provider"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date Range</Label>
-                      <RadioGroup
-                        value={dateRangeType}
-                        onValueChange={setDateRangeType}
-                        className="flex items-center space-x-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="allTime" id="allTime" />
-                          <Label htmlFor="allTime" className="font-normal">
-                            All Time
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="custom" id="custom" />
-                          <Label htmlFor="custom" className="font-normal">
-                            Custom
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                      {dateRangeType === "custom" && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              id="date"
-                              variant={"outline"}
-                              className="w-full justify-start text-left font-normal mt-2"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {date?.from ? (
-                                date.to ? (
-                                  `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
-                                ) : (
-                                  format(date.from, "LLL dd, y")
-                                )
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              initialFocus
-                              mode="range"
-                              defaultMonth={date?.from}
-                              selected={date}
-                              onSelect={setDate}
-                              numberOfMonths={2}
+            {/* Section: Detail Reports */}
+            <section>
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-3 mb-6">
+                Detail Reports
+              </h2>
+              <div className="bg-white rounded-lg border border-slate-200">
+                <div className="p-6">
+                  <h3 className="font-medium text-lg mb-6">Client Payment History</h3>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      <div className="space-y-2">
+                        <Label>Clients</Label>
+                        <RadioGroup
+                          value={clientSelectionType}
+                          onValueChange={setClientSelectionType}
+                          className="flex items-center space-x-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="all" id="allClients" />
+                            <Label htmlFor="allClients" className="font-normal">
+                              All Clients
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="select" id="selectClients" />
+                            <Label htmlFor="selectClients" className="font-normal">
+                              Select Clients
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                        {clientSelectionType === "select" && (
+                          <div className="pt-2">
+                            <MultiSelect
+                              options={clientOptions}
+                              selected={selectedClients}
+                              onChange={setSelectedClients}
+                              placeholder="Select clients..."
+                              groupBy="provider"
                             />
-                          </PopoverContent>
-                        </Popover>
-                      )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Date Range</Label>
+                        <RadioGroup
+                          value={dateRangeType}
+                          onValueChange={setDateRangeType}
+                          className="flex items-center space-x-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="allTime" id="allTime" />
+                            <Label htmlFor="allTime" className="font-normal">
+                              All Time
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="custom" id="custom" />
+                            <Label htmlFor="custom" className="font-normal">
+                              Custom
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                        {dateRangeType === "custom" && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="date"
+                                variant={"outline"}
+                                className="w-full justify-start text-left font-normal mt-2"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {date?.from ? (
+                                  date.to ? (
+                                    `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
+                                  ) : (
+                                    format(date.from, "LLL dd, y")
+                                  )
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={setDate}
+                                numberOfMonths={2}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-3">
-                    <Label>Include in Report</Label>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="details"
-                          checked={includeDetails}
-                          onCheckedChange={(c: boolean) => setIncludeDetails(c)}
-                        />
-                        <Label htmlFor="details" className="font-normal">
-                          Payment details
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="variance"
-                          checked={includeVariance}
-                          onCheckedChange={(c: boolean) => setIncludeVariance(c)}
-                        />
-                        <Label htmlFor="variance" className="font-normal">
-                          Variance analysis
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="aum" checked={includeAum} onCheckedChange={(c: boolean) => setIncludeAum(c)} />
-                        <Label htmlFor="aum" className="font-normal">
-                          AUM data
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t dark:border-slate-800">
-                <ExportActions baseKey="client" onExport={handleClientExport} />
-              </div>
-            </div>
-          </section>
-
-          {/* Section: System Data */}
-          <section>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 border-b pb-3 mb-6">System Data</h2>
-            <div className="bg-white dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800">
-              <div className="p-4">
-                <div className="flow-root">
-                  <div className="-m-2 divide-y divide-slate-100 dark:divide-slate-800">
-                    {[
-                      { name: "Contracts", count: clients.length * 2, key: "contracts" },
-                      { name: "Clients", count: clients.length, key: "clients" },
-                      { name: "Contacts", count: clients.length * 3, key: "contacts" },
-                    ].map((item) => (
-                      <div key={item.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 p-2">
-                        <span className="font-medium truncate">{item.name}</span>
-                        <span className="text-sm text-muted-foreground">{item.count} records</span>
-                        <div className="flex gap-1 justify-self-end">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSystemExport(item.key, 'csv')}
-                            disabled={loading[`${item.key}-csv`]}
-                          >
-                            <FileText className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">CSV</span>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSystemExport(item.key, 'excel')}
-                            disabled={loading[`${item.key}-excel`]}
-                          >
-                            <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Excel</span>
-                          </Button>
+                    <div className="space-y-3">
+                      <Label>Include in Report</Label>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="details"
+                            checked={includeDetails}
+                            onCheckedChange={(c: boolean) => setIncludeDetails(c)}
+                          />
+                          <Label htmlFor="details" className="font-normal">
+                            Payment details
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="variance"
+                            checked={includeVariance}
+                            onCheckedChange={(c: boolean) => setIncludeVariance(c)}
+                          />
+                          <Label htmlFor="variance" className="font-normal">
+                            Variance analysis
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="aum" checked={includeAum} onCheckedChange={(c: boolean) => setIncludeAum(c)} />
+                          <Label htmlFor="aum" className="font-normal">
+                            AUM data
+                          </Label>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-slate-50 px-6 py-4 border-t">
+                  <ExportActions baseKey="client" onExport={handleClientExport} />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Right column - System Data - Vertically Centered */}
+          <div className="xl:sticky xl:top-1/2 xl:-translate-y-1/2 h-fit">
+            <section>
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-3 mb-6">System Data</h2>
+              <div className="bg-white rounded-lg border border-slate-200">
+                <div className="p-4">
+                  <div className="flow-root">
+                    <div className="-m-2 divide-y divide-slate-100">
+                      {[
+                        { name: "Contracts", count: clients.length * 2, key: "contracts" },
+                        { name: "Clients", count: clients.length, key: "clients" },
+                        { name: "Contacts", count: clients.length * 3, key: "contacts" },
+                      ].map((item) => (
+                        <div key={item.key} className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-medium text-base">{item.name}</span>
+                            <span className="text-sm text-muted-foreground">{item.count} records</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleSystemExport(item.key, 'csv')}
+                              disabled={loading[`${item.key}-csv`]}
+                              className="flex-1"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              CSV
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleSystemExport(item.key, 'excel')}
+                              disabled={loading[`${item.key}-excel`]}
+                              className="flex-1"
+                            >
+                              <FileSpreadsheet className="h-4 w-4 mr-2" />
+                              Excel
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
         </div>
       </div>
     </div>

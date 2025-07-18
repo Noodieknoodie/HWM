@@ -54,9 +54,33 @@ export function usePaymentCompliance(clientId: number | null) {
       setError(null);
       
       try {
-        // Fetch all periods from comprehensive_payment_summary
+        // First get the contract to find start date
+        const contracts = await dataApiClient.getClientContracts(clientId) as any[];
+        const contract = contracts[0]; // Assuming one active contract
+        
+        if (!contract || !contract.contract_start_date) {
+          throw new Error('No contract found for client');
+        }
+        
+        // Parse contract start date
+        const startDate = new Date(contract.contract_start_date);
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth() + 1;
+        const startQuarter = Math.ceil(startMonth / 3);
+        
+        // Build filter based on payment schedule
+        let dateFilter = '';
+        if (contract.payment_schedule === 'monthly') {
+          // For monthly, filter by year and period
+          dateFilter = ` and (year gt ${startYear} or (year eq ${startYear} and period ge ${startMonth}))`;
+        } else {
+          // For quarterly, filter by year and quarter
+          dateFilter = ` and (year gt ${startYear} or (year eq ${startYear} and period ge ${startQuarter}))`;
+        }
+        
+        // Fetch with date filter
         const response = await dataApiClient.request(
-          `comprehensive_payment_summary?$filter=client_id eq ${clientId}&$orderby=year desc,period desc`
+          `comprehensive_payment_summary?$filter=client_id eq ${clientId}${dateFilter}&$orderby=year desc,period desc`
         );
         
         setData(Array.isArray(response) ? response : []);

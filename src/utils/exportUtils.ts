@@ -10,7 +10,7 @@ export interface QuarterlySummaryData {
   client: string;
   paymentSchedule: string;
   feeType: string;
-  rate: string;
+  rate: number;  // Changed to number
   expected: number;
   actual: number;
   variance: number;
@@ -22,7 +22,7 @@ export interface AnnualSummaryData {
   provider: string;
   client: string;
   paymentSchedule: string;
-  annualRate: string;
+  annualRate: number;  // Changed to number
   q1: number;
   q2: number;
   q3: number;
@@ -34,9 +34,9 @@ export interface PaymentHistoryData {
   clientName: string;
   provider: string;
   paymentSchedule: string;
-  currentRate: string;
+  currentRate: number;  // Changed to number
   payments: Array<{
-    date: string;
+    date: string | number;  // Can be string for CSV or number for Excel
     period: string;
     paymentMethod: string;
     amount: number;
@@ -107,7 +107,7 @@ export function formatQuarterlySummaryCSV(data: QuarterlySummaryData[], periods:
         `${((totals.variance / totals.expected) * 100).toFixed(2)}%,\n`;
       
       providerData.forEach(row => {
-        csv += `,${row.client},${row.paymentSchedule},${row.feeType},${row.rate},` +
+        csv += `,${row.client},${row.paymentSchedule},${row.feeType},${row.rate.toFixed(2)}%,` +
           `$${row.expected.toFixed(0)},` +
           `$${row.actual.toFixed(0)},` +
           `$${row.variance.toFixed(0)},` +
@@ -132,7 +132,7 @@ export function formatPaymentHistoryCSV(data: PaymentHistoryData[], options: {
     if (index > 0) csv += '\n';
     
     csv += `=== PAYMENT HISTORY: ${client.clientName} ===\n`;
-    csv += `Provider: ${client.provider} | Payment Schedule: ${client.paymentSchedule} | Current Rate: ${client.currentRate}\n\n`;
+    csv += `Provider: ${client.provider} | Payment Schedule: ${client.paymentSchedule} | Current Rate: ${client.currentRate.toFixed(2)}%\n\n`;
     
     // Build headers based on options
     let headers = 'Date,Period,Payment Method,Amount';

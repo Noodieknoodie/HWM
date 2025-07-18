@@ -1,6 +1,7 @@
 // src/pages/Summary.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import useAppStore from '@/stores/useAppStore';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -130,6 +131,7 @@ interface QuarterlySummaryDetail {
 
 const Summary: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -867,13 +869,23 @@ const Summary: React.FC = () => {
                               )}
                             </button>
                           )}
-                          <Link
-                            to={`/client/${client.client_id}`}
-                            className="text-blue-600 hover:text-blue-800"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Get the store instance and navigate
+                              const store = useAppStore.getState();
+                              store.setSelectedClient({
+                                client_id: client.client_id,
+                                display_name: client.display_name,
+                                full_name: '', // These fields aren't in summary data
+                                provider_name: provider.provider_name
+                              });
+                              navigate('/Payments');
+                            }}
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
                           >
                             {client.display_name}
-                          </Link>
+                          </button>
                           {viewMode === 'quarterly' && (
                             <button
                               onClick={(e) => handleNoteClick(e, client.client_id, (client as QuarterlyPageData).quarterly_notes)}

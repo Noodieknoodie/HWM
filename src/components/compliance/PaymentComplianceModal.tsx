@@ -1,9 +1,10 @@
 // src/components/compliance/PaymentComplianceModal.tsx
 import React, { useState } from 'react';
-import { X, ChevronDown, ChevronRight, Download, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
+import { X, ChevronDown, ChevronRight, Download, AlertCircle, CheckCircle, ExternalLink, ChevronLeft } from 'lucide-react';
 import { usePaymentCompliance } from '../../hooks/usePaymentCompliance';
 import { Alert } from '../Alert';
-import { useNavigate } from 'react-router-dom';
+import PaymentForm from '../payment/PaymentForm';
+import { useDataApiClient } from '@/api/client';
 
 interface PaymentComplianceModalProps {
   isOpen: boolean;
@@ -18,10 +19,16 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
   clientId,
   clientName,
 }) => {
-  const navigate = useNavigate();
+  const dataApiClient = useDataApiClient();
   // const { setActiveTab } = useAppStore();
   const { groupedByYear, overallStats, loading, error } = usePaymentCompliance(clientId);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentFormData, setPaymentFormData] = useState<{
+    period: number;
+    year: number;
+    periodType: string;
+  } | null>(null);
 
   if (!isOpen) return null;
 
@@ -36,14 +43,15 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
   };
 
   const handleAddPayment = (period: number, year: number) => {
-    // TODO: Navigate to payments tab and pre-fill the period
-    // For now, just close the modal
-    onClose();
-    // The period format expected is "year-period"
-    const periodValue = `${year}-${period}`;
-    // We'll need to pass this to the payment form somehow
-    // For now, just navigate - you could add this to the store or URL params
-    navigate(`/client/${clientId}?prefillPeriod=${periodValue}`);
+    // Get period type from first payment or contract
+    const periodType = groupedByYear[0]?.periods[0]?.payment_schedule || 'monthly';
+    
+    setPaymentFormData({
+      period,
+      year,
+      periodType
+    });
+    setShowPaymentForm(true);
   };
 
   const exportToCSV = () => {
@@ -153,14 +161,53 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
             
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
-              {error && (
-                <Alert variant="error" message={error} className="mb-4" />
-              )}
-              
-              {loading ? (
-                <div className="text-center py-8">Loading compliance data...</div>
+              {showPaymentForm && paymentFormData ? (
+                <div>
+                  <button
+                    onClick={() => {
+                      setShowPaymentForm(false);
+                      setPaymentFormData(null);
+                    }}
+                    className="mb-4 text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back to Compliance View
+                  </button>
+                  
+                  <PaymentForm
+                    clientId={clientId}
+                    contractId={null} // Will be fetched by form
+                    editingPayment={null}
+                    prefillPeriod={{
+                      period: paymentFormData.period,
+                      year: paymentFormData.year,
+                      periodType: paymentFormData.periodType
+                    }}
+                    onSubmit={async (data) => {
+                      // Let parent handle submit
+                      await dataApiClient.createPayment(data);
+                      // Refresh compliance data
+                      setShowPaymentForm(false);
+                      setPaymentFormData(null);
+                      // Trigger data refresh - reload the page to refresh data
+                      window.location.reload();
+                    }}
+                    onCancel={() => {
+                      setShowPaymentForm(false);
+                      setPaymentFormData(null);
+                    }}
+                  />
+                </div>
               ) : (
-                <div className="space-y-4">
+                <>
+                  {error && (
+                    <Alert variant="error" message={error} className="mb-4" />
+                  )}
+                  
+                  {loading ? (
+                    <div className="text-center py-8">Loading compliance data...</div>
+                  ) : (
+                    <div className="space-y-4">
                   {groupedByYear.map(yearGroup => (
                     <div key={yearGroup.year} className="border rounded-lg overflow-hidden">
                       {/* Year Header */}
@@ -256,7 +303,9 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
                       )}
                     </div>
                   ))}
-                </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             

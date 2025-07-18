@@ -12,6 +12,11 @@ interface PaymentFormProps {
   editingPayment: Payment | null;
   onSubmit: (data: PaymentCreateData | PaymentUpdateData) => Promise<void>;
   onCancel?: () => void;
+  prefillPeriod?: {
+    period: number;
+    year: number;
+    periodType: string;
+  };
 }
 
 const PAYMENT_METHODS = [
@@ -22,13 +27,15 @@ const PAYMENT_METHODS = [
   { value: 'Check', label: 'Check' },
 ];
 
-const PaymentForm: React.FC<PaymentFormProps> = ({
-  clientId,
-  contractId,
-  editingPayment,
-  onSubmit,
-  onCancel,
-}) => {
+const PaymentForm: React.FC<PaymentFormProps> = (props) => {
+  const {
+    clientId,
+    contractId,
+    editingPayment,
+    onSubmit,
+    onCancel,
+    prefillPeriod,
+  } = props;
   const { periods, loading: periodsLoading } = usePeriods(clientId);
   const { dashboardData } = useClientDashboard(clientId);
   const { defaults: paymentDefaults } = usePaymentDefaults(clientId);
@@ -41,7 +48,9 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     actual_fee: '',
     method: 'Check',
     notes: '',
-    period_selection: '',
+    period_selection: prefillPeriod 
+      ? `${prefillPeriod.year}-${prefillPeriod.period}`
+      : '',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
