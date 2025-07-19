@@ -1,5 +1,5 @@
 // src/components/clients/EditClientModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Alert } from '../Alert';
 import { useDataApiClient } from '../../api/client';
@@ -29,6 +29,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({
   onSuccess,
 }) => {
   const dataApiClient = useDataApiClient();
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [formData, setFormData] = useState<ClientFormData>({
     display_name: '',
     full_name: '',
@@ -57,6 +58,14 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({
       setSuccessMessage(null);
       setErrorMessage(null);
     }
+    
+    // Cleanup function to clear timeout on unmount or when modal closes
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = null;
+      }
+    };
   }, [client, isOpen]);
 
   if (!isOpen) return null;
@@ -115,7 +124,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({
       setSuccessMessage('Client updated successfully');
       
       // Clear success message and close after a delay
-      setTimeout(() => {
+      successTimeoutRef.current = setTimeout(() => {
         setSuccessMessage(null);
         if (onSuccess) onSuccess();
         onClose();

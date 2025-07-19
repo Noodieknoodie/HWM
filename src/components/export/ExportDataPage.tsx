@@ -19,6 +19,7 @@ import {
   exportToExcel, 
   formatQuarterlySummaryCSV, 
   formatPaymentHistoryCSV,
+  cleanNumber,
   type QuarterlySummaryData,
   type PaymentHistoryData 
 } from "@/utils/exportUtils"
@@ -128,11 +129,11 @@ export default function ExportDataPage() {
             client: row.display_name,
             paymentSchedule: row.payment_schedule || 'N/A',
             feeType: row.fee_type || 'N/A',
-            rate: row.quarterly_rate,  // Raw number for both CSV & Excel
-            expected: row.client_expected || 0,
-            actual: row.client_actual || 0,
-            variance: row.client_variance || 0,  // Stop calculating
-            variancePercent: row.client_variance_percent || 0,  // Stop calculating
+            rate: cleanNumber(row.quarterly_rate),  // Already in correct format from DB
+            expected: cleanNumber(row.client_expected || 0),
+            actual: cleanNumber(row.client_actual || 0),
+            variance: cleanNumber(row.client_variance || 0),
+            variancePercent: cleanNumber(row.client_variance_percent || 0),
             status: row.variance_status || 'N/A'
           }));
           
@@ -180,12 +181,12 @@ export default function ExportDataPage() {
           provider: row.provider_name,
           client: row.display_name,
           paymentSchedule: row.payment_schedule || 'N/A',
-          annualRate: row.annual_rate,  // Raw number for both CSV & Excel
-          q1: row.q1_actual || 0,
-          q2: row.q2_actual || 0,
-          q3: row.q3_actual || 0,
-          q4: row.q4_actual || 0,
-          total: row.client_annual_total || 0
+          annualRate: cleanNumber(row.annual_rate),  // Already in correct format from DB
+          q1: cleanNumber(row.q1_actual || 0),
+          q2: cleanNumber(row.q2_actual || 0),
+          q3: cleanNumber(row.q3_actual || 0),
+          q4: cleanNumber(row.q4_actual || 0),
+          total: cleanNumber(row.client_annual_total || 0)
         }));
         
         allData.push(...transformed);
@@ -229,17 +230,17 @@ export default function ExportDataPage() {
           provider: client.provider_name,
           paymentSchedule: currentContract?.payment_schedule || 'N/A',
           currentRate: currentContract?.fee_type === 'percentage'  // lowercase!
-            ? currentContract.percent_rate * 100  // Convert to display percentage
-            : currentContract?.flat_rate || 0,
+            ? cleanNumber(currentContract.percent_rate * 100)  // Convert to display percentage
+            : cleanNumber(currentContract?.flat_rate || 0),
           payments: payments.map((payment: any) => ({
             date: new Date(payment.received_date).toLocaleDateString('en-US'),
             period: payment.period_display || `${payment.applied_period} ${payment.applied_year}`,
             paymentMethod: payment.method || 'N/A',
-            amount: payment.actual_fee,
-            aum: includeAum ? payment.display_aum : undefined,
-            expectedFee: payment.expected_fee || 0,
-            variance: includeVariance ? payment.variance_amount : undefined,  // Use DB field
-            variancePercent: includeVariance ? payment.variance_percent : undefined,  // Use DB field
+            amount: cleanNumber(payment.actual_fee),
+            aum: includeAum ? cleanNumber(payment.display_aum) : undefined,
+            expectedFee: cleanNumber(payment.expected_fee || 0),
+            variance: includeVariance ? cleanNumber(payment.variance_amount) : undefined,  // Use DB field
+            variancePercent: includeVariance ? cleanNumber(payment.variance_percent) : undefined,  // Use DB field
             status: includeVariance ? payment.variance_status : undefined
           }))
         };

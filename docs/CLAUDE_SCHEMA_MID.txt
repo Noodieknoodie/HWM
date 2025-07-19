@@ -1,4 +1,4 @@
--- Generated: 2025-07-18 17:06:07
+-- Generated: 2025-07-18 22:46:24
 -- ===== TABLES =====
 -- Table: client_quarter_markers
 CREATE TABLE [dbo].[client_quarter_markers] (
@@ -24,11 +24,6 @@ CREATE TABLE [dbo].[clients_all] (
     [deleted_date] datetime,
     CONSTRAINT [PK_clients] PRIMARY KEY (client_id)
 );
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | display_name | full_name | ima_signed_date | is_deleted | deleted_date
--- 17 | 'Nordic Museum' | 'NATIONAL NORDIC MUSEUM' | 2024-03-11 | False | NULL
--- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17 | False | NULL
--- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19 | False | NULL
 -- Table: contacts
 CREATE TABLE [dbo].[contacts] (
     [contact_id] int IDENTITY(1,1) NOT NULL,
@@ -44,11 +39,6 @@ CREATE TABLE [dbo].[contacts] (
 );
 ALTER TABLE [dbo].[contacts] ADD CONSTRAINT [FK_contacts_clients]
     FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
--- Sample data (3 rows):
--- contact_id | client_id | contact_type | contact_name | phone | email | fax | physical_address | mailing_address
--- 1 | 1 | 'Primary' | 'Donald Jay' | '253-395-9551' | 'djay@asamerica.com' | NULL | '3500 West Vally HWY, Ste B-106, Auburn, WA 98001' | '3500 West Vally HWY, Ste B-106, Auburn, WA 98001'
--- 2 | 2 | 'Primary' | 'Mark Simpson' | '206-223-1361' | 'marks@bumgardner.biz' | NULL | '2111 Third Ave, Seattle, WA 98121' | '2111 Third Ave, Seattle, WA 98121'
--- 3 | 3 | 'Primary' | 'Doug Gelfand' | '206-816-3700' | 'dgelfand@amplero.com' | NULL | '1218 3rd Ave #900, Seattle, WA 98101' | NULL
 -- Table: contracts
 CREATE TABLE [dbo].[contracts] (
     [contract_id] int IDENTITY(1,1) NOT NULL,
@@ -70,11 +60,6 @@ CREATE TABLE [dbo].[contracts] (
 ALTER TABLE [dbo].[contracts] ADD CONSTRAINT [FK_contracts_clients]
     FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id)
     ON DELETE CASCADE;
--- Sample data (3 rows from end of 2024 or latest available):
--- contract_id | client_id | contract_number | provider_name | contract_start_date | fee_type | percent_rate | flat_rate | payment_schedule | num_people | notes | is_active
--- 5 | 5 | '231393' | 'Ascensus Trust Company' | 2019-05-01 | 'flat' | NULL | 3000.0 | 'quarterly' | 93 | NULL | True
--- 2 | 2 | NULL | 'Voya' | 2019-04-19 | 'percentage' | 0.000416 | NULL | 'monthly' | 35 | NULL | True
--- 1 | 1 | '134565' | 'John Hancock' | 2018-03-22 | 'percentage' | 0.0007 | NULL | 'monthly' | 18 | 'Phone: 800-333-0963 Option 1 with Contract # or O | True
 -- Table: payment_periods
 CREATE TABLE [dbo].[payment_periods] (
     [period_type] nvarchar(10) NOT NULL,
@@ -87,11 +72,6 @@ CREATE TABLE [dbo].[payment_periods] (
     CONSTRAINT [PK__payment___EA8CC9CD5742350A] PRIMARY KEY (period_type, year, period),
     CONSTRAINT [CK__payment_p__perio__76619304] CHECK ([period_type]='quarterly' OR [period_type]='monthly')
 );
--- Sample data (3 rows from end of 2024 or latest available):
--- period_type | year | period | period_name | start_date | end_date | is_current
--- 'monthly' | 2024 | 12 | 'December 2024' | 2024-12-01 | 2024-12-31 | False
--- 'monthly' | 2024 | 11 | 'November 2024' | 2024-11-01 | 2024-11-30 | False
--- 'quarterly' | 2024 | 4 | 'Q4 2024' | 2024-10-01 | 2024-12-31 | False
 -- Table: payments
 CREATE TABLE [dbo].[payments] (
     [payment_id] int IDENTITY(1,1) NOT NULL,
@@ -115,11 +95,6 @@ ALTER TABLE [dbo].[payments] ADD CONSTRAINT [FK_payments_clients]
     FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
 ALTER TABLE [dbo].[payments] ADD CONSTRAINT [FK_payments_contracts]
     FOREIGN KEY (contract_id) REFERENCES [dbo].[contracts] (contract_id);
--- Sample data (3 rows from end of 2024 or latest available):
--- payment_id | contract_id | client_id | received_date | total_assets | actual_fee | method | notes | applied_period_type | applied_period | applied_year
--- 1065 | 10 | 10 | 2024-12-17 | 3008463.47 | 2005.63 | 'Check' | NULL | 'monthly' | 11 | 2024
--- 1082 | 34 | 28 | 2024-12-17 | 2009948.21 | 1339.97 | 'Check' | NULL | 'monthly' | 11 | 2024
--- 1056 | 1 | 1 | 2024-12-06 | 1395147.37 | 926.68 | 'Check' | 'John Hancock payment' | 'monthly' | 11 | 2024
 -- Table: quarterly_notes
 CREATE TABLE [dbo].[quarterly_notes] (
     [client_id] int NOT NULL,
@@ -132,6 +107,21 @@ CREATE TABLE [dbo].[quarterly_notes] (
 );
 ALTER TABLE [dbo].[quarterly_notes] ADD CONSTRAINT [FK__quarterly__clien__589C25F3]
     FOREIGN KEY (client_id) REFERENCES [dbo].[clients_all] (client_id);
+-- Table: test_results
+CREATE TABLE [dbo].[test_results] (
+    [result_id] int IDENTITY(1,1) NOT NULL,
+    [test_suite] varchar(50) NOT NULL,
+    [test_name] varchar(200) NOT NULL,
+    [client_id] int,
+    [test_context] varchar(200),
+    [expected_value] varchar(500),
+    [actual_value] varchar(500),
+    [pass_fail] bit NOT NULL,
+    [error_message] varchar(1000),
+    [execution_time_ms] int,
+    [test_timestamp] datetime NOT NULL DEFAULT (getdate()),
+    CONSTRAINT [PK__test_res__AFB3C3162769FBDA] PRIMARY KEY (result_id)
+);
 -- Table: variance_thresholds
 CREATE TABLE [dbo].[variance_thresholds] (
     [threshold_type] varchar(20) NOT NULL,
@@ -188,11 +178,6 @@ FROM annual_summary_by_client asbc
 JOIN provider_annual_summary pas 
     ON pas.provider_name = asbc.provider_name 
     AND pas.year = asbc.applied_year;
--- Sample data (3 rows):
--- provider_name | provider_client_count | provider_q1_total | provider_q2_total | provider_q3_total | provider_q4_total | provider_annual_total | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | annual_rate | q1_actual | q2_actual | q3_actual | q4_actual | q1_payments | q2_payments | q3_payments | q4_payments | client_annual_total | client_annual_expected | client_annual_variance | client_annual_variance_percent | fully_posted | total_payments | total_expected_payments | applied_year | row_type
--- 'Ascensus' | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 1.3784 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0 | 0.0 | 0.0 | 0.0 | NULL | 0 | 0 | 4 | 2019 | 'client'
--- 'Ascensus' | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 19 | 'Opportunity Interactive' | 'quarterly' | 'flat' | NULL | 2000.0 | 8000.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0 | 0.0 | 8000.0 | -8000.0 | -100.0 | 0 | 0 | 4 | 2019 | 'client'
--- 'Ascensus Trust Company' | 2 | 0.0 | 1648.35 | 2956.44 | 4750.0 | 9354.79 | 5 | 'BDR Interactive' | 'quarterly' | 'flat' | NULL | 3000.0 | 12000.0 | 0.0 | 0.0 | 2500.0 | 2500.0 | 0 | 0 | 1 | 1 | 5000.0 | 6000.0 | -1000.0 | -16.67 | 0 | 2 | 2 | 2019 | 'client'
 -- View: annual_summary_by_client
 CREATE VIEW [dbo].[annual_summary_by_client] AS
 WITH QuarterlyData AS (
@@ -253,11 +238,6 @@ SELECT
         ELSE 0
     END as fully_posted
 FROM QuarterlyData;
--- Sample data (3 rows):
--- provider_name | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | applied_year | q1_actual | q2_actual | q3_actual | q4_actual | q1_payments | q2_payments | q3_payments | q4_payments | annual_total | annual_expected | total_payments | total_expected_payments | total_posted_count | annual_rate | annual_variance | annual_variance_percent | fully_posted
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0 | 0.0 | 0.0 | 0 | 4 | 0 | 1.3784 | 0.0 | NULL | 0
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2020 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0 | 0.0 | 0.0 | 0 | 4 | 0 | 1.3784 | 0.0 | NULL | 0
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2021 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0 | 0.0 | 0.0 | 0 | 4 | 0 | 1.3784 | 0.0 | NULL | 0
 -- View: client_period_matrix
 -- ========================================
 -- STEP 3: RECREATE VIEWS WITH FIXED VARIANCE STATUS
@@ -310,20 +290,10 @@ CROSS JOIN CurrentPeriodInfo cpi
 WHERE pp.period_type = ct.payment_schedule
     AND pp.start_date >= ISNULL(ct.contract_start_date, '2019-01-01')
     AND pp.end_date <= GETDATE();
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | display_name | full_name | contract_id | provider_name | payment_schedule | fee_type | percent_rate | flat_rate | contract_start_date | year | period | period_type | quarter | period_display | current_year | current_month | current_quarter_year | current_quarter
--- 5 | 'BDR Interactive' | 'BUSINESS DEVELOPMENT RESOURCES & OPPORTUNITIES IN | 5 | 'Ascensus Trust Company' | 'quarterly' | 'flat' | NULL | 3000.0 | 2019-05-01 | 2019 | 3 | 'quarterly' | 3 | 'Q3 2019' | 2025 | 6 | 2025 | 2
--- 5 | 'BDR Interactive' | 'BUSINESS DEVELOPMENT RESOURCES & OPPORTUNITIES IN | 5 | 'Ascensus Trust Company' | 'quarterly' | 'flat' | NULL | 3000.0 | 2019-05-01 | 2019 | 4 | 'quarterly' | 4 | 'Q4 2019' | 2025 | 6 | 2025 | 2
--- 5 | 'BDR Interactive' | 'BUSINESS DEVELOPMENT RESOURCES & OPPORTUNITIES IN | 5 | 'Ascensus Trust Company' | 'quarterly' | 'flat' | NULL | 3000.0 | 2019-05-01 | 2020 | 1 | 'quarterly' | 1 | 'Q1 2020' | 2025 | 6 | 2025 | 2
 -- View: clients
 -- 2. Create filtered view with original name
 CREATE VIEW clients AS 
 SELECT * FROM clients_all WHERE is_deleted = 0;
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | display_name | full_name | ima_signed_date | is_deleted | deleted_date
--- 17 | 'Nordic Museum' | 'NATIONAL NORDIC MUSEUM' | 2024-03-11 | False | NULL
--- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17 | False | NULL
--- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19 | False | NULL
 -- View: comprehensive_payment_summary
 -- STEP 6: Update comprehensive_payment_summary to use the function
 CREATE VIEW [dbo].[comprehensive_payment_summary] AS
@@ -393,11 +363,6 @@ LEFT JOIN payments p ON
     AND p.applied_year = cpm.year 
     AND p.applied_period = cpm.period
     AND p.applied_period_type = cpm.period_type;
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | display_name | contract_id | provider_name | payment_schedule | fee_type | percent_rate | flat_rate | year | period | period_type | quarter | period_display | payment_id | received_date | actual_fee | total_assets | method | notes | expected_fee | variance_amount | variance_percent | variance_status
--- 1 | 'AirSea America' | 1 | 'John Hancock' | 'monthly' | 'percentage' | 0.0007 | NULL | 2019 | 1 | 'monthly' | 1 | 'January 2019' | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NULL | 'no_payment'
--- 1 | 'AirSea America' | 1 | 'John Hancock' | 'monthly' | 'percentage' | 0.0007 | NULL | 2019 | 2 | 'monthly' | 1 | 'February 2019' | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NULL | 'no_payment'
--- 1 | 'AirSea America' | 1 | 'John Hancock' | 'monthly' | 'percentage' | 0.0007 | NULL | 2019 | 3 | 'monthly' | 1 | 'March 2019' | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NULL | 'no_payment'
 -- View: dashboard_view
 CREATE VIEW [dbo].[dashboard_view] AS
 WITH LastPayment AS (
@@ -418,27 +383,22 @@ SELECT
     c.display_name,
     c.full_name,
     c.ima_signed_date,
-    
     -- Provider and participants
     ct.provider_name,
     ct.num_people,
-    
     -- Contact info
     con.contact_name,
     con.phone,
     con.physical_address,
-    
     -- Contract basics
     ct.contract_id,  -- Already included
     ct.payment_schedule,
     ct.fee_type,
-    
     -- Current billable period (arrears billing - always previous period)
     CASE 
         WHEN ct.payment_schedule = 'monthly' THEN FORMAT(DATEADD(month, -1, GETDATE()), 'MMMM yyyy')
         WHEN ct.payment_schedule = 'quarterly' THEN 'Q' + CAST(DATEPART(QUARTER, DATEADD(quarter, -1, GETDATE())) AS VARCHAR) + ' ' + CAST(YEAR(DATEADD(quarter, -1, GETDATE())) AS VARCHAR)
     END AS current_period_display,
-    
     -- Payment status determination based on arrears billing model
     CASE
         WHEN lp.applied_year IS NULL THEN 'Due'
@@ -461,11 +421,9 @@ SELECT
         END THEN 'Due'
         ELSE 'Paid'
     END AS payment_status,
-    
     -- Last payment info
     lp.last_payment_date,
     lp.last_payment_amount,
-    
     -- AUM can be recorded directly or estimated from percentage-based payments
     CASE 
         WHEN lp.last_recorded_assets IS NOT NULL THEN lp.last_recorded_assets
@@ -473,13 +431,11 @@ SELECT
             lp.last_payment_amount / ct.percent_rate
         ELSE NULL
     END AS aum,
-    
     CASE 
         WHEN lp.last_recorded_assets IS NOT NULL THEN 'recorded'
         WHEN ct.fee_type = 'percentage' AND lp.last_payment_amount IS NOT NULL AND ct.percent_rate > 0 THEN 'estimated'
         ELSE NULL
     END AS aum_source,
-    
     -- Rate calculations respect payment frequency with proper precision
     CASE 
         WHEN ct.fee_type = 'flat' THEN
@@ -493,7 +449,6 @@ SELECT
                 WHEN ct.payment_schedule = 'quarterly' THEN ROUND(ct.percent_rate * 100 / 3.0, 4)
             END
     END as monthly_rate,
-    
     -- Quarterly equivalents
     CASE 
         WHEN ct.fee_type = 'flat' THEN
@@ -507,7 +462,6 @@ SELECT
                 WHEN ct.payment_schedule = 'quarterly' THEN ROUND(ct.percent_rate * 100, 4)
             END
     END as quarterly_rate,
-    
     -- Annual equivalents
     CASE 
         WHEN ct.fee_type = 'flat' THEN
@@ -521,7 +475,6 @@ SELECT
                 WHEN ct.payment_schedule = 'quarterly' THEN ROUND(ct.percent_rate * 100 * 4, 4)
             END
     END as annual_rate,
-    
     -- Expected fee for current period
     CASE
         WHEN ct.fee_type = 'flat' THEN ct.flat_rate
@@ -535,22 +488,15 @@ SELECT
                 END * ct.percent_rate, 2)
         ELSE NULL
     END AS expected_fee,
-    
     -- Raw contract data
     ct.contract_number,
     ct.percent_rate,
     ct.flat_rate
-    
 FROM clients c
 JOIN contracts ct ON c.client_id = ct.client_id AND ct.is_active = 1
 LEFT JOIN contacts con ON c.client_id = con.client_id 
     AND con.contact_type = 'Primary'
 LEFT JOIN LastPayment lp ON c.client_id = lp.client_id AND lp.rn = 1;
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | display_name | full_name | ima_signed_date | provider_name | num_people | contact_name | phone | physical_address | contract_id | payment_schedule | fee_type | current_period_display | payment_status | last_payment_date | last_payment_amount | aum | aum_source | monthly_rate | quarterly_rate | annual_rate | expected_fee | contract_number | percent_rate | flat_rate
--- 17 | 'Nordic Museum' | 'NATIONAL NORDIC MUSEUM' | 2024-03-11 | 'Capital Group / American Funds' | 15 | 'Pamela Brooks' | '206-789-5707' | '2655 NW Market Street, Seattle, WA 98107' | 17 | 'quarterly' | 'flat' | 'Q2 2025' | 'Due' | 2024-05-20 | 1000.0 | NULL | NULL | 333.33 | 1000.0 | 4000.0 | 1000.0 | NULL | NULL | 1000.0
--- 8 | 'Dakota Creek' | 'DAKOTA CREEK INDUSTRIES' | 2024-01-17 | 'Ascensus' | 177 | NULL | '360-293-9575' | '820 4th St, Anacortes WA 98221' | 8 | 'quarterly' | 'percentage' | 'Q2 2025' | 'Due' | 2025-04-16 | 5194.0 | 1507254.7881601858 | 'estimated' | 0.1149 | 0.3446 | 1.3784 | 5194.0 | '273504' | 0.003446 | NULL
--- 29 | 'Youth Dynamics' | 'YOUTH DYNAMICS' | 2023-10-19 | 'Principal' | 15 | 'Rob Tiffany' | NULL | NULL | 35 | 'quarterly' | 'percentage' | 'Q2 2025' | 'Due' | 2025-04-15 | 1081.41 | 576752.0000000001 | 'estimated' | 0.0625 | 0.1875 | 0.75 | 1081.41 | NULL | 0.001875 | NULL
 -- View: payment_form_defaults_view
 CREATE VIEW [dbo].[payment_form_defaults_view] AS
 SELECT 
@@ -577,11 +523,6 @@ LEFT JOIN (
     FROM payments
     WHERE total_assets IS NOT NULL
 ) lra ON c.client_id = lra.client_id AND lra.rn = 1;
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | contract_id | payment_schedule | fee_type | percent_rate | flat_rate | suggested_aum | current_period | current_year | payment_status
--- 1 | 1 | 'monthly' | 'percentage' | 0.0007 | NULL | 1400234.25 | 6 | 2025 | 'Due'
--- 2 | 2 | 'monthly' | 'percentage' | 0.000416 | NULL | 3247119.0 | 6 | 2025 | 'Due'
--- 3 | 3 | 'monthly' | 'flat' | NULL | 666.66 | 1533543.0 | 6 | 2025 | 'Due'
 -- View: payment_form_periods_view
 CREATE VIEW [dbo].[payment_form_periods_view] AS
 SELECT 
@@ -608,11 +549,6 @@ LEFT JOIN (
 ) first_payment ON c.client_id = first_payment.client_id
 WHERE pp.end_date <= GETDATE()  -- Not future periods
   AND pp.start_date >= ISNULL(first_payment.first_payment_date, GETDATE());  -- From first payment or today for new clients
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | year | period | display_text | is_paid
--- 1 | 2019 | 4 | 'April 2019' | 1
--- 1 | 2019 | 5 | 'May 2019' | 1
--- 1 | 2019 | 6 | 'June 2019' | 1
 -- View: payment_history_view
 CREATE VIEW [dbo].[payment_history_view] AS
 SELECT 
@@ -656,7 +592,6 @@ SELECT
         WHEN p.applied_period_type = 'quarterly' THEN 
             'Q' + CAST(p.applied_period AS VARCHAR) + ' ' + CAST(p.applied_year AS VARCHAR)
     END AS period_display,
-    
     -- NEW: Add AUM estimation tracking
     CASE 
         WHEN p.total_assets IS NOT NULL THEN p.total_assets
@@ -664,13 +599,11 @@ SELECT
             THEN p.actual_fee / ct.percent_rate
         ELSE NULL
     END as display_aum,
-    
     CASE 
         WHEN p.total_assets IS NOT NULL THEN 0
         WHEN ct.fee_type = 'percentage' AND ct.percent_rate > 0 AND p.actual_fee > 0 THEN 1
         ELSE 0
     END as is_aum_estimated,
-    
     -- MODIFIED: Block variance calculations when AUM is estimated
     CASE 
         WHEN p.total_assets IS NULL AND ct.fee_type = 'percentage' THEN NULL
@@ -684,7 +617,6 @@ SELECT
             p.applied_period
         )
     END AS variance_amount,
-    
     CASE 
         WHEN p.total_assets IS NULL AND ct.fee_type = 'percentage' THEN NULL
         WHEN dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period) = 0 
@@ -693,7 +625,6 @@ SELECT
         ELSE ((p.actual_fee - dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) 
               / dbo.calculate_expected_fee(p.client_id, ct.fee_type, ct.percent_rate, ct.flat_rate, p.applied_period_type, p.applied_year, p.applied_period)) * 100
     END AS variance_percent,
-    
     -- MODIFIED: Show special status for estimated AUM
     CASE 
         WHEN p.total_assets IS NULL AND ct.fee_type = 'percentage' THEN 'unknown'
@@ -705,11 +636,6 @@ SELECT
     END AS variance_status
 FROM payments p
 JOIN contracts ct ON p.contract_id = ct.contract_id;
--- Sample data (3 rows from end of 2024 or latest available):
--- payment_id | contract_id | client_id | received_date | total_assets | expected_fee | actual_fee | method | notes | applied_period_type | applied_period | applied_year | provider_name | period_display | display_aum | is_aum_estimated | variance_amount | variance_percent | variance_status
--- 1065 | 10 | 10 | 2024-12-17 | 3008463.47 | 2006.65 | 2005.63 | 'Check' | NULL | 'monthly' | 11 | 2024 | 'Empower' | 'Nov 2024' | 3008463.47 | 0 | -1.0199999999999818 | -0.05083098696832939 | 'acceptable'
--- 1082 | 34 | 28 | 2024-12-17 | 2009948.21 | 1340.64 | 1339.97 | 'Check' | NULL | 'monthly' | 11 | 2024 | 'Empower' | 'Nov 2024' | 2009948.21 | 0 | -0.6700000000000728 | -0.04997613080320389 | 'acceptable'
--- 1056 | 1 | 1 | 2024-12-06 | 1395147.37 | 976.6 | 926.68 | 'Check' | 'John Hancock payment' | 'monthly' | 11 | 2024 | 'John Hancock' | 'Nov 2024' | 1395147.37 | 0 | -49.92000000000007 | -5.111611714110185 | 'warning'
 -- View: payment_status_base
 -- =====================================================
 -- Create a base view for payment status calculation
@@ -731,7 +657,6 @@ SELECT
     lp.applied_period AS last_applied_period,
     lp.applied_year AS last_applied_year,
     lp.applied_period_type AS last_applied_period_type,
-    
     -- Current billable period
     CASE 
         WHEN ct.payment_schedule = 'monthly' THEN 
@@ -739,13 +664,11 @@ SELECT
         WHEN ct.payment_schedule = 'quarterly' THEN 
             CASE WHEN DATEPART(QUARTER, GETDATE()) = 1 THEN 4 ELSE DATEPART(QUARTER, GETDATE()) - 1 END
     END AS current_period,
-    
     CASE 
         WHEN MONTH(GETDATE()) = 1 AND ct.payment_schedule = 'monthly' THEN YEAR(GETDATE()) - 1
         WHEN DATEPART(QUARTER, GETDATE()) = 1 AND ct.payment_schedule = 'quarterly' THEN YEAR(GETDATE()) - 1
         ELSE YEAR(GETDATE())
     END AS current_year,
-    
     -- Payment status
     CASE
         WHEN lp.applied_year IS NULL THEN 'Due'
@@ -768,15 +691,9 @@ SELECT
         END THEN 'Due'
         ELSE 'Paid'
     END AS payment_status
-    
 FROM clients c
 JOIN contracts ct ON c.client_id = ct.client_id
 LEFT JOIN LastPayment lp ON c.client_id = lp.client_id AND lp.rn = 1;
--- Sample data (3 rows from end of 2024 or latest available):
--- client_id | payment_schedule | last_applied_period | last_applied_year | last_applied_period_type | current_period | current_year | payment_status
--- 1 | 'monthly' | 4 | 2025 | 'monthly' | 6 | 2025 | 'Due'
--- 2 | 'monthly' | 6 | 2024 | 'monthly' | 6 | 2025 | 'Due'
--- 3 | 'monthly' | 6 | 2024 | 'monthly' | 6 | 2025 | 'Due'
 -- View: provider_annual_summary
 -- Section 5H: Recreate provider_annual_summary
 CREATE VIEW [dbo].[provider_annual_summary] AS
@@ -791,11 +708,6 @@ SELECT
     ROUND(SUM(annual_total), 2) as annual_total
 FROM annual_summary_by_client
 GROUP BY provider_name, applied_year;
--- Sample data (3 rows):
--- provider_name | year | client_count | q1_total | q2_total | q3_total | q4_total | annual_total
--- 'Ascensus' | 2019 | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0
--- 'Ascensus' | 2020 | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0
--- 'Ascensus' | 2021 | 2 | 2000.0 | 2000.0 | 2000.0 | 2000.0 | 8000.0
 -- View: provider_quarterly_summary
 -- Section 5E: Recreate provider_quarterly_summary
 CREATE VIEW [dbo].[provider_quarterly_summary] AS
@@ -814,11 +726,6 @@ SELECT
     CAST(COUNT(DISTINCT client_id) AS VARCHAR) as posted_display
 FROM quarterly_summary_aggregated
 GROUP BY provider_name, applied_year, quarter;
--- Sample data (3 rows):
--- provider_name | year | quarter | client_count | provider_actual_total | provider_expected_total | provider_variance | clients_posted | total_clients | posted_display
--- 'Ascensus' | 2019 | 1 | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2'
--- 'Ascensus' | 2019 | 2 | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2'
--- 'Ascensus' | 2019 | 3 | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2'
 -- View: quarterly_page_data
 -- Section 5F: Recreate quarterly_page_data
 CREATE VIEW [dbo].[quarterly_page_data] AS
@@ -863,11 +770,6 @@ LEFT JOIN client_quarter_markers cqm
     ON cqm.client_id = qse.client_id
     AND cqm.year = qse.applied_year
     AND cqm.quarter = qse.quarter;
--- Sample data (3 rows):
--- provider_name | provider_client_count | provider_actual_total | provider_expected_total | provider_variance | clients_posted | total_clients | provider_posted_display | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | quarterly_rate | client_expected | client_actual | client_variance | client_variance_percent | variance_status | payment_count | expected_payment_count | payment_status_display | fully_posted | has_notes | quarterly_notes | posted_count | is_posted | applied_year | quarter | row_type
--- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | False | 0 | NULL | 0 | False | 2019 | 1 | 'client'
--- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 19 | 'Opportunity Interactive' | 'quarterly' | 'flat' | NULL | 2000.0 | 2000.0 | 2000.0 | 0.0 | -2000.0 | -100.0 | 'no_payment' | 0 | 1 | '0/1' | False | 0 | NULL | 0 | False | 2019 | 1 | 'client'
--- 'Ascensus' | 2 | 0.0 | 2000.0 | -2000.0 | 0 | 2 | '0/2' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 0.3446 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 1 | '0/1' | False | 0 | NULL | 0 | False | 2019 | 2 | 'client'
 -- View: quarterly_summary_aggregated
 CREATE VIEW [dbo].[quarterly_summary_aggregated] AS
 SELECT 
@@ -921,11 +823,6 @@ GROUP BY
     cps.year,
     cps.quarter,
     cqm.is_posted;
--- Sample data (3 rows):
--- provider_name | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | applied_year | quarter | payment_count | expected_payment_count | actual_total | expected_total | variance | variance_percent | variance_status | posted_count | fully_posted | last_aum
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 1 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | False | NULL
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 2 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | False | NULL
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 3 | 0 | 1 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | False | NULL
 -- View: quarterly_summary_enhanced
 -- Section 5D: Recreate quarterly_summary_enhanced
 CREATE VIEW [dbo].[quarterly_summary_enhanced] AS
@@ -980,11 +877,18 @@ SELECT
 FROM clients c
 LEFT JOIN contracts ct ON c.client_id = ct.client_id
 LEFT JOIN payment_status_base ps ON c.client_id = ps.client_id;
--- Sample data (3 rows):
--- client_id | display_name | full_name | provider_name | payment_status
--- 1 | 'AirSea America' | 'THE TRUSTEES OF AIRSEA AMERICA INC 401K PLAN AND  | 'John Hancock' | 'Due'
--- 2 | 'Bumgardner Architects (ABC)' | 'THE BUMGARDNER ARCHITECTS A WASHINGTON CORPORATIO | 'Voya' | 'Due'
--- 3 | 'Amplero' | 'AMPLERO INC 401K' | 'Voya' | 'Due'
+-- View: test_summary
+-- Create summary view for quick status check
+CREATE   VIEW test_summary AS
+SELECT 
+    test_suite,
+    COUNT(*) as total_tests,
+    SUM(CAST(pass_fail AS INT)) as passed,
+    COUNT(*) - SUM(CAST(pass_fail AS INT)) as failed,
+    CAST(SUM(CAST(pass_fail AS INT)) * 100.0 / COUNT(*) AS DECIMAL(5,2)) as pass_rate,
+    MAX(test_timestamp) as last_run
+FROM test_results
+GROUP BY test_suite;
 -- View: yearly_summaries
 -- Create yearly view to replace the table
 CREATE VIEW [dbo].[yearly_summaries_view] AS
@@ -1061,12 +965,45 @@ GROUP BY
     percent_rate,
     flat_rate,
     applied_year;
--- Sample data (3 rows):
--- provider_name | client_id | display_name | payment_schedule | fee_type | percent_rate | flat_rate | year | payment_count | expected_payment_count | actual_total | expected_total | variance | variance_percent | variance_status | posted_count | fully_posted | q1_actual | q2_actual | q3_actual | q4_actual | q1_payments | q2_payments | q3_payments | q4_payments
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2019 | 0 | 4 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2020 | 0 | 4 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0
--- 'Ascensus' | 8 | 'Dakota Creek' | 'quarterly' | 'percentage' | 0.003446 | NULL | 2021 | 0 | 4 | 0.0 | 0.0 | 0.0 | NULL | 'no_payment' | 0 | 0 | 0.0 | 0.0 | 0.0 | 0.0 | 0 | 0 | 0 | 0
 -- ===== STORED PROCEDURES =====
+-- Stored Procedure: sp_test_summary
+-- Helper function to format test output
+CREATE   PROCEDURE sp_test_summary
+AS
+BEGIN
+    PRINT '========================================='
+    PRINT 'HWM 401k TEST SUMMARY'
+    PRINT 'Run Date: ' + CONVERT(VARCHAR, GETDATE(), 120)
+    PRINT '========================================='
+    SELECT 
+        test_suite as [Test Suite],
+        CAST(passed AS VARCHAR) + '/' + CAST(total_tests AS VARCHAR) as [Pass/Total],
+        CAST(pass_rate AS VARCHAR) + '%' as [Pass Rate],
+        CASE 
+            WHEN pass_rate = 100 THEN '✓ PERFECT'
+            WHEN pass_rate >= 90 THEN '✓ GOOD'
+            WHEN pass_rate >= 75 THEN '⚠ WARNING'
+            ELSE '✗ FAILED'
+        END as Status
+    FROM test_summary
+    ORDER BY 
+        CASE WHEN pass_rate < 100 THEN 0 ELSE 1 END,
+        pass_rate;
+    -- Show failures if any
+    IF EXISTS (SELECT 1 FROM test_results WHERE pass_fail = 0)
+    BEGIN
+        PRINT ''
+        PRINT 'FAILED TESTS:'
+        PRINT '-------------'
+        SELECT 
+            test_suite + ' - ' + test_name as [Failed Test],
+            'Expected: ' + ISNULL(expected_value, 'NULL') + ' | Actual: ' + ISNULL(actual_value, 'NULL') as [Details]
+        FROM test_results 
+        WHERE pass_fail = 0
+        ORDER BY test_suite, test_name;
+    END
+END;
+GO
 -- ===== FUNCTIONS =====
 -- Function: calculate_expected_fee (SQL_SCALAR_FUNCTION)
 CREATE FUNCTION [dbo].[calculate_expected_fee]
@@ -1083,7 +1020,6 @@ RETURNS FLOAT
 AS
 BEGIN
     DECLARE @expected_fee FLOAT = NULL;
-    
     IF @fee_type = 'flat'
     BEGIN
         SET @expected_fee = @flat_rate;
@@ -1092,7 +1028,6 @@ BEGIN
     BEGIN
         -- Get AUM for CURRENT PERIOD ONLY
         DECLARE @aum FLOAT;
-        
         SELECT TOP 1 @aum = total_assets
         FROM payments
         WHERE client_id = @client_id 
@@ -1101,7 +1036,6 @@ BEGIN
           AND applied_period_type = @period_type
           AND total_assets IS NOT NULL
         ORDER BY received_date DESC;
-        
         -- If AUM found, calculate fee. If not, return NULL.
         IF @aum IS NOT NULL
         BEGIN
@@ -1109,13 +1043,9 @@ BEGIN
         END
         -- REMOVED: No more looking backwards for old AUM
     END
-    
     RETURN @expected_fee;
 END;
 GO
--- Sample usage:
--- SELECT [dbo].[calculate_expected_fee](1, 'TestValue', 100.00, 100.00, 'TestValue', 1, 1) AS Result;
--- Expected result type: float
 -- Function: get_variance_status (SQL_SCALAR_FUNCTION)
 -- STEP 2: Create the get_variance_status function
 CREATE FUNCTION [dbo].[get_variance_status]
@@ -1131,36 +1061,27 @@ BEGIN
     -- Handle special cases first
     IF @has_payment = 0 RETURN 'no_payment';
     IF @expected_fee IS NULL OR @expected_fee = 0 RETURN 'unknown';
-    
     DECLARE @variance_amount FLOAT = ABS(@actual_fee - @expected_fee);
     DECLARE @variance_percent FLOAT;
     DECLARE @status VARCHAR(20) = 'alert'; -- Default if no threshold matches
-    
     -- Check exact match first (dollar amount threshold)
     DECLARE @exact_threshold FLOAT;
     SELECT @exact_threshold = max_percent FROM dbo.variance_thresholds WHERE threshold_type = 'exact';
-    
     IF @variance_amount < @exact_threshold
     BEGIN
         RETURN 'exact';
     END
-    
     -- Calculate percentage variance
     SET @variance_percent = (@variance_amount / ABS(@expected_fee)) * 100;
-    
     -- Check percentage thresholds in order
     SELECT TOP 1 @status = threshold_type
     FROM dbo.variance_thresholds
     WHERE threshold_type != 'exact'  -- Already checked exact
       AND @variance_percent <= max_percent
     ORDER BY display_order;
-    
     RETURN @status;
 END;
 GO
--- Sample usage:
--- SELECT [dbo].[get_variance_status](100.00, 100.00, 1) AS Result;
--- Expected result type: varchar
 -- ===== INDEXES =====
 CREATE NONCLUSTERED INDEX [IX_client_quarter_markers_year_quarter] ON [dbo].[client_quarter_markers] ([year], [quarter]) INCLUDE ([client_id], [is_posted]);
 CREATE NONCLUSTERED INDEX [idx_contacts_client_id] ON [dbo].[contacts] ([client_id]);

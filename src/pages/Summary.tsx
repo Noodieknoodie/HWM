@@ -257,7 +257,7 @@ const Summary: React.FC = () => {
         setAnnualGroups(grouped);
       }
     } catch (err) {
-      console.error('Failed to load summary data:', err);
+      // console.error('Failed to load summary data:', err);
       setError('Failed to load summary data. Please try again.');
     } finally {
       setLoading(false);
@@ -270,6 +270,8 @@ const Summary: React.FC = () => {
 
   // Close export menu when clicking outside
   useEffect(() => {
+    if (!showExportMenu) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.export-menu-container')) {
@@ -277,10 +279,10 @@ const Summary: React.FC = () => {
       }
     };
 
-    if (showExportMenu) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
+    document.addEventListener('click', handleClickOutside);
+    
+    // Always return cleanup function when listener was added
+    return () => document.removeEventListener('click', handleClickOutside);
   }, [showExportMenu]);
 
   // Handle escape key for note popover
@@ -331,12 +333,12 @@ const Summary: React.FC = () => {
           // Check cache first
           const cached = apiCache.get<QuarterlySummaryDetail[]>(cacheKey);
           if (cached) {
-            console.log(`Using cached payment details for client ${clientId}`);
+            // console.log(`Using cached payment details for client ${clientId}`);
             setPaymentDetails(prev => new Map(prev).set(clientId, cached));
           } else {
-            console.log(`Loading payment details for client ${clientId}, year ${currentYear}, quarter ${currentQuarter}`);
+            // console.log(`Loading payment details for client ${clientId}, year ${currentYear}, quarter ${currentQuarter}`);
             const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
-            console.log(`Received ${details.length} payment details:`, details);
+            // console.log(`Received ${details.length} payment details:`, details);
             
             // Cache for 5 minutes
             apiCache.set(cacheKey, details, 5 * 60 * 1000);
@@ -344,7 +346,7 @@ const Summary: React.FC = () => {
             setPaymentDetails(prev => new Map(prev).set(clientId, details));
           }
         } catch (err) {
-          console.error(`Failed to load payment details for client ${clientId}:`, err);
+          // console.error(`Failed to load payment details for client ${clientId}:`, err);
         }
       }
     }
@@ -401,7 +403,7 @@ const Summary: React.FC = () => {
         };
       }));
     } catch (err) {
-      console.error('Failed to update posted status:', err);
+      // console.error('Failed to update posted status:', err);
     }
   };
 
@@ -430,7 +432,7 @@ const Summary: React.FC = () => {
       
       setNotePopover(null);
     } catch (err) {
-      console.error('Failed to save note:', err);
+      // console.error('Failed to save note:', err);
     }
   };
 
@@ -565,7 +567,7 @@ const Summary: React.FC = () => {
         XLSX.writeFile(wb, `${filename}.xlsx`);
       }
     } catch (err) {
-      console.error('Export failed:', err);
+      // console.error('Export failed:', err);
       setError('Export failed. Please make sure required libraries are installed.');
     }
   };
@@ -965,7 +967,7 @@ const Summary: React.FC = () => {
                         <td colSpan={7} className="px-4 py-2 bg-gray-50">
                           <div className="pl-16 space-y-1 text-sm text-gray-600">
                             {paymentDetails.get(client.client_id)?.map((payment, idx) => {
-                              console.log(`Rendering payment ${idx} for client ${client.client_id}:`, payment);
+                              // console.log(`Rendering payment ${idx} for client ${client.client_id}:`, payment);
                               return (
                               <div key={idx}>
                                 └─ {formatPaymentLine(payment)}

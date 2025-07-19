@@ -29,8 +29,6 @@ const useAppStore = create<AppState>((set) => ({
   documentViewerOpen: false,
   toggleDocumentViewer: () => set((state) => ({ documentViewerOpen: !state.documentViewerOpen })),
   setDocumentViewerOpen: (open) => set({ documentViewerOpen: open }),
-  
-  // Removed - no longer needed with Azure data-api
 }));
 
 export default useAppStore;

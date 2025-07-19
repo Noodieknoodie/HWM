@@ -47,7 +47,12 @@ export function usePaymentCompliance(clientId: number | null) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId) {
+      setData([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     
     const fetchComplianceData = async () => {
       setLoading(true);
@@ -93,7 +98,7 @@ export function usePaymentCompliance(clientId: number | null) {
     };
     
     fetchComplianceData();
-  }, [clientId]);
+  }, [clientId, dataApiClient]);
 
   // Calculate overall stats
   const overallStats: ComplianceStats = {

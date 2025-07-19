@@ -74,7 +74,12 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
   const { year = null } = options; // Azure handles pagination
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId) {
+      setPayments([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     
     let cancelled = false;
     
@@ -104,7 +109,7 @@ export function usePayments(clientId: number | null, options: UsePaymentsOptions
     return () => {
       cancelled = true;
     };
-  }, [clientId, year, refreshKey]);
+  }, [clientId, year, refreshKey, dataApiClient]);
   
   const createPayment = async (data: PaymentCreateData) => {
     try {

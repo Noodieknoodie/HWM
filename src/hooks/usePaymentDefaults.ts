@@ -43,7 +43,7 @@ export function usePaymentDefaults(clientId: number | null) {
     };
     
     fetchDefaults();
-  }, [clientId]);
+  }, [clientId, dataApiClient]);
   
   return { defaults, loading, error };
 }

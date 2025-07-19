@@ -36,6 +36,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   };
   
   const shouldShowVarianceIndicator = (variancePercent: number | null | undefined) => {
+    // Show visual indicator for variances > 10% (between DB's "acceptable" 5% and "warning" 15%)
+    // This is just for UI emphasis, not the official variance_status calculation
     return variancePercent !== null && variancePercent !== undefined && Math.abs(variancePercent) > 10;
   };
   

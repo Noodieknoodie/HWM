@@ -54,7 +54,8 @@ export function formatRate(rate: number | null | undefined, feeType: 'percentage
   if (rate === null || rate === undefined) return '--';
   
   if (feeType === 'percentage') {
-    // Rates are already scaled (e.g., 0.07 for 0.07%)
+    // Rates come from dashboard_view already scaled to percentage
+    // e.g., DB stores 0.001 → view returns 0.1 → we display "0.10%"
     return `${rate.toFixed(2)}%`;
   } else if (feeType === 'flat') {
     // Flat fees are dollar amounts

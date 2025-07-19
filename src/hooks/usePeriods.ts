@@ -19,7 +19,12 @@ export function usePeriods(clientId: number | null) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId) {
+      setPeriods([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     
     const fetchPeriods = async () => {
       setLoading(true);
@@ -36,7 +41,7 @@ export function usePeriods(clientId: number | null) {
     };
     
     fetchPeriods();
-  }, [clientId]);
+  }, [clientId, dataApiClient]);
   
   // Transform to match expected format
   // Filter to prevent years that would violate database constraints

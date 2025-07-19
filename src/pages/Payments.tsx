@@ -20,6 +20,8 @@ const getErrorMessage = (error: any): string => {
 };
 
 const Payments: React.FC = () => {
+  // Note: Could optimize by combining selectors: useAppStore((state) => ({ selectedClient: state.selectedClient, documentViewerOpen: state.documentViewerOpen }))
+  // But current approach is fine for readability
   const selectedClient = useAppStore((state) => state.selectedClient);
   const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
   const { dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);

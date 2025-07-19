@@ -1,5 +1,5 @@
 // src/components/payment/PaymentForm.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePeriods } from '@/hooks/usePeriods';
 import { Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
@@ -41,6 +41,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
   const { defaults: paymentDefaults } = usePaymentDefaults(clientId);
   const formRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [formData, setFormData] = useState({
     received_date: new Date().toISOString().split('T')[0],
@@ -80,15 +81,23 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
       });
       
       // Scroll to form and focus first input
-      setTimeout(() => {
+      scrollTimeoutRef.current = setTimeout(() => {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         firstInputRef.current?.focus();
       }, 100);
     }
+    
+    // Cleanup function to clear timeout on unmount
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+    };
   }, [editingPayment]);
   
-  // Calculate expected fee based on contract
-  const calculateExpectedFee = () => {
+  // Calculate expected fee based on contract - memoized for performance
+  const expectedFee = useMemo(() => {
     if (!dashboardData || !formData.total_assets) return null;
     
     const assets = parseFloat(formData.total_assets);
@@ -102,9 +111,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
     }
     
     return null;
-  };
-  
-  const expectedFee = calculateExpectedFee();
+  }, [dashboardData, formData.total_assets]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

@@ -89,17 +89,20 @@ export const PaymentComplianceModal: React.FC<PaymentComplianceModalProps> = ({
 
   const getVarianceColor = (status: string) => {
     switch (status) {
-      case 'ok': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'alert': return 'text-red-600';
-      case 'no_payment': return 'text-gray-400';
+      case 'exact': return 'text-green-600';      // Within $0.01
+      case 'acceptable': return 'text-green-600';  // Within 5%
+      case 'warning': return 'text-yellow-600';    // 5-15%
+      case 'alert': return 'text-red-600';         // Over 15%
+      case 'unknown': return 'text-gray-400';      // No expected fee
+      case 'no_payment': return 'text-gray-400';   // Missing payment
       default: return 'text-gray-600';
     }
   };
 
   const getVarianceIcon = (status: string) => {
     switch (status) {
-      case 'ok': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'exact': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'acceptable': return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'warning': return <AlertCircle className="h-4 w-4 text-yellow-600" />;
       case 'alert': return <AlertCircle className="h-4 w-4 text-red-600" />;
       default: return null;

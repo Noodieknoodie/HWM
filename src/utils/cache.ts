@@ -32,7 +32,7 @@ class SimpleCache {
       return null;
     }
 
-    console.log(`[Cache HIT] ${key}`);
+    // console.log(`[Cache HIT] ${key}`);
     return entry.data as T;
   }
 
@@ -40,7 +40,7 @@ class SimpleCache {
    * Set data in cache with optional TTL
    */
   set<T>(key: string, data: T, ttl?: number): void {
-    console.log(`[Cache SET] ${key} (TTL: ${ttl || this.DEFAULT_TTL}ms)`);
+    // console.log(`[Cache SET] ${key} (TTL: ${ttl || this.DEFAULT_TTL}ms)`);
     
     this.cache.set(key, {
       data,
@@ -54,10 +54,10 @@ class SimpleCache {
    */
   clear(key?: string): void {
     if (key) {
-      console.log(`[Cache CLEAR] ${key}`);
+      // console.log(`[Cache CLEAR] ${key}`);
       this.cache.delete(key);
     } else {
-      console.log('[Cache CLEAR ALL]');
+      // console.log('[Cache CLEAR ALL]');
       this.cache.clear();
     }
   }
@@ -75,7 +75,7 @@ class SimpleCache {
     }
 
     keysToDelete.forEach(key => {
-      console.log(`[Cache INVALIDATE] ${key}`);
+      // console.log(`[Cache INVALIDATE] ${key}`);
       this.cache.delete(key);
     });
   }
