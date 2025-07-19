@@ -99,7 +99,7 @@ export function MultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <ScrollArea className="max-h-72">
+        <ScrollArea className="max-h-96">
           <div className="p-2">
             {groupedOptions
               ? Object.entries(groupedOptions).map(([group, groupOptions]) => {

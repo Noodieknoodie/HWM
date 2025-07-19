@@ -54,7 +54,14 @@ export function usePeriods(clientId: number | null) {
       period: p.period,
       year: p.year,
       period_type: p.display_text.includes('Q') ? 'quarterly' : 'monthly'
-    }));
+    }))
+    .sort((a, b) => {
+      // Sort by year descending, then by period descending
+      if (b.year !== a.year) {
+        return b.year - a.year;
+      }
+      return b.period - a.period;
+    });
   
   return {
     periods: formattedPeriods,

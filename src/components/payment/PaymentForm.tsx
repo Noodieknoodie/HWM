@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePeriods } from '@/hooks/usePeriods';
 import { Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
-import { usePaymentDefaults } from '@/hooks/usePaymentDefaults';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -39,7 +38,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
   } = props;
   const { periods, loading: periodsLoading } = usePeriods(clientId);
   const { dashboardData } = useClientDashboard(clientId);
-  const { defaults: paymentDefaults } = usePaymentDefaults(clientId);
+  // Removed paymentDefaults - no longer auto-filling AUM
   const formRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);

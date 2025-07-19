@@ -15,7 +15,7 @@ const Header: React.FC = () => {
   ];
   
   return (
-    <header className="navbar-dark shadow-md">
+    <header className="navbar-dark shadow-md relative z-40">
       <div className="flex h-14 items-center justify-between px-6">
         <div className="flex items-center">
           <Link to="/" className="text-xl font-semibold text-white mr-8 hover:text-blue-300 transition-colors duration-200">
