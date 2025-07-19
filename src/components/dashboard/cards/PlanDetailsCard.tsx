@@ -1,7 +1,7 @@
 // src/components/dashboard/cards/PlanDetailsCard.tsx
 import React, { useState } from 'react';
 import { DashboardViewData } from '../../../hooks/useClientDashboard';
-import { formatDateMMYY, formatNumber } from '../../../utils/formatters';
+import { formatDateMonthYear, formatNumber } from '../../../utils/formatters';
 import { GridAlignedCard } from './GridAlignedCard';
 import { EditClientModal } from '../../clients/EditClientModal';
 
@@ -23,7 +23,7 @@ export const PlanDetailsCard: React.FC<PlanDetailsCardProps> = ({ dashboardData 
     },
     { 
       label: "Client Since", 
-      value: formatDateMMYY(dashboardData.ima_signed_date) 
+      value: formatDateMonthYear(dashboardData.ima_signed_date) 
     },
   ];
 

@@ -20,11 +20,25 @@ export const ContactCard: React.FC<ContactCardProps> = ({ dashboardData }) => {
     
     if (parts.length === 0) return '--';
     
+    // Check if last part looks like state + zip (e.g., "WA 98101")
+    const lastPart = parts[parts.length - 1];
+    const stateZipPattern = /^[A-Z]{2}\s+\d{5}(-\d{4})?$/;
+    
+    let displayParts: string[] = [];
+    
+    if (parts.length >= 3 && stateZipPattern.test(lastPart)) {
+      // Combine city with state and zip
+      const cityStateZip = `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`;
+      displayParts = [...parts.slice(0, -2), cityStateZip];
+    } else {
+      displayParts = parts;
+    }
+    
     // Return formatted address as JSX with line breaks
     return (
       <div className="text-right text-xs leading-relaxed">
-        {parts.map((part, index) => (
-          <div key={index}>{part}</div>
+        {displayParts.map((part, index) => (
+          <div key={index} className={index === displayParts.length - 1 ? 'whitespace-nowrap' : ''}>{part}</div>
         ))}
       </div>
     );

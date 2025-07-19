@@ -74,7 +74,7 @@ const Sidebar: React.FC = () => {
   
   if (error) {
     return (
-      <div className="w-80 border-r border-gray-200 bg-white flex flex-col fixed left-0 top-14 bottom-0 z-30">
+      <div className="w-80 border-r border-gray-200 bg-white flex flex-col fixed left-0 top-0 bottom-0 z-30 pt-14">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Clients</h2>
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
@@ -92,7 +92,7 @@ const Sidebar: React.FC = () => {
   }
   
   return (
-    <div className="w-80 border-r border-gray-200 bg-white flex flex-col fixed left-0 top-14 bottom-0 z-30">
+    <div className="w-80 border-r border-gray-200 bg-white flex flex-col fixed left-0 top-0 bottom-0 z-30 pt-14">
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Clients</h2>
         <ClientSearch clients={clients} isLoading={isLoading} />

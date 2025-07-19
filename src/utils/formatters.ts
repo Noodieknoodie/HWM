@@ -32,6 +32,21 @@ export function formatDateMMYY(date: string | null | undefined): string {
 }
 
 /**
+ * Date formatter - for displaying dates in Month YYYY format (e.g., October 2019)
+ */
+export function formatDateMonthYear(date: string | null | undefined): string {
+  if (!date) return '--';
+  
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return '--';
+  
+  const monthName = dateObj.toLocaleString('en-US', { month: 'long' });
+  const year = dateObj.getFullYear();
+  
+  return `${monthName} ${year}`;
+}
+
+/**
  * Date formatter - for displaying dates in MM/DD/YY format
  */
 export function formatDateMMDDYY(date: string | null | undefined): string {
