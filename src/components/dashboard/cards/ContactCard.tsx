@@ -53,7 +53,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({ dashboardData }) => {
             onClick={() => setIsContactsModalOpen(true)}
             className="px-3 py-1 text-xs font-medium text-blue-600 bg-white border border-blue-600 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
-            Manage
+            Manage Contacts
           </button>
         }
       />
