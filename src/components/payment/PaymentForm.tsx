@@ -369,38 +369,41 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
           )}
         </div>
         
-        {/* Notes */}
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-            Notes
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            value={formData.notes}
-            onChange={handleInputChange}
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            placeholder="Optional notes about this payment"
-          />
-        </div>
-        
-        {/* Form Actions */}
-        <div className="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={handleClear}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {editingPayment ? 'Cancel' : 'Clear'}
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : (editingPayment ? 'Update Payment' : 'Record Payment')}
-          </button>
+        {/* Notes and Actions Row */}
+        <div className="flex gap-4">
+          {/* Notes - takes up available space */}
+          <div className="flex-1">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+              Notes
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              rows={3}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Optional notes about this payment"
+            />
+          </div>
+          
+          {/* Form Actions - fixed width */}
+          <div className="flex flex-col justify-end space-y-2" style={{ minWidth: '160px' }}>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {editingPayment ? 'Cancel' : 'Clear'}
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : (editingPayment ? 'Update Payment' : 'Record Payment')}
+            </button>
+          </div>
         </div>
       </form>
     </div>

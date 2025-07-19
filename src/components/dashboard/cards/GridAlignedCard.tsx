@@ -17,7 +17,7 @@ export const GridAlignedCard: React.FC<GridAlignedCardProps> = ({
   action 
 }) => {
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 flex flex-col h-full relative">
+    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col h-full relative">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-semibold text-sm text-gray-600">{title}</h3>
         {action && (

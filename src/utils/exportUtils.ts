@@ -97,8 +97,23 @@ export function formatQuarterlySummaryCSV(data: QuarterlySummaryData[], periods:
     
     const periodData = data; // Period filtering happens at data fetch level
     
-    // Group by provider
+    // Add all detail rows with provider column
+    periodData.forEach(row => {
+      csv += `${row.provider},${row.client},${row.paymentSchedule},${row.feeType},${row.rate.toFixed(2)},` +
+        `${row.expected.toFixed(2)},` +
+        `${row.actual.toFixed(2)},` +
+        `${row.variance.toFixed(2)},` +
+        `${row.variancePercent.toFixed(2)},` +
+        `${row.status}\n`;
+    });
+    
+    // Add provider summary section
+    csv += '\n';
+    csv += 'PROVIDER SUMMARY\n';
+    csv += 'Provider,Total Expected,Total Actual,Total Variance,Variance %\n';
+    
     const providers = [...new Set(periodData.map(d => d.provider))];
+    let grandTotals = { expected: 0, actual: 0, variance: 0 };
     
     providers.forEach(provider => {
       const providerData = periodData.filter(d => d.provider === provider);
@@ -108,21 +123,23 @@ export function formatQuarterlySummaryCSV(data: QuarterlySummaryData[], periods:
         variance: providerData.reduce((sum, d) => sum + d.variance, 0)
       };
       
-      csv += `${provider},,,,,` +
+      grandTotals.expected += totals.expected;
+      grandTotals.actual += totals.actual;
+      grandTotals.variance += totals.variance;
+      
+      csv += `${provider},` +
         `${totals.expected.toFixed(2)},` +
         `${totals.actual.toFixed(2)},` +
         `${totals.variance.toFixed(2)},` +
-        `${totals.expected !== 0 ? ((totals.variance / totals.expected) * 100).toFixed(2) : '0.00'},\n`;
-      
-      providerData.forEach(row => {
-        csv += `,${row.client},${row.paymentSchedule},${row.feeType},${row.rate.toFixed(2)},` +
-          `${row.expected.toFixed(2)},` +
-          `${row.actual.toFixed(2)},` +
-          `${row.variance.toFixed(2)},` +
-          `${row.variancePercent.toFixed(2)},` +
-          `${row.status}\n`;
-      });
+        `${totals.expected !== 0 ? ((totals.variance / totals.expected) * 100).toFixed(2) : '0.00'}\n`;
     });
+    
+    // Add grand total row
+    csv += `TOTAL,` +
+      `${grandTotals.expected.toFixed(2)},` +
+      `${grandTotals.actual.toFixed(2)},` +
+      `${grandTotals.variance.toFixed(2)},` +
+      `${grandTotals.expected !== 0 ? ((grandTotals.variance / grandTotals.expected) * 100).toFixed(2) : '0.00'}\n`;
   });
   
   return csv;

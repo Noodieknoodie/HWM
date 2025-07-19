@@ -74,7 +74,7 @@ const Sidebar: React.FC = () => {
   
   if (error) {
     return (
-      <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full">
+      <div className="w-80 border-r border-gray-200 bg-white flex flex-col fixed left-0 top-14 bottom-0 z-30">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Clients</h2>
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
@@ -92,7 +92,7 @@ const Sidebar: React.FC = () => {
   }
   
   return (
-    <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full lg:relative lg:translate-x-0 transition-transform duration-300">
+    <div className="w-80 border-r border-gray-200 bg-white flex flex-col fixed left-0 top-14 bottom-0 z-30">
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Clients</h2>
         <ClientSearch clients={clients} isLoading={isLoading} />
@@ -133,13 +133,18 @@ const Sidebar: React.FC = () => {
                 {providerClients.map(client => (
                   <button
                     key={client.client_id}
-                    className={`w-full flex items-center py-2 px-3 mb-1 text-left rounded transition-colors ${
+                    className={`w-full flex items-center py-2.5 px-3 mb-1 text-left rounded-md transition-all duration-200 ${
                       selectedClient?.client_id === client.client_id 
-                        ? 'bg-gray-100 border-l-4 border-blue-600 font-medium text-gray-900' 
-                        : 'text-gray-800 hover:bg-gray-50'
+                        ? 'bg-blue-50 border border-blue-200 shadow-sm font-semibold text-blue-900 transform scale-[1.02]' 
+                        : 'text-gray-700 hover:bg-gray-50 hover:shadow-sm border border-transparent'
                     }`}
                     onClick={() => setSelectedClient(client)}
                   >
+                    {selectedClient?.client_id === client.client_id && (
+                      <svg className="w-4 h-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
                     <span className="truncate flex-grow">{client.display_name}</span>
                     <span className="ml-2 flex-shrink-0">
                       <StatusIcon status={client.payment_status} />

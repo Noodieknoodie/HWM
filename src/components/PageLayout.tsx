@@ -18,7 +18,7 @@ const PageLayout: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {showSidebar && <Sidebar />}
         
-        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${documentViewerOpen ? 'mr-96' : ''}`}>
+        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${showSidebar ? 'ml-80' : ''} ${documentViewerOpen ? 'mr-96' : ''}`}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Outlet />
           </div>

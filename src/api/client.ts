@@ -37,7 +37,7 @@ export class DataApiClient {
       
       // Check if we're getting HTML instead of JSON (common with 404s or auth redirects)
       if (contentType && contentType.includes('text/html')) {
-        const htmlContent = await response.text();
+        await response.text(); // Consume the response body
         // console.error(`[DataApiClient] Received HTML response instead of JSON from ${url}`);
         // console.error(`[DataApiClient] Status: ${response.status} ${response.statusText}`);
         // console.error(`[DataApiClient] First 500 chars of HTML:`, htmlContent.substring(0, 500));

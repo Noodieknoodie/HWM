@@ -66,9 +66,9 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
         <input
           type="search"
           placeholder="Search clients..."
-          className="pl-10 pr-8 w-full p-2.5 rounded-lg border border-gray-200 bg-gray-50
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    shadow-sm hover:shadow transition-all duration-200 text-gray-800 placeholder-gray-600"
+          className="pl-10 pr-8 w-full p-2.5 rounded-lg border border-gray-300 bg-white
+                    focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+                    hover:border-gray-400 transition-all duration-200 text-gray-800 placeholder-gray-500"
           value={searchTerm}
           onChange={handleSearchChange}
           disabled={isLoading}

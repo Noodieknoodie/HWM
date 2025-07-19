@@ -373,7 +373,7 @@ export default function ExportDataPage() {
   )
 
   return (
-    <div className="bg-slate-50 min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto">
         <header className="mb-10">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Export Center</h1>
@@ -390,7 +390,7 @@ export default function ExportDataPage() {
               </h2>
               <div className="space-y-8">
                 {/* Quarterly Summary */}
-                <div className="bg-white rounded-lg border border-slate-200">
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                   <div className="p-6">
                     <h3 className="font-medium text-lg mb-4">Quarterly Summary</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -426,12 +426,12 @@ export default function ExportDataPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-50 px-6 py-4 border-t">
+                  <div className="bg-gray-50 px-6 py-4 border-t">
                     <ExportActions baseKey="quarterly" onExport={handleQuarterlyExport} />
                   </div>
                 </div>
                 {/* Annual Summary */}
-                <div className="bg-white rounded-lg border border-slate-200">
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                   <div className="p-6">
                     <h3 className="font-medium text-lg mb-4">Annual Summary</h3>
                     <div className="space-y-1.5">
@@ -450,7 +450,7 @@ export default function ExportDataPage() {
                       </ToggleGroup>
                     </div>
                   </div>
-                  <div className="bg-slate-50 px-6 py-4 border-t">
+                  <div className="bg-gray-50 px-6 py-4 border-t">
                     <ExportActions baseKey="annual" onExport={handleAnnualExport} />
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export default function ExportDataPage() {
               <h2 className="text-xl font-semibold text-gray-800 border-b pb-3 mb-6">
                 Detail Reports
               </h2>
-              <div className="bg-white rounded-lg border border-slate-200">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                 <div className="p-6">
                   <h3 className="font-medium text-lg mb-6">Client Payment History</h3>
                   <div className="space-y-6">
@@ -586,7 +586,7 @@ export default function ExportDataPage() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-slate-50 px-6 py-4 border-t">
+                <div className="bg-gray-50 px-6 py-4 border-t">
                   <ExportActions baseKey="client" onExport={handleClientExport} />
                 </div>
               </div>
@@ -597,7 +597,7 @@ export default function ExportDataPage() {
           <div className="xl:sticky xl:top-1/2 xl:-translate-y-1/2 h-fit">
             <section>
               <h2 className="text-xl font-semibold text-gray-800 border-b pb-3 mb-6">System Data</h2>
-              <div className="bg-white rounded-lg border border-slate-200">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                 <div className="p-4">
                   <div className="flow-root">
                     <div className="-m-2 divide-y divide-slate-100">

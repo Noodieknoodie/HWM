@@ -136,9 +136,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="contact_name"
                     value={formData.contact_name}
                     onChange={(e) => handleChange('contact_name', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.contact_name ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`form-input ${errors.contact_name ? 'form-input-error' : ''}`}
                     disabled={saving}
                   />
                   {errors.contact_name && (
@@ -172,8 +170,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.phone ? 'border-red-500' : 'border-gray-300'
+                    className={`form-input ${
+                      errors.phone ? 'form-input-error' : ''
                     }`}
                     disabled={saving}
                   />
@@ -191,8 +189,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="email"
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    className={`form-input ${
+                      errors.email ? 'form-input-error' : ''
                     }`}
                     disabled={saving}
                   />
@@ -224,8 +222,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="physical_address"
                     value={formData.physical_address}
                     onChange={(e) => handleChange('physical_address', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.physical_address ? 'border-red-500' : 'border-gray-300'
+                    className={`form-input ${
+                      errors.physical_address ? 'form-input-error' : ''
                     }`}
                     disabled={saving}
                   />

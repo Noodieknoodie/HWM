@@ -13,6 +13,7 @@ tests\FRONTEND_TEST_LOG.md
 
 # CONTEXT
 
+Azure Static Web Apps with Azure Data API - This is a serverless setup where the data API handles all the database operations. There's no local cache to invalidate.
 This codebase is 100% AI-implemented. Human user (non-developer) gives natural language prompts → agentic systems roll out code. This creates unique challenges:
 - AI coders are "forgetful geniuses" - brilliant in isolation but lack session-to-session memory
 - They grep for problems, add/edit/remove code, but miss the full picture
