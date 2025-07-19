@@ -5,6 +5,7 @@ import { Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePaymen
 import { useClientDashboard } from '@/hooks/useClientDashboard';
 import { usePaymentDefaults } from '@/hooks/usePaymentDefaults';
 import { getErrorMessage } from '@/utils/errorUtils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PaymentFormProps {
   clientId: number;
@@ -58,15 +59,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   
-  // Pre-fill AUM with suggested value when defaults are loaded
-  useEffect(() => {
-    if (!editingPayment && paymentDefaults?.suggested_aum && !formData.total_assets && !isDirty) {
-      setFormData(prev => ({
-        ...prev,
-        total_assets: paymentDefaults.suggested_aum?.toString() || ''
-      }));
-    }
-  }, [paymentDefaults, editingPayment, isDirty]);
+  // Removed auto-fill of AUM - form should start blank
   
   // Populate form when editing and handle focus/scroll
   useEffect(() => {
@@ -332,22 +325,30 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
             <label htmlFor="period_selection" className="block text-sm font-medium text-gray-700">
               Applied Period <span className="text-red-500">*</span>
             </label>
-            <select
-              id="period_selection"
-              name="period_selection"
+            <Select
               value={formData.period_selection}
-              onChange={handleInputChange}
-              required
+              onValueChange={(value) => {
+                const event = {
+                  target: {
+                    name: 'period_selection',
+                    value: value
+                  }
+                } as React.ChangeEvent<HTMLSelectElement>;
+                handleInputChange(event);
+              }}
               disabled={periodsLoading || periods.length === 0}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
-              <option value="">Select a period</option>
-              {periods.map(period => (
-                <option key={period.value} value={period.value}>
-                  {period.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="mt-1 w-full">
+                <SelectValue placeholder="Select a period" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[280px]">
+                {periods.map(period => (
+                  <SelectItem key={period.value} value={period.value}>
+                    {period.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {periodsLoading && (
               <p className="mt-1 text-sm text-gray-500">Loading periods...</p>
             )}

@@ -163,7 +163,7 @@ export class DataApiClient {
 
   // Period methods - using payment_form_periods_view
   async getAvailablePeriods(clientId: number) {
-    return this.request(`payment_form_periods_view?$filter=client_id eq ${clientId} and is_paid eq 0`);
+    return this.request(`payment_form_periods_view?$filter=client_id eq ${clientId}`);
   }
 
   // Dashboard data - single view for all dashboard data
