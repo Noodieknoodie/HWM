@@ -152,7 +152,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {payments.map((payment) => (
-                <tr key={payment.payment_id} className="hover:bg-gray-50">
+                <tr key={payment.payment_id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(payment.received_date).toLocaleDateString()}
                   </td>

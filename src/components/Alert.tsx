@@ -43,7 +43,7 @@ export const Alert: React.FC<AlertProps> = ({ variant, title, message, className
   const styles = variantStyles[variant];
   
   return (
-    <div className={`border rounded-md p-4 ${styles.container} ${className}`}>
+    <div className={`border rounded-md p-4 ${styles.container} ${className} animate-fade-in`}>
       <div className="flex">
         <div className="flex-shrink-0">
           <svg className={`h-5 w-5 ${styles.icon}`} viewBox="0 0 20 20" fill="currentColor">

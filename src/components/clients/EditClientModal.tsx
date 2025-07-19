@@ -163,7 +163,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({
       {/* Modal Content */}
       <div className="fixed inset-0 z-[60] overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
+          <div className="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full transform transition-all duration-300 scale-100">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-lg font-semibold">

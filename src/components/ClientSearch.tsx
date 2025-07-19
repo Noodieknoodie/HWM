@@ -19,6 +19,26 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
   const setSelectedClient = useAppStore((state) => state.setSelectedClient);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredClients, setFilteredClients] = useState<Client[]>(clients);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Auto-focus search on mount
+  React.useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+  
+  // Add keyboard shortcut (Cmd/Ctrl + K)
+  React.useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, []);
   
   // Update filtered clients when search term or clients change
   useEffect(() => {
@@ -64,6 +84,7 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = f
         </svg>
         
         <input
+          ref={searchInputRef}
           type="search"
           placeholder="Search clients..."
           className="pl-10 pr-8 w-full p-2.5 rounded-lg border border-gray-300 bg-white

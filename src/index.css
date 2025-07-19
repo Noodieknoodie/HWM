@@ -9,6 +9,12 @@
   body {
     @apply text-gray-700 bg-gray-50 antialiased;
   }
+  
+  /* Premium number display */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
 }
 
 /* Component styles using Tailwind */
@@ -70,7 +76,8 @@
   }
   
   .navbar-dark {
-    @apply bg-dark-bg text-light-300;
+    @apply text-light-300;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   }
   
   .hover\:bg-dark-accent:hover {

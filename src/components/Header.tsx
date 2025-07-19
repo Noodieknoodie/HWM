@@ -37,14 +37,7 @@ const Header: React.FC = () => {
             ))}
           </nav>
         </div>
-        <div className="flex items-center space-x-4">
-          <button className="flex items-center gap-2 p-2 text-gray-100 hover:text-white transition-colors duration-200">
-            <span className="hidden sm:inline-block text-sm font-medium">Admin User</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-        </div>
+        {/* Admin section removed */}
       </div>
       <div className="md:hidden overflow-x-auto bg-gray-800 px-3 border-t border-gray-700">
         <nav className="flex">

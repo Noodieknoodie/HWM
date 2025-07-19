@@ -59,6 +59,7 @@ const Payments: React.FC = () => {
                 <div className="h-1 w-full mt-2 bg-gradient-to-r from-blue-600 to-blue-200 rounded-full"></div>
               </div>
             </div>
+            {/* Documents button commented out for now
             <button
               onClick={() => useAppStore.getState().toggleDocumentViewer()}
               className={`
@@ -88,6 +89,7 @@ const Payments: React.FC = () => {
               </svg>
               <span className="font-medium">{documentViewerOpen ? "Hide Documents" : "View Documents"}</span>
             </button>
+            */}
           </div>
 
           {/* Error state */}
