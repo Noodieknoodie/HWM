@@ -1,3 +1,152 @@
+Perfect, that’s everything I need. Here’s your implementation:
+
+## 1. Install Teams SDK
+
+```bash
+npm install @microsoft/teams-js@2.32.0
+```
+
+## 2. Replace your `useAuth.ts` completely
+
+```typescript
+// src/auth/useAuth.ts
+import { useState, useEffect } from 'react';
+import * as microsoftTeams from '@microsoft/teams-js';
+
+interface User {
+  userId: string;
+  userDetails: string;
+  userRoles: string[];
+  identityProvider: string;
+}
+
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+  error: Error | null;
+}
+
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    loading: true,
+    error: null
+  });
+
+  useEffect(() => {
+    // Use mock auth for local development
+    if (window.location.hostname === 'localhost') {
+      setAuthState({
+        user: {
+          userId: 'dev-user',
+          userDetails: 'dev@hohimer.com',
+          userRoles: ['authenticated'],
+          identityProvider: 'aad'
+        },
+        loading: false,
+        error: null
+      });
+      return;
+    }
+
+    // Teams SSO for production
+    const authenticateWithTeams = async () => {
+      try {
+        await microsoftTeams.app.initialize();
+        const context = await microsoftTeams.app.getContext();
+        
+        // This is the magic - Teams handles everything
+        const token = await microsoftTeams.authentication.getAuthToken();
+        
+        // Decode the token to get user info (basic parsing, not validation)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        setAuthState({
+          user: {
+            userId: payload.oid || payload.sub,
+            userDetails: payload.preferred_username || payload.email,
+            userRoles: ['authenticated'],
+            identityProvider: 'aad'
+          },
+          loading: false,
+          error: null
+        });
+      } catch (error) {
+        setAuthState({
+          user: null,
+          loading: false,
+          error: error as Error
+        });
+      }
+    };
+
+    authenticateWithTeams();
+  }, []);
+
+  const logout = () => {
+    window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
+  };
+
+  return {
+    user: authState.user,
+    loading: authState.loading,
+    error: authState.error,
+    isAuthenticated: !!authState.user,
+    logout
+  };
+}
+```
+
+## 3. Update `staticwebapp.config.json`
+
+```json
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/rest/*", "/data-api/*", "/_framework/*", "/.auth/*"]
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  },
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://login.microsoftonline.com/e621abc4-3baa-4b93-badc-3b99e8609963/v2.0",
+          "clientIdSettingName": "AAD_CLIENT_ID",
+          "clientSecretSettingName": "AAD_CLIENT_SECRET"
+        }
+      }
+    }
+  },
+  "routes": [
+    {
+      "route": "/data-api/*",
+      "allowedRoles": ["authenticated"]
+    }
+  ]
+}
+```
+
+## 4. Update App Registration (Azure Portal)
+
+Go to your App Registration and:
+
+1. **Application ID URI**: Set to `api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0`
+1. **Expose an API** → **Add a client application**:
+- Add `1fec8e78-bce4-4aaf-ab1b-5451cc387264` (Teams mobile/desktop)
+- Add `5e3ce6c0-2b1f-4285-8d4b-75ee78787346` (Teams web)
+- Check the `access_as_user` scope for both
+1. **Manifest**: Change `accessTokenAcceptedVersion` to `2`
+
+That’s it. Your local development will use mock auth, and when deployed to Azure inside Teams, it’ll use real SSO automatically.​​​​​​​​​​​​​​​​
+
+
+---
+
+
+
+
 # Teams SSO Configuration for Static Web Apps with React and Azure SQL
 
 Your architecture is well-suited for Teams SSO, and Azure Static Web Apps handles much of the authentication complexity automatically. Here’s precisely what’s essential versus redundant for your setup.
