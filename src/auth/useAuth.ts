@@ -45,7 +45,7 @@ export function useAuth() {
     
     if (!isInTeams && ENABLE_BROWSER_AUTH) {
       // Fallback to Azure Static Web Apps auth for browser testing
-      fetch('/.auth/me')
+      fetch('/.auth/me', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
           if (data.clientPrincipal) {

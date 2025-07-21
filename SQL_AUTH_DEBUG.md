@@ -121,3 +121,11 @@ const response = await fetch(url, {
 ```
 
 **Missing:** `credentials: 'include'` to send auth cookies
+
+### Step 7: Fix Applied
+
+**Fixed in commit:** Added `credentials: 'include'` to:
+1. `src/api/client.ts` line 28 - All Data API requests
+2. `src/auth/useAuth.ts` line 48 - Auth check request
+
+This ensures authentication cookies are sent with every request.
