@@ -78,7 +78,6 @@ export function useAuth() {
     const authenticateWithTeams = async () => {
       try {
         await microsoftTeams.app.initialize();
-        const context = await microsoftTeams.app.getContext();
         
         const token = await microsoftTeams.authentication.getAuthToken();
         const payload = JSON.parse(atob(token.split('.')[1]));
