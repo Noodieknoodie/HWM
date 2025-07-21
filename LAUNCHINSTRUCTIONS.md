@@ -190,7 +190,7 @@
    ===
 
 
-   
+
 
 
 
@@ -531,3 +531,4 @@ The only database requirement: Enable “Allow Azure services and resources to a
 - Complex token validation logic
 
 Your architecture leverages Static Web Apps’ built-in capabilities perfectly.   The authentication chain from Teams through to your database is handled automatically once these configurations are in place.
+ 
