@@ -1,4 +1,3 @@
-import * as microsoftTeams from '@microsoft/teams-js';
 import { useEffect, useState } from 'react';
 
 interface User {
@@ -37,77 +36,30 @@ export function useAuth() {
         return;
       }
 
-      const isInTeams = window.parent !== window.self;
-
-      if (isInTeams) {
-        try {
-          await microsoftTeams.app.initialize();
-          
-          const response = await fetch('/.auth/me');
-          const data = await response.json();
-          
-          if (data.clientPrincipal) {
-            setAuthState({
-              user: {
-                userId: data.clientPrincipal.userId,
-                userDetails: data.clientPrincipal.userDetails,
-                userRoles: data.clientPrincipal.userRoles,
-                identityProvider: data.clientPrincipal.identityProvider
-              },
-              loading: false,
-              error: null
-            });
-          } else {
-            microsoftTeams.authentication.authenticate({
-              url: `${window.location.origin}/.auth/login/aad`,
-              width: 600,
-              height: 535,
-              successCallback: () => {
-                window.location.reload();
-              },
-              failureCallback: (error: string) => {
-                setAuthState({
-                  user: null,
-                  loading: false,
-                  error: new Error(error || 'Authentication failed')
-                });
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Teams init error:', error);
+      try {
+        const response = await fetch('/.auth/me');
+        const data = await response.json();
+        
+        if (data.clientPrincipal) {
           setAuthState({
-            user: null,
+            user: {
+              userId: data.clientPrincipal.userId,
+              userDetails: data.clientPrincipal.userDetails,
+              userRoles: data.clientPrincipal.userRoles,
+              identityProvider: data.clientPrincipal.identityProvider
+            },
             loading: false,
-            error: error as Error
+            error: null
           });
+        } else {
+          window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.href);
         }
-      } else {
-        try {
-          const response = await fetch('/.auth/me');
-          const data = await response.json();
-          
-          if (data.clientPrincipal) {
-            setAuthState({
-              user: {
-                userId: data.clientPrincipal.userId,
-                userDetails: data.clientPrincipal.userDetails,
-                userRoles: data.clientPrincipal.userRoles,
-                identityProvider: data.clientPrincipal.identityProvider
-              },
-              loading: false,
-              error: null
-            });
-          } else {
-            window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname);
-          }
-        } catch (error) {
-          setAuthState({
-            user: null,
-            loading: false,
-            error: error as Error
-          });
-        }
+      } catch (error) {
+        setAuthState({
+          user: null,
+          loading: false,
+          error: error as Error
+        });
       }
     };
 
