@@ -22,50 +22,96 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Mock auth for local development
-    if (window.location.hostname === 'localhost') {
-      setAuthState({
-        user: {
-          userId: 'dev-user',
-          userDetails: 'dev@hohimer.com',
-          userRoles: ['authenticated'],
-          identityProvider: 'aad'
-        },
-        loading: false,
-        error: null
-      });
-      return;
-    }
-
-    // Teams SSO for production
-    const authenticateWithTeams = async () => {
-      try {
-        await microsoftTeams.app.initialize();
-        const token = await microsoftTeams.authentication.getAuthToken();
-        
-        // Extract user info from token
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        
+    const authenticateUser = async () => {
+      if (window.location.hostname === 'localhost') {
         setAuthState({
           user: {
-            userId: payload.oid || payload.sub,
-            userDetails: payload.preferred_username || payload.email,
+            userId: 'dev-user',
+            userDetails: 'dev@hohimer.com',
             userRoles: ['authenticated'],
             identityProvider: 'aad'
           },
           loading: false,
           error: null
         });
-      } catch (error) {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: error as Error
-        });
+        return;
+      }
+
+      const isInTeams = window.parent !== window.self;
+
+      if (isInTeams) {
+        try {
+          await microsoftTeams.app.initialize();
+          
+          const response = await fetch('/.auth/me');
+          const data = await response.json();
+          
+          if (data.clientPrincipal) {
+            setAuthState({
+              user: {
+                userId: data.clientPrincipal.userId,
+                userDetails: data.clientPrincipal.userDetails,
+                userRoles: data.clientPrincipal.userRoles,
+                identityProvider: data.clientPrincipal.identityProvider
+              },
+              loading: false,
+              error: null
+            });
+          } else {
+            microsoftTeams.authentication.authenticate({
+              url: `${window.location.origin}/.auth/login/aad`,
+              width: 600,
+              height: 535,
+              successCallback: () => {
+                window.location.reload();
+              },
+              failureCallback: (error: string) => {
+                setAuthState({
+                  user: null,
+                  loading: false,
+                  error: new Error(error || 'Authentication failed')
+                });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Teams init error:', error);
+          setAuthState({
+            user: null,
+            loading: false,
+            error: error as Error
+          });
+        }
+      } else {
+        try {
+          const response = await fetch('/.auth/me');
+          const data = await response.json();
+          
+          if (data.clientPrincipal) {
+            setAuthState({
+              user: {
+                userId: data.clientPrincipal.userId,
+                userDetails: data.clientPrincipal.userDetails,
+                userRoles: data.clientPrincipal.userRoles,
+                identityProvider: data.clientPrincipal.identityProvider
+              },
+              loading: false,
+              error: null
+            });
+          } else {
+            window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname);
+          }
+        } catch (error) {
+          setAuthState({
+            user: null,
+            loading: false,
+            error: error as Error
+          });
+        }
       }
     };
 
-    authenticateWithTeams();
+    authenticateUser();
   }, []);
 
   const logout = () => {
@@ -76,7 +122,7 @@ export function useAuth() {
     user: authState.user,
     loading: authState.loading,
     error: authState.error,
-    isAuthenticated: !!authState.user,
+    isAuthenticated: !authState.loading && !!authState.user,
     logout
   };
 }

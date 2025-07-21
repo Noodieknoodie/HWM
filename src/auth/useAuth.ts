@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import * as microsoftTeams from '@microsoft/teams-js';
+import { useEffect, useState } from 'react';
 
 interface User {
   userId: string;
@@ -65,7 +65,7 @@ export function useAuth() {
               successCallback: () => {
                 window.location.reload();
               },
-              failureCallback: (error) => {
+              failureCallback: (error: string) => {
                 setAuthState({
                   user: null,
                   loading: false,
