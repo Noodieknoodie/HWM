@@ -129,3 +129,31 @@ const response = await fetch(url, {
 2. `src/auth/useAuth.ts` line 48 - Auth check request
 
 This ensures authentication cookies are sent with every request.
+
+### Step 8: Teams vs Browser Issue Analysis
+
+**Corrected Understanding:**
+- Data API uses SWA's managed identity for SQL access (not frontend tokens)
+- Frontend auth only gates access to SWA endpoints
+- Browser works = managed identity and networking are correct
+
+**Teams-specific issue possibilities:**
+1. CORS/origin restrictions 
+2. Teams iframe sandbox blocking requests
+3. Network routing differences when embedded in Teams
+
+### Step 9: Teams Error Analysis
+
+**Error Found:** 403 Forbidden on Data API calls in Teams
+- Browser: Works (origin matches)
+- Teams: Fails (runs from SharePoint domain)
+
+**Root Cause:** CORS configuration only allows `https://teams.microsoft.com` but Teams apps actually run from SharePoint domains (*.sharepoint.com)
+
+### Step 10: Expert Analysis - It's Not CORS!
+
+**Real Issue:** Azure SQL firewall is blocking Teams traffic
+- Browser works: Your IP is whitelisted
+- Teams fails: Runs from Azure infrastructure (different IP)
+
+**Key Insight:** Teams requests come from Azure's IP ranges, not your local IP

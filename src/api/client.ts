@@ -28,6 +28,7 @@ export class DataApiClient {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'X-MS-API-ROLE': 'authenticated',
         ...options.headers,
       },
     });

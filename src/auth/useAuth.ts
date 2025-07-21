@@ -40,12 +40,8 @@ export function useAuth() {
       return;
     }
 
-    // Check if we're in Teams
-    const isInTeams = window.parent !== window.self;
-    
-    if (!isInTeams && ENABLE_BROWSER_AUTH) {
-      // Fallback to Azure Static Web Apps auth for browser testing
-      fetch('/.auth/me', { credentials: 'include' })
+    // ALWAYS use Static Web Apps auth (remove Teams SSO detection)
+    fetch('/.auth/me', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
           if (data.clientPrincipal) {
@@ -71,37 +67,6 @@ export function useAuth() {
             error: error as Error
           });
         });
-      return;
-    }
-
-    // Teams SSO for production
-    const authenticateWithTeams = async () => {
-      try {
-        await microsoftTeams.app.initialize();
-        
-        const token = await microsoftTeams.authentication.getAuthToken();
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        
-        setAuthState({
-          user: {
-            userId: payload.oid || payload.sub,
-            userDetails: payload.preferred_username || payload.email,
-            userRoles: ['authenticated'],
-            identityProvider: 'aad'
-          },
-          loading: false,
-          error: null
-        });
-      } catch (error) {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: error as Error
-        });
-      }
-    };
-
-    authenticateWithTeams();
   }, []);
 
   const logout = () => {
