@@ -1,8 +1,5 @@
-// src/auth/useAuth.ts
 import { useState, useEffect } from 'react';
 import * as microsoftTeams from '@microsoft/teams-js';
-
-const ENABLE_BROWSER_AUTH = true; // Set to false before deploying to production
 
 interface User {
   userId: string;
@@ -25,25 +22,30 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Use mock auth for local development
-    if (window.location.hostname === 'localhost') {
-      setAuthState({
-        user: {
-          userId: 'dev-user',
-          userDetails: 'dev@hohimer.com',
-          userRoles: ['authenticated'],
-          identityProvider: 'aad'
-        },
-        loading: false,
-        error: null
-      });
-      return;
-    }
+    const authenticateUser = async () => {
+      if (window.location.hostname === 'localhost') {
+        setAuthState({
+          user: {
+            userId: 'dev-user',
+            userDetails: 'dev@hohimer.com',
+            userRoles: ['authenticated'],
+            identityProvider: 'aad'
+          },
+          loading: false,
+          error: null
+        });
+        return;
+      }
 
-    // ALWAYS use Static Web Apps auth (remove Teams SSO detection)
-    fetch('/.auth/me', { credentials: 'include' })
-        .then(response => response.json())
-        .then(data => {
+      const isInTeams = window.parent !== window.self;
+
+      if (isInTeams) {
+        try {
+          await microsoftTeams.app.initialize();
+          
+          const response = await fetch('/.auth/me');
+          const data = await response.json();
+          
           if (data.clientPrincipal) {
             setAuthState({
               user: {
@@ -56,17 +58,60 @@ export function useAuth() {
               error: null
             });
           } else {
-            // Redirect to login
-            window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname);
+            microsoftTeams.authentication.authenticate({
+              url: `${window.location.origin}/.auth/login/aad`,
+              width: 600,
+              height: 535,
+              successCallback: () => {
+                window.location.reload();
+              },
+              failureCallback: (error) => {
+                setAuthState({
+                  user: null,
+                  loading: false,
+                  error: new Error(error || 'Authentication failed')
+                });
+              }
+            });
           }
-        })
-        .catch(error => {
+        } catch (error) {
+          console.error('Teams init error:', error);
           setAuthState({
             user: null,
             loading: false,
             error: error as Error
           });
-        });
+        }
+      } else {
+        try {
+          const response = await fetch('/.auth/me');
+          const data = await response.json();
+          
+          if (data.clientPrincipal) {
+            setAuthState({
+              user: {
+                userId: data.clientPrincipal.userId,
+                userDetails: data.clientPrincipal.userDetails,
+                userRoles: data.clientPrincipal.userRoles,
+                identityProvider: data.clientPrincipal.identityProvider
+              },
+              loading: false,
+              error: null
+            });
+          } else {
+            window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname);
+          }
+        } catch (error) {
+          setAuthState({
+            user: null,
+            loading: false,
+            error: error as Error
+          });
+        }
+      }
+    };
+
+    authenticateUser();
   }, []);
 
   const logout = () => {
@@ -77,7 +122,7 @@ export function useAuth() {
     user: authState.user,
     loading: authState.loading,
     error: authState.error,
-    isAuthenticated: !!authState.user,
+    isAuthenticated: !authState.loading && !!authState.user,
     logout
   };
 }

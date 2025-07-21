@@ -15,7 +15,7 @@
     "test:db": "dotenv -- tsx tests/run-tests.ts"
   },
   "dependencies": {
-    "@microsoft/teams-js": "^2.32.0",
+    "@microsoft/teams-js": "^2.40.0",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-icons": "^1.3.2",
     "@radix-ui/react-label": "^2.1.7",

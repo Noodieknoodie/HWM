@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
   "manifestVersion": "1.22",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
   "developer": {
     "name": "Hohimer Wealth Management",
-    "websiteUrl": "https://www.hohimer.com",
-    "privacyUrl": "https://www.hohimer.com/privacy",
-    "termsOfUseUrl": "https://www.hohimer.com/terms"
+    "websiteUrl": "https://www.hohimerwealthmanagement.com",
+    "privacyUrl": "https://www.hohimerwealthmanagement.com/privacy",
+    "termsOfUseUrl": "https://www.hohimerwealthmanagement.com/terms"
   },
   "name": {
-    "short": "401k Tracker",
+    "short": "401k Payment Tracker",
     "full": "HWM 401k Payment Tracker"
   },
   "description": {
@@ -28,19 +28,17 @@
       "name": "401k Tracker",
       "contentUrl": "https://green-rock-024c27f1e.1.azurestaticapps.net",
       "websiteUrl": "https://green-rock-024c27f1e.1.azurestaticapps.net",
-      "scopes": ["personal", "team"]
+      "scopes": [
+        "personal",
+        "team"
+      ]
     }
   ],
   "permissions": [
-    "identity",
     "messageTeamMembers"
   ],
   "validDomains": [
     "green-rock-024c27f1e.1.azurestaticapps.net",
     "*.azurestaticapps.net"
-  ],
-  "webApplicationInfo": {
-    "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
-    "resource": "api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0"
-  }
+  ]
 }
