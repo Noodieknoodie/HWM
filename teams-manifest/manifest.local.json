@@ -1,9 +1,8 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
-  "manifestVersion": "1.16",
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.22",
   "version": "1.0.0",
   "id": "00000000-0000-0000-0000-000000000001",
-  "packageName": "com.hohimer.401ktracker.local",
   "developer": {
     "name": "Hohimer Wealth Management",
     "websiteUrl": "https://www.hohimer.com",
@@ -27,8 +26,8 @@
     {
       "entityId": "401k-tracker-tab",
       "name": "401k Tracker",
-      "contentUrl": "https://localhost:4280",
-      "websiteUrl": "https://localhost:4280",
+      "contentUrl": "http://localhost:4280",
+      "websiteUrl": "http://localhost:4280",
       "scopes": ["personal", "team"]
     }
   ],

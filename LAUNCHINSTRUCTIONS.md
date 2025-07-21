@@ -1,4 +1,199 @@
-Perfect, that’s everything I need. Here’s your implementation:
+## Teams App Manifest - Condensed Documentation for Tab Apps
+
+### Core Manifest Structure
+```json
+{
+    "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.22",
+    "version": "1.0.0",
+    "id": "%MICROSOFT-APP-ID%",
+    "developer": {...},
+    "name": {...},
+    "description": {...},
+    "icons": {...},
+    "accentColor": "#FFFFFF",
+    "staticTabs": [...],
+    "permissions": [...],
+    "validDomains": [...],
+    "webApplicationInfo": {...}
+}
+```
+
+### Essential Properties
+
+**id** (Required)
+- Unique Microsoft-generated identifier (GUID format)
+- Get from Microsoft Application Registration Portal
+
+**developer** (Required)
+```json
+{
+    "name": "Your Company Name",
+    "websiteUrl": "https://example.com/",
+    "privacyUrl": "https://example.com/privacy",
+    "termsOfUseUrl": "https://example.com/terms",
+    "mpnId": "1234567890"  // Optional
+}
+```
+
+**name** (Required)
+```json
+{
+    "short": "App Name (≤30 chars)",
+    "full": "Full App Name if longer than 30 characters (≤100 chars)"
+}
+```
+
+**description** (Required)
+```json
+{
+    "short": "Brief description (≤80 chars)",
+    "full": "Complete description (≤4000 chars)"
+}
+```
+
+**icons** (Required)
+```json
+{
+    "outline": "icon-outline-32x32.png",  // 32x32 transparent PNG
+    "color": "icon-color-192x192.png"     // 192x192 full color PNG
+}
+```
+
+**accentColor** (Required)
+- HTML hex color code (e.g., "#4464ee")
+- Used as background for color icons
+
+### Tab Configuration
+
+**staticTabs** - For personal tabs that are pre-configured
+```json
+"staticTabs": [
+    {
+        "entityId": "unique-tab-id",
+        "name": "Tab Display Name",
+        "contentUrl": "https://your-app.azurestaticapps.net",
+        "websiteUrl": "https://your-app.azurestaticapps.net",
+        "scopes": ["personal"]
+    }
+]
+```
+
+**configurableTabs** - For team/channel tabs requiring setup
+```json
+"configurableTabs": [
+    {
+        "configurationUrl": "https://your-app.azurestaticapps.net/config",
+        "scopes": ["team", "groupChat"],
+        "canUpdateConfiguration": true,
+        "context": ["channelTab", "privateChatTab", "meetingChatTab"]
+    }
+]
+```
+
+### SSO Configuration
+
+**webApplicationInfo** (Required for SSO)
+```json
+"webApplicationInfo": {
+    "id": "AAD-APP-ID",  // Your Azure AD App Registration ID
+    "resource": "api://your-app.azurestaticapps.net/AAD-APP-ID"
+}
+```
+
+### Domain Validation
+
+**validDomains**
+```json
+"validDomains": [
+    "*.azurestaticapps.net",
+    "your-specific-domain.com"
+]
+```
+
+### Permissions
+```json
+"permissions": [
+    "identity",              // For user identity info
+    "messageTeamMembers"     // If sending messages to team members
+]
+```
+
+### Minimal Tab App Example
+```json
+{
+    "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.22",
+    "version": "1.0.0",
+    "id": "00000000-0000-0000-0000-000000000000",
+    "developer": {
+        "name": "Your Financial Advisory Firm",
+        "websiteUrl": "https://yourfirm.com",
+        "privacyUrl": "https://yourfirm.com/privacy",
+        "termsOfUseUrl": "https://yourfirm.com/terms"
+    },
+    "name": {
+        "short": "Payment Tracker",
+        "full": "Internal Payment Records Tracker"
+    },
+    "description": {
+        "short": "Track payment records internally",
+        "full": "Internal tool for tracking and managing payment records for the financial advisory team"
+    },
+    "icons": {
+        "outline": "outline-32.png",
+        "color": "color-192.png"
+    },
+    "accentColor": "#0078D4",
+    "staticTabs": [
+        {
+            "entityId": "payment-tracker-tab",
+            "name": "Payments",
+            "contentUrl": "https://your-app.azurestaticapps.net",
+            "websiteUrl": "https://your-app.azurestaticapps.net",
+            "scopes": ["personal"]
+        }
+    ],
+    "permissions": ["identity"],
+    "validDomains": [
+        "*.azurestaticapps.net"
+    ],
+    "webApplicationInfo": {
+        "id": "YOUR-AAD-APP-ID",
+        "resource": "api://your-app.azurestaticapps.net/YOUR-AAD-APP-ID"
+    }
+}
+```
+
+### Key Notes for Your Scenario
+
+1. **Authentication**: Since Azure Static Web Apps handles auth at the infrastructure level, you mainly need `webApplicationInfo` for Teams SSO integration
+
+2. **Tab Types**: Use `staticTabs` for personal tabs (appears in left rail) or `configurableTabs` for team/channel tabs
+
+3. **Scopes**: 
+   - `personal` - Tab available to individual users
+   - `team` - Tab can be added to teams
+   - `groupChat` - Tab can be added to group chats
+
+4. **Context for Tabs**:
+   - `personalTab` - Personal app space
+   - `channelTab` - Team channel
+   - `privateChatTab` - 1:1 or group chat
+
+5. **TeamsJS Integration**: Your React app will need to use the Teams JavaScript SDK to:
+   - Initialize the app: `app.initialize()`
+   - Get user context: `app.getContext()`
+   - Handle authentication: `authentication.getAuthToken()`
+
+
+   ===
+
+
+   
+
+
+
 
 ## 1. Install Teams SDK
 

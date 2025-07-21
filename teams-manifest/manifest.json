@@ -1,9 +1,8 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
-  "manifestVersion": "1.16",
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.22",
   "version": "1.0.0",
   "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
-  "packageName": "com.hohimer.401ktracker",
   "developer": {
     "name": "Hohimer Wealth Management",
     "websiteUrl": "https://www.hohimer.com",
@@ -37,7 +36,8 @@
     "messageTeamMembers"
   ],
   "validDomains": [
-    "green-rock-024c27f1e.1.azurestaticapps.net"
+    "green-rock-024c27f1e.1.azurestaticapps.net",
+    "*.azurestaticapps.net"
   ],
   "webApplicationInfo": {
     "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",

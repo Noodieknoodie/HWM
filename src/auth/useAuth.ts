@@ -1,9 +1,9 @@
-// frontend/src/auth/useAuth.ts
 import { useState, useEffect } from 'react';
+import * as microsoftTeams from '@microsoft/teams-js';
 
 interface User {
   userId: string;
-  userDetails: string; // email
+  userDetails: string;
   userRoles: string[];
   identityProvider: string;
 }
@@ -22,65 +22,50 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // TEMPORARY: Mock auth for all environments during development
-    // TODO: Remove this and uncomment production auth code
-    setAuthState({
-      user: {
-        userId: 'dev-user',
-        userDetails: 'dev@hohimer.com',
-        userRoles: ['authenticated'],
-        identityProvider: 'aad'
-      },
-      loading: false,
-      error: null
-    });
-    return;
-    
-    // PRODUCTION AUTH CODE - UNCOMMENT WHEN READY
-    // if (window.location.hostname === 'localhost') {
-    //   setAuthState({
-    //     user: {
-    //       userId: 'local-dev-user',
-    //       userDetails: 'dev@localhost',
-    //       userRoles: ['authenticated'],
-    //       identityProvider: 'aad'
-    //     },
-    //     loading: false,
-    //     error: null
-    //   });
-    //   return;
-    // }
-    
-    // Fetch user info from Static Web App auth endpoint
-    fetch('/.auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.clientPrincipal) {
-          setAuthState({
-            user: {
-              userId: data.clientPrincipal.userId,
-              userDetails: data.clientPrincipal.userDetails,
-              userRoles: data.clientPrincipal.userRoles || [],
-              identityProvider: data.clientPrincipal.identityProvider
-            },
-            loading: false,
-            error: null
-          });
-        } else {
-          setAuthState({
-            user: null,
-            loading: false,
-            error: null
-          });
-        }
-      })
-      .catch(error => {
+    // Mock auth for local development
+    if (window.location.hostname === 'localhost') {
+      setAuthState({
+        user: {
+          userId: 'dev-user',
+          userDetails: 'dev@hohimer.com',
+          userRoles: ['authenticated'],
+          identityProvider: 'aad'
+        },
+        loading: false,
+        error: null
+      });
+      return;
+    }
+
+    // Teams SSO for production
+    const authenticateWithTeams = async () => {
+      try {
+        await microsoftTeams.app.initialize();
+        const token = await microsoftTeams.authentication.getAuthToken();
+        
+        // Extract user info from token
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        setAuthState({
+          user: {
+            userId: payload.oid || payload.sub,
+            userDetails: payload.preferred_username || payload.email,
+            userRoles: ['authenticated'],
+            identityProvider: 'aad'
+          },
+          loading: false,
+          error: null
+        });
+      } catch (error) {
         setAuthState({
           user: null,
           loading: false,
-          error
+          error: error as Error
         });
-      });
+      }
+    };
+
+    authenticateWithTeams();
   }, []);
 
   const logout = () => {

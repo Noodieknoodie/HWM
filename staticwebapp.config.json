@@ -5,5 +5,26 @@
   },
   "mimeTypes": {
     ".json": "application/json"
-  }
+  },
+  "globalHeaders": {
+    "Access-Control-Allow-Origin": "https://teams.microsoft.com",
+    "Access-Control-Allow-Credentials": "true"
+  },
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://login.microsoftonline.com/e621abc4-3baa-4b93-badc-3b99e8609963/v2.0",
+          "clientIdSettingName": "AAD_CLIENT_ID",
+          "clientSecretSettingName": "AAD_CLIENT_SECRET"
+        }
+      }
+    }
+  },
+  "routes": [
+    {
+      "route": "/data-api/*",
+      "allowedRoles": ["anonymous", "authenticated"]
+    }
+  ]
 }
