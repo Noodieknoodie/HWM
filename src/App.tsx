@@ -13,7 +13,7 @@ import Export from './pages/Export'
 import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
-  const { user, loading, isTeams } = useAuthUnified();
+  const { user, loading } = useAuthUnified();
   const dataApiClient = useDataApiClient();
   
   // Pre-cache client list when user is authenticated
