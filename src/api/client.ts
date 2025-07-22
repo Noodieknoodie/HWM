@@ -16,12 +16,6 @@ export interface AzureApiError {
 }
 
 export class DataApiClient {
-  private token?: string;
-
-  setToken(token?: string) {
-    this.token = token;
-  }
-
   private async requestWithRetry(
     url: string,
     options: RequestInit = {},
@@ -65,21 +59,14 @@ export class DataApiClient {
     const url = `${DATA_API_BASE}/${entity}`;
     // console.log(`[DataApiClient] Requesting: ${url}`);
     
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'X-MS-API-ROLE': 'authenticated',
-      ...(options.headers as Record<string, string> || {}),
-    };
-
-    // Add Teams token if available
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
     const response = await this.requestWithRetry(url, {
       ...options,
       credentials: 'include',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MS-API-ROLE': 'authenticated',
+        ...options.headers,
+      },
     });
 
     if (!response.ok) {

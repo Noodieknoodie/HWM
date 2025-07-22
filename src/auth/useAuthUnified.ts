@@ -52,21 +52,40 @@ export function useAuthUnified() {
         try {
           const token = await microsoftTeams.authentication.getAuthToken();
           
-          // Decode the token to get user info (basic parsing, not validation)
-          const payload = token.split('.')[1];
-          const decoded = JSON.parse(atob(payload));
-          
-          setAuthState({
-            user: {
-              userId: decoded.oid || decoded.sub,
-              userDetails: decoded.preferred_username || decoded.upn || decoded.email,
-              userRoles: ['authenticated'],
-              identityProvider: 'teams-sso'
+          // Exchange Teams token for SWA session
+          const loginResponse = await fetch('/.auth/login/aad', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
-            loading: false,
-            error: null,
-            isTeams: true
+            body: JSON.stringify({
+              id_token: token
+            }),
           });
+
+          if (!loginResponse.ok) {
+            throw new Error('Failed to exchange token');
+          }
+
+          // Now fetch user details from SWA
+          const userResponse = await fetch('/.auth/me');
+          const userData = await userResponse.json();
+          
+          if (userData.clientPrincipal) {
+            setAuthState({
+              user: {
+                userId: userData.clientPrincipal.userId,
+                userDetails: userData.clientPrincipal.userDetails,
+                userRoles: userData.clientPrincipal.userRoles,
+                identityProvider: userData.clientPrincipal.identityProvider
+              },
+              loading: false,
+              error: null,
+              isTeams: true
+            });
+          } else {
+            throw new Error('No user principal found');
+          }
         } catch (ssoError) {
           // Teams SSO failed - show error
           setAuthState({

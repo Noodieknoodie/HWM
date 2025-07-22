@@ -51,7 +51,8 @@
       "mcp__MSSQL_MCP__update_data",
       "Bash(npx shadcn:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__perplexity-mcp__reason"
     ],
     "deny": []
   }

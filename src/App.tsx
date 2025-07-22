@@ -16,19 +16,6 @@ function AppContent() {
   const { user, loading, isTeams } = useAuthUnified();
   const dataApiClient = useDataApiClient();
   
-  // Set Teams token when available
-  useEffect(() => {
-    if (isTeams && user) {
-      // Extract token from user details if stored there
-      // For now, we need to get it directly from Teams SDK
-      import('@microsoft/teams-js').then(({ authentication }) => {
-        authentication.getAuthToken()
-          .then(token => dataApiClient.setToken(token))
-          .catch(err => console.error('Failed to get Teams token:', err));
-      });
-    }
-  }, [isTeams, user, dataApiClient]);
-  
   // Pre-cache client list when user is authenticated
   useEffect(() => {
     if (user && !loading) {
