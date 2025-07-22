@@ -30,7 +30,13 @@ const Sidebar: React.FC = () => {
         setIsLoading(true);
         setError(null);
         const data = await dataApiClient.getClients();
-        setClients(Array.isArray(data) ? data : []);
+        const clientList = Array.isArray(data) ? data : [];
+        setClients(clientList);
+        
+        // Auto-select first client if none selected
+        if (!selectedClient && clientList.length > 0) {
+          setSelectedClient(clientList[0]);
+        }
       } catch (err: any) {
         console.error('Error loading clients:', err);
         setError(err.error?.message || 'Failed to load clients');

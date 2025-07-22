@@ -8,9 +8,9 @@ const Header: React.FC = () => {
   const navItems = [
     { title: 'SUMMARY', path: '/Summary' },
     { title: 'PAYMENTS', path: '/Payments' },
-    { title: 'CONTACTS', path: '/Contacts' },
-    { title: 'CONTRACTS', path: '/Contracts' },
-    { title: 'DOCUMENTS', path: '/Documents' },
+    // { title: 'CONTACTS', path: '/Contacts' },
+    // { title: 'CONTRACTS', path: '/Contracts' },
+    // { title: 'DOCUMENTS', path: '/Documents' },
     { title: 'EXPORT', path: '/Export' },
   ];
   

@@ -5,10 +5,10 @@ import { useEffect } from 'react'
 import { useDataApiClient } from './api/client'
 import PageLayout from './components/PageLayout'
 import Payments from './pages/Payments'
-import Documents from './pages/Documents'
+// import Documents from './pages/Documents'
 import Summary from './pages/Summary'
-import Contacts from './pages/Contacts'
-import Contracts from './pages/Contracts'
+// import Contacts from './pages/Contacts'
+// import Contracts from './pages/Contracts'
 import Export from './pages/Export'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -62,10 +62,10 @@ function AppContent() {
         <Route index element={<Navigate to="/Summary" replace />} />
         <Route path="Summary" element={<Summary />} />
         <Route path="Payments" element={<Payments />} />
-        <Route path="Contacts" element={<Contacts />} />
-        <Route path="Contracts" element={<Contracts />} />
+        {/* <Route path="Contacts" element={<Contacts />} /> */}
+        {/* <Route path="Contracts" element={<Contracts />} /> */}
         <Route path="Export" element={<Export />} />
-        <Route path="Documents" element={<Documents />} />
+        {/* <Route path="Documents" element={<Documents />} /> */}
         <Route path="*" element={<Navigate to="/Summary" replace />} />
       </Route>
     </Routes>
