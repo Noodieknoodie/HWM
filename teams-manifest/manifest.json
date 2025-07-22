@@ -43,7 +43,6 @@
   ],
   "webApplicationInfo": {
     "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
-    "resource": "api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
-    "scopes": ["access_as_user"]
+    "resource": "api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0"
   }
 }
