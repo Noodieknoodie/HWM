@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './auth/useAuth'
+import { useAuthUnified } from './auth/useAuthUnified'
 import { useEffect } from 'react'
 import { useDataApiClient } from './api/client'
 import PageLayout from './components/PageLayout'
@@ -13,7 +13,7 @@ import Export from './pages/Export'
 import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuthUnified();
   const dataApiClient = useDataApiClient();
   
   // Pre-cache client list when user is authenticated
