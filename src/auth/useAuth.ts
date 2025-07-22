@@ -1,3 +1,4 @@
+// In: src/auth/useAuth.ts
 import { useEffect, useState } from 'react';
 
 interface User {
@@ -13,57 +14,58 @@ interface AuthState {
   error: Error | null;
 }
 
+/**
+ * This is the primary authentication hook for the application.
+ * It leverages the built-in authentication ("Easy Auth") of Azure Static Web Apps.
+ * The flow is simple:
+ * 1. Check for an existing session via the `/.auth/me` endpoint.
+ * 2. If no session, redirect to `/.auth/login/aad`.
+ * 3. Inside Teams, this redirect is handled silently by the SWA platform,
+ *    achieving seamless SSO without any manual token exchange in the frontend.
+ */
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     loading: true,
-    error: null
+    error: null,
   });
 
   useEffect(() => {
-    const authenticateUser = async () => {
+    const authenticate = async () => {
+      // For local development, create a mock user to bypass auth.
       if (window.location.hostname === 'localhost') {
         setAuthState({
-          user: {
-            userId: 'dev-user',
-            userDetails: 'dev@hohimer.com',
-            userRoles: ['authenticated'],
-            identityProvider: 'aad'
+          user: { 
+            userId: 'dev-user', 
+            userDetails: 'dev@hohimerwealthmanagement.com', 
+            userRoles: ['authenticated'], 
+            identityProvider: 'aad' 
           },
-          loading: false,
+          loading: false, 
           error: null
         });
         return;
       }
 
       try {
+        // Check if the SWA platform has already established a session.
         const response = await fetch('/.auth/me');
         const data = await response.json();
-        
+
         if (data.clientPrincipal) {
-          setAuthState({
-            user: {
-              userId: data.clientPrincipal.userId,
-              userDetails: data.clientPrincipal.userDetails,
-              userRoles: data.clientPrincipal.userRoles,
-              identityProvider: data.clientPrincipal.identityProvider
-            },
-            loading: false,
-            error: null
-          });
+          // Yes, user is logged in.
+          setAuthState({ user: data.clientPrincipal, loading: false, error: null });
         } else {
-          window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.href);
+          // No session. Redirect to the SWA login endpoint.
+          // Inside Teams, this is a silent, invisible process.
+          window.location.href = '/.auth/login/aad';
         }
-      } catch (error) {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: error as Error
-        });
+      } catch (e) {
+        setAuthState({ user: null, loading: false, error: e as Error });
       }
     };
 
-    authenticateUser();
+    authenticate();
   }, []);
 
   const logout = () => {
@@ -75,6 +77,6 @@ export function useAuth() {
     loading: authState.loading,
     error: authState.error,
     isAuthenticated: !authState.loading && !!authState.user,
-    logout
+    logout,
   };
 }

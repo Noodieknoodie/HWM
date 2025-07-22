@@ -1,19 +1,19 @@
-// frontend/src/App.tsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useAuthUnified } from './auth/useAuthUnified'
+//src/App.tsx
 import { useEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useDataApiClient } from './api/client'
+import { useAuth } from './auth/useAuth'
 import PageLayout from './components/PageLayout'
 import Payments from './pages/Payments'
 // import Documents from './pages/Documents'
 import Summary from './pages/Summary'
 // import Contacts from './pages/Contacts'
 // import Contracts from './pages/Contracts'
-import Export from './pages/Export'
 import ErrorBoundary from './components/ErrorBoundary'
+import Export from './pages/Export'
 
 function AppContent() {
-  const { user, loading } = useAuthUnified();
+  const { user, loading } = useAuth();
   const dataApiClient = useDataApiClient();
   
   // Pre-cache client list when user is authenticated

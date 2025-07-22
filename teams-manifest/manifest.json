@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
   "manifestVersion": "1.22",
   "version": "1.0.4",
-  "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
+  "id": "9a7b1b3a-1a2b-3c4d-5e6f-7a8b9c0d1e2f",
   "developer": {
     "name": "Hohimer Wealth Management",
     "websiteUrl": "https://www.hohimerwealthmanagement.com",
@@ -18,10 +18,10 @@
     "full": "Internal application for Hohimer Wealth Management to track 401k client fee payments, monitor compliance status, and manage payment schedules."
   },
   "icons": {
-    "color": "color.png",
-    "outline": "outline.png"
+    "color": "icons/color.png",
+    "outline": "icons/outline.png"
   },
-  "accentColor": "#0078D4",
+  "accentColor": "#6d28d9",
   "staticTabs": [
     {
       "entityId": "401k-tracker-tab",
@@ -29,14 +29,12 @@
       "contentUrl": "https://green-rock-024c27f1e.1.azurestaticapps.net",
       "websiteUrl": "https://green-rock-024c27f1e.1.azurestaticapps.net",
       "scopes": [
-        "personal",
-        "team"
+        "personal"
       ]
     }
   ],
   "permissions": [
-    "identity",
-    "messageTeamMembers"
+    "identity"
   ],
   "validDomains": [
     "green-rock-024c27f1e.1.azurestaticapps.net"

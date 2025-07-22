@@ -1,0 +1,1267 @@
+Build REST API with Azure Data API Builder (DAB)
+written by Eduardo Pivaral June 3, 2024 2 comments
+Problem
+
+In the modern IT world, globally available data that can be accessed in a secure, fast, and reliable way is vital for businesses to stay competitive and provide great data solutions to their customers. REST API offers a reliable, secure, and platform-agnostic method to share information via the web. Previously, we used third-party tools or coded our own solutions to create our data APIs, which could take us some time to achieve. Whether you are a developer or data engineer working with Azure databases, how can we easily create a data API for our databases without spending excessive time coding the solution or using third-party tools?
+
+
+Solution
+
+Microsoft offers a tool named Data API Builder (DAB). According to the documentation, it generates modern REST and GraphQL endpoints for your Azure databases. It can securely expose API (Application Programming Interface) endpoints so your data can be accessed using modern techniques from any platform, developer language, or device. It includes a flexible, deeply integrated policy engine, granular security controls, and integration with popular Azure databases.
+
+DAB is open-source and can be executed for development workloads on your machines or production workloads in any cloud. It also supports multiple database engines: Azure SQL, SQL Server, Azure Database for PostgreSQL, Azure Database for MySQL, and Azure Cosmos DB for NoSQL.
+
+
+This tutorial will guide you through creating your first REST API using Azure SQL database.
+
+Prerequisites
+One of the Supported Database Engines: Azure SQL, SQL Server, Azure Database for PostgreSQL, Azure Database for MySQL, and Azure Cosmos DB for NoSQL. I will use an Azure SQL database on the free tier.
+
+My Azure SQL database
+.NET 6: This is the current version at the time of writing; it should support higher versions soon. Since it is platform agnostic, you can use Windows, MacOS, or Linux. For this tip, I will use an Azure VM with Linux. Below is the command I use on my Linux VM for .NET 6:
+
+sudo apt-get update && \ 
+sudo apt-get install -y dotnet-sdk-6.0
+Install .NET 6
+Installing Data API Builder
+Once you have the prerequisites in place, start using DAB by installing the CLI:
+
+dotnet tool install --global Microsoft.DataApiBuilder
+installing data api builder
+You can validate that it installed successfully by running this command:
+
+dab --version
+checking is properly installed
+Note: If you get a “not found” error, try to reload your session. If the issue persists, try reinstalling the tool.
+
+Creating the First REST API
+DAB functions as a “web server” on the machine where it runs, meaning it serves REST API calls.
+
+The usual flow for DAB is Init > add/update entities > start service.
+
+It’s as simple as that!
+
+Once completed, you can perform API calls to the machine where it is running.
+
+Now, let’s go step by step with a simple example. I am using an Azure SQL database and a Linux VM.
+
+We should first initialize our DAB using the init command. If you are using another engine, change it as needed.
+
+The –config flag is used to specify multiple environments, such as dev, QA, and Prod. It must follow this convention: dab-config.<Your-Environment>.json
+
+For this demonstration, my environment will be mssql: dab-config.mssql.json
+
+dab init --config "dab-config.<Your-Environment>.json" --database-type "mssql" –-connection-string '<Your Connection String>'
+dab init command
+The next step is to add entities to our REST API; a simple example is adding a table.
+
+With the -c flag, we specify the environment we want to add the entity, in our case dab-config.mssql.json
+
+dab add <MyObjectName> -c "dab-config.<Your-Environment>.json" --source <MyDBObject> --permissions "anonymous:*"
+adding an entity to dab
+We can use the add or update commands as needed. You can see the full CLI reference here.
+
+Once you are done with the configuration, you can source the dab-config.mssql.json in case you need it deployed on another server or container or to be part of your CI/CD strategy.
+
+We can explore the .json file and make sure everything is correct. In Linux, perform a cat command:
+
+cat dab-config.mssql.json
+exploring our dab config json file
+We can see the entity we added and the connection string we initialized for our configuration file are there. As stated earlier, on production environments, you need to source/copy and deploy this file; there is no need to run the init and add/update commands again.
+
+Once the config file is ready, the last step is to run the start command so the API can be consumed:
+
+dab start -c "dab-config.<Your-Environment>.json"
+running the dab start command
+If successful, you will see the input in the image above.
+
+To consume the API, you must use the address marked in the image https://localhost:5001 or use the server IP address so it can be accessed from another location. You must configure firewalls and access rules properly, depending on the underlying infrastructure DAB is running (VM, container, on-premises).
+
+Testing It!
+We can test it on the same machine by opening another session. If the session where the DAB Start command is stopped, you will not be able to consume the API.
+
+One of the easiest ways to test if you can access the API is via a curl command:
+
+curl -v https://localhost:5001
+Validating health in a secondary session
+The -v flag indicates that we want verbose output.
+
+If you want to make it simpler, remove the flag, and you should see only the Healthy text:
+
+running curl without verbose
+The last step in our testing is to consume the API.
+
+Do you remember that we set up a Customer entity? We can try to call it by issuing a GET command with curl.
+
+The basic structure to call an entity should be https://host:5001/api/<Entity>
+
+curl -i -X GET https://localhost:5001/api/Customers
+issuing a GET command with CURL
+Note: If you have https issues with curl, you can use the -k flag to mark the connection as insecure.
+
+If we check the original session, where the start command is executing, we can see the calls we made so far:
+
+Checking session running dab, we can see the log
+Using jq, we can customize the API calls to see only the relevant data we want.
+
+For example:
+
+curl -s https://localhost:5001/api/Customers | jq '.value[0] | {CustomerID, Email}'
+using jq to filter and customize data retrieval
+curl -s https://localhost:5001/api/Customers | jq -c '.value[] | select( .Phone | contains("21"))'
+using jq to filter and customize data retrieval, example 2
+Next Steps
+
+Check Data API Builder documentation.
+DAB can be deployed on VMs, Containers, and on-premises servers, so you can use the one you want, which may be different from this example.
+You can use any programming language that supports REST API calls so you can start working with your API.
+If you want to secure your connection string, you can set up environments. If you use them, remember to exclude .env files from your git repository.
+Stay tuned for more tips where we will see more examples and configurations.
+
+Eduardo Pivaral
+Eduardo Pivaral is an MCSA, SQL Server Database Administrator and Developer with over 15 years of experience working in large environments.
+
+MSSQLTips Awards: Trendsetter (25+ tips) - 2020 | Author of the Year Contender - 2019 | Rookie of the Year - 2018
+previous post
+Generating Uniform, Normal, or Lognormal Random Numbers in SQL Server
+next post
+SQL Stored Procedure for all CRUD Operations and Change Tracking
+You may also like
+API Strategy – Important for Digital Success
+March 5, 2025
+Getting Started with Kiota for Building API Clients
+October 9, 2024
+Advanced Features of DAB (Data API Builder) to...
+July 9, 2024
+2 comments
+
+Eduardo Pivaral
+June 3, 2024 - 12:55 pm
+Hi Rob,
+
+I have a part 2 article that is pending publishing where I explain about security considerations, but you have multiple options to authenticate clients:
+– Using firewall & IP rules in the VM or container that is running DAB,
+– In DAB itself using authorization options: https://learn.microsoft.com/en-us/azure/data-api-builder/authorization
+– if you use Azure API management service, you can control access from there
+
+Reply
+
+Rob
+June 3, 2024 - 12:09 pm
+Very nice. We have it up and running towards an on-premises SQL-database. Should we have something in front of it to authenticate a client call or can we embed that in DAB with config files?
+
+Reply
+Leave a Comment
+Your Comment
+
+Name*
+Email*
+Save my name, email, and website in this browser for the next time I comment.
+
+* By using this form you agree with the storage and handling of your data by this website.
+
+
+Recent Posts
+SQL Rand Function to Perform Monte Carlo Simulation
+Microsoft SQL Server Sample Databases
+Data Extraction from XML to JSON in SQL Server 2025
+New SQL Regex Functions in SQL Server 2025 and SSMS
+Reduce SQL Server Deadlocks with a Clustered Index
+
+Related Posts
+API Strategy – Important for Digital Success
+Getting Started with Kiota for Building API Clients
+Advanced Features of DAB (Data API Builder) to Build a REST API
+OpenAI API – Setup Development Environment, Create Account and API Key
+Binance API and Python with SQL Server for Data Analysis and Reporting
+
+
+MSSQLTips Get Free Tips
+
+mssqltips white logo
+MSSQLTips.com delivers SQL Server resources to solve real world problems for DBAs, Architects, DevOps Engineers, Developers, Analysts, Cloud and Business Intelligence Pros – all for free. The content we serve is all human written and based on our authors’ real-world experience. Check out tips, articles, scripts, videos, tutorials, live events and more all related to SQL Server on-premises and in the cloud.
+
+Resources
+Authors
+Categories
+Tutorials
+Webcasts
+Whitepapers
+First Timer
+Get Free SQL Tips
+Community
+About
+Advertise
+Contribute
+Copyright
+Disclaimer
+Feedback
+Privacy
+Subscribe
+Be a better SQL Server Professional – Join MSSQLTips.com
+
+Copyright (c) 2006-2025 Edgewood Solutions, LLC All rights reserved
+Facebook
+ X-twitter
+ Rss
+ Envelope
+ Linkedin
+Type and hit enter...
+Beginner
+Tutorials
+DBA
+T-SQL
+Analytics
+Cloud
+Tools
+Subscribe
+    
+Copyright (c) 2006-2025 Edgewood Solutions, LLC All rights reserved
+
+
+=====
+
+
+Lab A02: Create a Teams app with Azure AD Single Sign-On
+Overview
+This lab is part of Path A, which begins with a Northwind Orders application that already uses Azure AD.
+
+Are you on the right path? Expand these notes to find out!
+In this lab you will extend the Northwind Orders application as a personal tab in a Teams application. That means the application needs to run in an IFrame; if your app includes code that prevents this, you may need to modify it to look for the Teams referrer URL.
+
+The Northwind Orders app doesn't check for IFrames, but Azure AD does, so the existing site won't work without modifications. To accomodate this and to prevent extra user logins, you'll set this tab up to use Teams' Azure AD Single Sign-on.
+
+The completed solution can be found in the A02-after-teams-sso folder, but the instructions will guide you through modifying the app running in your working folder.
+
+Note that as you complete the labs, the original app should still work outside of Teams! This is often a requirement of ISV's who have an app in market and need to serve an existing customer base outside of Teams.
+
+A01-begin-app: Setting up the application with Azure AD
+A02-after-teams-sso: Creating a Teams app with Azure ADO SSO (📍You are here)
+A03-after-apply-styling: Teams styling and themes
+In this lab you will learn to:
+
+Create an app manifest and package that can be installed into Teams
+Update your Azure AD app registration to allow Teams to issue tokens on behalf of your application
+Use the Microsoft Teams JavaScript SDK to request an Azure AD access token
+Install and test your application in Microsoft Teams
+Video briefing
+
+Lab A02 Briefing
+Table of Contents (open to display ►)
+Features
+Microsoft Teams personal tab application displays the Northwind Orders web application
+Users sign into the Teams application transparently using Azure AD SSO
+Application alters its appearance (hides the top navigation) when running in Teams, allowing Teams tab navigation instead
+Project structure
+Project files before and after this lab (open to display ►)
+Exercise 1: Authorize Microsoft Teams to log users into your application
+The starting application logs users into Azure Active Directory using the Microsoft Authentication Library (MSAL). While this works well in a web browser, it won't work reliably in a Microsoft Teams application. Instead, Microsoft Teams provides a Single Sign-On (SSO) capability so users are silently logged into your application using the same credentials they used to log into Microsoft Teams. This requires giving Microsoft Teams permission to issue Azure AD tokens on behalf of your application. In this exercise, you'll provide that permission.
+
+Step 1: Return to your app registration
+Return to the Azure AD admin portal and make sure you're logged in as the administrator of your development tenant. Click "Azure Active Directory" 1️⃣ and then "App Registrations" 2️⃣.
+
+Return to your app registration
+
+Select the app you registered earlier to view the application overview.
+
+Step 2: Add the Teams client applications
+Click "Expose an API" 1️⃣ and then "+ Add a client application" 2️⃣.
+
+Open the Expose an API screen
+
+Paste the ID for the Teams mobile or desktop app, which is 1fec8e78-bce4-4aaf-ab1b-5451cc387264, into the Client ID field in the flyout 1️⃣ and check the scope you created earlier 2️⃣ to allow Teams to issue tokens for that scope. Then click "Add application" 3️⃣ to save your work.
+
+Repeat the process for the Teams web application, 5e3ce6c0-2b1f-4285-8d4b-75ee78787346.
+
+Add a client application
+
+Warning
+
+These app ID's, 1fec8e78-bce4-4aaf-ab1b-5451cc387264 and 5e3ce6c0-2b1f-4285-8d4b-75ee78787346, are the exact ID's you should use; they are not examples. These are the ID's for the Teams mobile/desktop app and Teams web app that are registered in Microsoft's tenant for use by every customer who uses Microsoft Teams.
+
+Exercise 2: Create the Teams application package
+Microsoft Teams applications don't run "inside" of Microsoft Teams, they just appear in the Teams user interface. A tab in Teams is just a web page, which could be hosted anywhere as long as the Teams client can reach it.
+
+To create a Teams application, you need to create a file called manifest.json which contains the information Teams needs to display the app, such as the URL of the Northwind Orders application. This file is placed in a .zip file along with the application icons, and the resulting application package is uploaded into Teams or distributed through the Teams app store.
+
+In this exercise you'll create a manifest.json file and application package for the Northwind Orders app and upload it into Microsoft Teams.
+
+Step 1: Copy the manifest folder to your working directory
+Many developers use the Teams Developer Portal to create an app package; this is preferred by many enterprise developer and systems integrators. However ISV's may want to keep the app package settings in their source control system, and that's the approach used in the lab. It's just a zip file; you can create it any way you want!
+
+The Teams developer portal is important even if you generate your own app package!
+
+Import your pacakge into the Teams Developer Portal to run validation checks prior to submitting it to the Teams app store! If you do this periodically during development you can catch issues earlier and avoid rework.
+
+Go to your local copy of the A02-TeamsSSO folder on your computer and copy the manifest folder into the working folder you used in the previous lab. This folder contains a template for building the manifest.json file.
+
+Step 2: Examine the manifest template
+In the manifest folder you just copied, open manifest.template.json in your code editor. This is the JSON that Teams needs to display your application.
+
+Notice that the template contains tokens such as<HOST_NAME> and <CLIENT_ID>. A small build script will take these values from your .env file and plug them into the manifest. However there's one token, <TEAMS_APP_ID> that's not yet in the .env file; we'll add that in the next step.
+
+Examine the staticTabs property in the manifest. It defines two tabs, one for the "My Orders" page and one for the "Products" page. The contentUrl is used within the Teams application, and websiteUrl is used if Teams can't render the tab and needs to launch it in a regular web browser. The Northwind Orders app will use the same code URL's for both.
+
+"staticTabs": [
+  {
+    "entityId": "Orders",
+    "name": "My Orders",
+    "contentUrl": "https://<HOST_NAME>/pages/myOrders.html",
+    "websiteUrl": "https://<HOST_NAME>/pages/myOrders.html",
+    "scopes": [
+      "personal"
+    ]
+  },
+  {
+    "entityId": "Products",
+    "name": "Products",
+    "contentUrl": "https://<HOST_NAME>/pages/categories.html",
+    "websiteUrl": "https://<HOST_NAME>/pages/categories.html",
+    "scopes": [
+      "personal"
+    ]
+
+Now examine the webApplicationInfo property. It contains the information Teams needs to obtain an access token using Single Sign On.
+
+  "webApplicationInfo": {
+      "id": "<CLIENT_ID>",
+      "resource": "api://<HOST_NAME>/<CLIENT_ID>"
+  }
+Step 3: Add the Teams App ID to the .env file
+Open the .env file in your working directory and add this line to the values from Lab A01:
+
+TEAMS_APP_ID=1331dbd6-08eb-4123-9713-017d9e0fc04a
+Be sure to complete the line by placing an end of line character at the end (using the enter key in your text editor).
+
+You should generate a different GUID for each application you register; this one is just here for your convenience. We could have hard-coded the app ID in the manifest.json template, but there are times when you need it in your code, so this will make that possible in the future. You can generate a new GUID at this website
+
+Step 4: Add npm package to create .zip files
+Run this command in your working application folder:
+
+npm install adm-zip --save-dev
+Step 5: Build the package
+Open the package.json file in your working directory and add a script that will generate the app package. The script code is in the manifest folder you just copied, so we just need to declare it in package.json. This is what scripts property should look like when you're done.
+
+"scripts": {
+  "start": "nodemon server/server.js",
+  "debug": "nodemon --inspect server/server.js",
+  "db-download": "node northwindDB/dbDownload.js",
+  "package": "node manifest/makePackage.js"
+},
+Now you can build a new package at any time with this command:
+
+npm run package
+Go ahead and run it, and two new files, manifest.json and northwind.zip (the app package) should appear in your manifest folder.
+
+Exercise 3: Modify the application source code
+Step 1: Add a module with Teams helper functions
+Create a file called teamsHelpers.js in the client/modules folder, and paste in this code:
+
+import 'https://res.cdn.office.net/teams-js/2.0.0/js/MicrosoftTeams.min.js';
+
+// Ensure that the Teams SDK is initialized once no matter how often this is called
+let teamsInitPromise;
+export function ensureTeamsSdkInitialized() {
+    if (!teamsInitPromise) {
+        teamsInitPromise = microsoftTeams.app.initialize();
+    }
+    return teamsInitPromise;
+}
+
+// Function returns a promise which resolves to true if we're running in Teams
+export async function inTeams() {
+    try {
+        await ensureTeamsSdkInitialized();
+        const context = await microsoftTeams.app.getContext();
+        return (context.app.host.name === microsoftTeams.HostName.teams);
+    }
+    catch (e) {
+        console.log(`${e} from Teams SDK, may be running outside of Teams`);    
+        return false;
+    }
+}
+These functions are used throughout the application to manage the Microsoft Teams JavaScript SDK.
+
+Before using the Microsoft Teams JavaScript SDK for the first time on a page, you need to call the microsoftTeams.app.initialize() function. The first function in teamsHelpers.js will ensure that initialize() has been called exactly once on the page.W
+
+The inTeams() function is used to determine if the application is running in Microsoft Teams or not. You may want to check out the microsoftTeams.Hostname enumeration to see other places where Teams applications will be able to run in the near future!
+
+Step 2: Update the login code for Teams SSO
+Open the client/identity/identityClient.js file and add these import statements near the top.
+
+import { ensureTeamsSdkInitialized, inTeams } from '/modules/teamsHelpers.js';
+import 'https://res.cdn.office.net/teams-js/2.0.0/js/MicrosoftTeams.min.js';
+The first import, of course, is the Teams helper functions we just added. It's a JavaScript module so there is no bundling; the browser will resolve the import at runtime.
+
+The second import will load the Teams JavaScript SDK, which creates a global object microsoftTeams that we can use to access the SDK. You could also load it using a <script> tag or, if you bundle your client-side JavaScript, using the @microsoft/teams-js npm package.
+
+Now modify the getAccessToken2() function to include this code at the top:
+
+    if (await inTeams()) {        
+
+        await ensureTeamsSdkInitialized();
+        return await microsoftTeams.authentication.getAuthToken();  
+
+    } else {
+      // existing code
+    }
+This code checks to see if it's running in Teams and if so, uses the Teams JavaScript SDK's getAuthToken() function to get the access token needed to call the server.
+
+The completed getAccessToken2() function should look like this:
+
+async function getAccessToken2() {
+
+    if (await inTeams()) {    
+
+        await ensureTeamsSdkInitialized();
+        return await microsoftTeams.authentication.getAuthToken();
+
+    } else {
+
+        // If we were waiting for a redirect with an auth code, handle it here
+        await msalClient.handleRedirectPromise();
+
+        try {
+            await msalClient.ssoSilent(msalRequest);
+        } catch (error) {
+            await msalClient.loginRedirect(msalRequest);
+        }
+
+        const accounts = msalClient.getAllAccounts();
+        if (accounts.length === 1) {
+            msalRequest.account = accounts[0];
+        } else {
+            throw ("Error: Too many or no accounts logged in");
+        }
+
+        let accessToken;
+        try {
+            const tokenResponse = await msalClient.acquireTokenSilent(msalRequest);
+            accessToken = tokenResponse.accessToken;
+            return accessToken;
+        } catch (error) {
+            if (error instanceof msal.InteractionRequiredAuthError) {
+                console.warn("Silent token acquisition failed; acquiring token using redirect");
+                this.msalClient.acquireTokenRedirect(this.request);
+            } else {
+                throw (error);
+            }
+        }
+    }
+}
+Finally, update the logoff function to disable logging off if it's running in Teams.
+
+export async function logoff() {
+    getLoggedInEmployeeIdPromise = null;
+    getAccessTokenPromise = null;
+
+    if (!(await inTeams())) {
+        msalClient.logoutRedirect(msalRequest);
+    }
+}
+Step 3: Hide the navigation within Teams
+Microsoft Teams already has multiple levels of navigation, including multiple tabs as configured in the previous exercise. So the applications' built-in navigation is redundant in Teams.
+
+To hide the built-in navigation in Teams, open the client/components/navigation.js file and add this import statement at the top.
+
+import { inTeams } from '../modules/teamsHelpers.js';
+Now modify the connectedCallback() function, which displays the navigation web component, to skip rendering if it's running in Teams. The resulting function should look like this:
+
+    async connectedCallback() {
+
+        if (!(await inTeams())) {
+            let listItemHtml = "";
+            topNavLinks.forEach(link => {
+                if (window.location.href.indexOf(link.url) < 0) {
+                    listItemHtml += '<li><a href="' + link.url + '">' + link.text + '</a></li>';
+                } else {
+                    return listItemHtml += '<li><a href="' + link.url + '" class="selected">' + link.text + '</a></li>';
+                }
+            });
+            this.innerHTML = `
+                <ul class="topnav">${listItemHtml}</ul>
+            `;
+        }
+
+    }
+About web components
+
+Web components are encapsulated custom HTML elements. They're not a Teams thing, nor do they use React or another UI library; they're built right into modern web browsers! You can learn more in this article
+
+Exercise 4: Test your application in Microsoft Teams
+Step 1: Start the application
+Now it's time to run your updated application and run it in Microsoft Teams. Start the application with this command:
+
+npm start
+Step 2: Upload the app package
+In the Teams web or desktop UI, click "Apps" in the sidebar 1️⃣, then "Manage your apps" 2️⃣. At this point you have three choices:
+
+Upload a custom app (upload the app for yourself or a specific team or group chat) - this only appears if you have enabled "Upload custom apps" in your setup policy; this was a step in the previous lab
+Upload an app to your org's app catalog (upload the app for use within your organization) - this only appears if you are a tenant administrator
+Submit an app to your org (initiate a workflow asking a tenant administrator to install your app) - this appears for everyone
+In this case, choose the first option 3️⃣.
+
+Upload the app
+
+Navigate to the Northwind.zip file in your manifest directory and upload it. Teams will display the application information; click the "Add" button to install it for your personal use.
+
+Upload the app
+
+Step 3: Run the application
+The application should appear without any login prompt. The app's navigation should not be displayed; instead users can navigate to "My Orders" or "Products" using the tabs in the Teams app.
+
+Run the app
+
+Congratulations!
+When you have finished this lab,
+please click this button to let us know!
+
+No personal information is collected; we only want to count how many people have completed the labs so we can continue to fund this work!
+
+Challenge
+
+You might have noticed the logout button doesn't do anything in Teams! If you wish, hide the logout button just as you hid the navigation bar. The code is in client/identity/userPanel.js.
+
+Known issues
+While it will work on mobile devices, the application is not responsive and will not look good on these devices. This may be addressed in a future version of the lab.
+
+For the latest issues, or to file a bug report, see the GitHub issues list for this repository.
+
+
+
+Lab A01: Start with Azure Active Directory
+Overview
+This is the very first lab in Path A, which begins with an application that already uses Azure AD.
+
+Are you on the right path? Expand these notes to find out!
+In this lab you will set up the Northwind Orders application, which can be found in the A01-begin-app folder. The labs that follow will lead you step by step into extending the web application to be a Microsoft Teams application as well.
+
+A01-begin-app: Setting up the application with Azure AD (📍You are here)
+A02-after-teams-sso: Creating a Teams app with Azure ADO SSO
+A03-after-apply-styling: Teams styling and themes
+In this lab you will learn to:
+
+Run a web application using NodeJS
+Expose a local web application using ngrok
+Register an application with the Microsoft identity platform
+How to use the Microsoft Authentication Library (MSAL)
+How to validate an Azure AD access token in a NodeJS application
+Video briefing
+
+Lab A01 Briefing
+Table of Contents (open to display ►)
+Features
+View orders associated with the logged-in user (sales representative)
+View products by category
+View product details and orders for a product
+View order details
+The application is based on the Northwind Traders Database, which is a sample relational database that originally shipped with Microsoft Access. The Northwind Traders Database is now available as a demonstration OData service, which is queried in this lab. This is a read-only data source; some of the later exercises appear to update the data but the changes are only stored in the server memory and will only persist until the server is restarted.
+
+Exercise 1: Install prerequisites
+You can complete these labs on a Windows, Mac, or Linux machine, but you do need the ability to install the prerequisites. If you are not permitted to install applications on your computer, you'll need to find another machine (or virtual machine) to use throughout the workshop.
+
+Step 1: Install NodeJS
+NodeJS is a program that allows you to run JavaScript on your computer; it uses the open source "V8" engine, which is used in popular web browsers such as Microsoft Edge and Google Chrome. You will need NodeJS to run the web server code used throughout this workshop.
+
+Browse to https://nodejs.org/en/download/ and install the "LTS" (Long Term Support) version for your operating system. This lab has been tested using NodeJS version 14.17.4 and 16.14.0. If you already have another version of NodeJS installed, you may want to set up the Node Version Manager (or this variation for Microsoft Windows), which allows you to easily switch Node versions on the same computer.
+
+Step 2: Install a Code Editor
+You can really use any code editor you wish, but we recommend Visual Studio Code.
+
+Step 3: Install ngrok
+ngrok is a tunneling program that allows you to access your local web server (running in NodeJS in this case) from the Internet. To complete this exercise, sign up for a free ngrok account and install ngrok on your computer.
+
+Note
+
+Whether you choose a free or paid ngrok account plan, you be given an auth token that you'll need to install on your computer. Simply follow the instructions on the ngrok web site for details.
+
+The free version of ngrok will assign a URL similar to https://something.ngrok.io, where "something" is a random identifier. As long as ngrok is running (leave it going in a command or terminal window), you can browse your web site at that URL. If you start and stop ngrok, or try to keep it running for more than 8 hours, you'll get a new identifier and you'll need to update your app registration, environment variables, etc. The paid version of ngrok allows you to reserve the same URL for use over time, removing the need to update it when you return to the lab.
+
+Tip
+
+If you restart ngrok and get a new URL under the free plan, you can refer to this page for details on all the places in the labs where you need to update the URL.
+
+While ngrok isn't strictly required for developing Microsoft Teams applications, it makes things much easier, especially if Bots are involved. An example of this is the Message Extension lab since Message Extensions use a Bot to communicate with Microsoft Teams.
+
+More information
+
+What is ngrok and do you really need it?
+Exercise 2: Set up your Microsoft 365 Subscription
+The initial Northwind Orders application doesn't require Microsoft 365, but it does use Azure AD. So let's set up a Microsoft 365 tenant now, which will give you an Azure AD instance where you're a full administrator so you can register the Northwind Orders application. In the labs which follow, you'll also use this tenant to run Microsoft Teams.
+
+Step 1: Get a tenant
+If you don't yet have a tenant, please join the Microsoft 365 Developer Program to get a free one. Your tenant includes 25 E5 user licenses and can be renewed as long as you keep developing!
+
+Select "Join now" to begin. Signup
+
+Log in with any Microsoft personal or work and school account, enter your information, and select "Next". You will have an opportunity to choose what kind of "sandbox" you want; the "Instant sandbox" is recommended.
+
+Signup
+
+Follow the wizard and select your administrator username and password, tenant domain name, etc. The domain name you choose is just the left-most portion - for example if you enter "Contoso" your domain will be "Contoso.onmicrosoft.com".
+
+Remember this information as you'll need it throughout the labs! You will log in as >username<@>domain<.onmicrosoft.com with the password you chose. You'll be prompted for your phone number and then the system will set up your subscription.
+
+Eventually you'll be prompted to log into your new tenant. Be sure to use the new administrator credentials you just created, not the ones you used when you signed up for the developer program.
+
+More information
+
+Setting up your Microsoft 365 Development tenant
+Tip: Navigating many tenants
+
+Consider creating a browser profile for each tenant that will have its own favorites, stored credentials, and cookies so you can easily swtch between tenants as you work.
+
+You may be asked to enable multi-factor authentication (MFA)
+
+This is certainly a good idea! Just follow the instructions. If you really must turn off MFA, here are instructions.
+
+Step 2: Enable Teams application uploads
+By default, end users can't upload Teams applications directly; instead an administrator needs to upload them into the enterprise app catalog. In this step you will enable direct uploads to make developement easier and allow installation directly from the Teams user interface.
+
+a. Navigate to https://admin.microsoft.com/, which is the Microsoft 365 Admin Center.
+
+b. In the left panel of the admin center, select "Show all" to open up the entire navigation
+
+M365 Admin
+
+When the panel opens, select Teams to open the Microsoft Teams admin center.
+
+M365 Admin
+
+c. In the left of the Microsoft Teams admin center, open the Teams apps accordion 1️⃣ and select Setup Policies 2️⃣. You will see a list of App setup policies. Select the Global (Org-wide default) policy 3️⃣.
+
+Teams admin
+
+d. Ensure the first switch, "Upload custom apps" is turned On.
+
+Teams admin
+
+Be sure to scroll down and select the "Save" button to persist your change.
+
+Teams admin
+
+We have been working to get this enabled by default on developer tenants, so it may already be set for you. The change can take up to 24 hours to take effect, but usually it's much faster.
+
+Exercise 3: Assign users as Northwind "Employees"
+The Northwind database contains 9 employees, so up to 9 users in your tenant will be able to use the application. (You'll only need two to complete the labs.)
+
+The Northwind Orders application expects each user's employee ID in Azure Active Directory to match their employee ID in the Northwind database. In this exercise you'll set up some test users accordingly.
+
+Step 1: Edit Azure AD users
+Navigate to the Microsoft 365 admin center at https://admin.microsoft.com/ and log in as the administrator of your new dev tenant.
+
+In the left navigation, select "Show All" to reveal the full list of admin centers, and then select "Azure Active Directory". This will bring you to the Azure AD admin center.
+
+Navigating to the M365 Admin site
+
+Note
+
+The Users feature in the Microsoft 365 Admin site is useful for most things, but doesn't allow modifying some user properties such as the Employee ID. For that reason, you'll need to continue to the Users feature in the Azure Active Directory Admin Site.
+
+Select "Azure Active Directory" again in the left navigation bar.
+Navigating to the M365 Admin site
+
+This will bring you to the overview of your Azure AD tenant. Note that a "tenant" is a single instance of Azure Active Directory, with its own users, groups, and app registrations. Verify that you're in the developer tenant you just created, and select "Users" in the navigation bar.
+Edit users
+
+You can use existing users to run the Northwind Orders application (the names may not match the Northwind database unless you change them, but you'll know what's going on), or create new ones. It's easiest if one of the users is the administrator account you're logged into right now, so you can test the application without logging on and off, but that's up to you.
+
+Note
+
+If you didn't select the "Instant Sandbox" option when you set up your Microsoft 365 developer subscription, you will be the only user on the list. That's OK; just add more users as needed.
+
+Select on the user to view their user profile, and then select the "Edit" button.
+
+Edit user's employee ID
+
+Change the Employee ID to the ID of one of the users in the Northwind datbase, which are:
+
+Employee ID	Name
+1	Nancy Davolio
+2	Andrew Fuller
+3	Janet Leverling
+4	Margaret Peacock
+5	Steven Buchanan
+6	Michael Suyama
+7	Robert King
+8	Laura Callahan
+9	Anne Dodsworth
+You may also choose to rename the users to match the database.
+
+Still on the edit screen, assign a manager for each user by clicking "Edit" again and then click "Change" next to the manager field and select a manager.
+
+Assign a manager
+
+Step 2: Ensure the users are licensed for Microsoft 365
+From the same user profile screen, select "Licenses" and ensure the user has an Office 365 license so they can run Microsoft Teams.
+
+Check license
+
+Note
+
+When you publish your application in the Microsoft Teams store, you will be responsible for your own license management and licenses for your application will not appear here along with the licenses for Microsoft products. In Lab 08, you will implement this strategy for the Northwind Orders app.
+
+Exercise 4: Register your application with Azure AD
+In order for users to log into your application with Azure AD, you need to register it. In this exercise you will register your application directly in the tenant you created in Exercise 2, however we'll set it up so it can be used from other tenants, such as those of customers who purchase your application in the Microsoft Teams store.
+
+More information
+
+Learn about multi-tenant applications
+Step 1: Start ngrok
+Before you can register your application, you will need to start ngrok to obtain the URL for your application. In the command line tool of your choice, navigate to the folder where you've saved ngrok.exe and run this command:
+
+ngrok http 3978
+The terminal will display a screen like this; note the https forwarding URL for use in this lab. ngrok will tunnel requests on this URL to your local host on port 3978 for easy debugging.
+
+Save this URL for use throughout the labs.
+
+ngrok output
+
+Warning
+
+Do not stop ngrok for the duration of these labs. If you do stop ngrok and are assigned a new URL, this page lists all the exercises which involve the ngrok URL so you can easily update it.
+
+Step 2: Register your application in Azure Active Directory
+Navigate to the Microsoft 365 admin center at https://admin.microsoft.com/ and log in as the administrator of your new dev tenant.
+
+In the left navigation, select "Show More" to reveal the full list of admin centers, and then select "Azure Active Directory". This will bring you to the Azure AD admin center.
+
+Navigating to the M365 Admin site
+
+Select "Azure Active Directory" again in the left navigation bar.
+Navigating to the M365 Admin site
+
+This will bring you to the overview of your Azure AD tenant. Note that a "tenant" is a single instance of Azure Active Directory, with its own users, groups, and app registrations. Verify that you're in the developer tenant you just created, and select "App Registrations" in the navigation bar.
+Opening App Registrations
+
+You will be shown a list of applications (if any) registered in the tenant. Select "+ New Registration" at the top to register a new application.
+Adding a registration
+
+You will be presented with the "Register an application" form.
+
+Register an application form
+
+Enter a name for your application 1️⃣.
+Under "Supported account types" select "Accounts in any organizational directory" 2️⃣. This will allow your application to be used in your customer's tenants.
+Under "Redirect URI", select "Single-page application (SPA)" 3️⃣ and enter the ngrok URL you saved earlier 4️⃣.
+Select the "Register" button 5️⃣
+You will be presented with the application overview. There are two values on this screen you need to copy for use later on; those are the Application (client) ID 1️⃣ and the Directory (tenant) ID 2️⃣.
+
+Application overview screen
+
+When you've recorded these values, navigate to "Certificates & secrets" 3️⃣.
+
+Adding a secret
+
+Now you will create a client secret, which is like a password for your application to use when it needs to authenticate with Azure AD.
+
+Select "+ New client secret" 1️⃣
+Enter a description 2️⃣ and select an expiration date 3️⃣ for your secret
+Select "Add" to add your secret. 4️⃣
+The secret will be displayed just this once on the "Certificates and secrets" screen. Copy it now and store it in a safe place.
+
+Copy the app secret
+
+Managing app secrets is an ongoing responsibility
+
+App secrets have a limited lifetime, and if they expire your application may stop working. You can have multiple secrets, so plan to roll them over as you would with a digital certificate.
+
+Keep your secrets secret!
+
+Give each developer a free developer tenant and register their apps in their tenants so each developer has his or her own app secrets. Limit who has access to app secrets for production. If you're running in Microsoft Azure, a great place to store your secrets is Azure KeyVault. You could deploy an app just like this one and store sensitive application settings in Keyvault. See this article for more information.
+
+Step 3: Verify permission to call the Microsoft Graph API
+The app registration created an identity for your application; now we need to add permission to call the Microsoft Graph API. The Microsoft Graph is a RESTful API that allows you to access data in Azure AD and Microsoft 365, including Microsoft Teams.
+
+While still in the app registration, navigate to "API Permissions" 1️⃣ and notice there is already a permission there, "User.Read" 2️⃣.
+Adding a permission
+
+The permission is for calling the Microsoft Graph, and it allows reading the logged-in user's profile, which includes the user's Employee ID. This permission is "delegated" (it acts on behalf of the logged-in user). For an explanation of application vs. delegated permissions, see this documentation or watch this video.
+
+Note
+
+If "User.Read" permission isn't already configured as in the screen shot above (it's included by default in newly registered applications), you need to click "Add a permission", then "Microsoft Graph", then "Delegated permissions", and then find and select the "User.Read" permission.
+
+More information
+
+Understanding Single Sign-On (SSO) with Azure AD
+ 
+Learn about multi-tenant applications
+The Northwind Orders application uses the Employee ID value in each users's Azure AD profile to locate the user in the Employees table in the Northwind database. The names probably won't match unless you rename them but in a real application the employees and Microsoft 365 users would be the same people.
+
+Step 4: Consent to the permission
+You have added the permission but nobody has consented to it. If you return to the permission page for your app, you can see that the new permission has not been granted. 1️⃣ To fix this, select the "Grant admin consent for " button and then agree to grant the consent 2️⃣. When this is complete, the message "Granted for " should be displayed for each permission.
+
+Grant consent
+
+Step 5: Expose an API
+The Northwind Orders app is a full stack application, with code running in the web browser and web server. The server code will validate each call from the browser using Azure Active Directory. To allow this, we need to expose an API in our Azure AD application. This will allow the server to validate Azure AD access tokens from the web browser.
+
+Select "Expose an API" 1️⃣ and then "Add a scope"2️⃣. Scopes expose an application's permissions; what you're doing here is adding a permission that your application's browser code can use it when calling the server.
+
+Expose an API
+
+On the "Add a scope" flyout, edit the Application ID URI to include your ngrok URL between the "api://" and the client ID. Select the "Save and continue" button to proceed.
+
+Set the App URI
+
+Now that you've defined the application URI, the "Add a scope" flyout will allow you to set up the new permission scope. Fill in the form as follows: - Scope name: access_as_user - Who can consent: Admins only - Admin consent display name: Access as the logged in user - Admin consent description: Access Northwind services as the logged in user - (skip User consent fields) - Ensure the State is set to "Enabled" - Select "Add scope"
+
+Add the scope
+
+Exercise 5: Configure and run the application
+Step 1: Download the starting application
+Begin by downloading the app-camp repository at https://github.com/microsoft/app-camp. Select the "Code" button and clone or download the content to your computer.
+
+Download the lab source code
+
+The starting code is in the src/create-core-app/aad/A01-begin-app/ folder. Copy this folder to another location on your computer; this will be your working copy to keep the original source separate. Folders are also provided with the final code for the other labs.
+
+Note
+
+Be sure to copy the A01-begin-app folder to a working location where you can modify the contents as you complete the labs. That way you'll still have a clean copy to start from or to compare with your work.
+
+Step 2: Install the app's dependencies
+Using a command line tool of your choice, navigate to your working copy of the A01-begin-app directory and type the command:
+
+npm install
+This will install the libraries required to run the server side of your solution.
+
+Note
+
+The client-side code is not bundled as it uses JavaScript Modules (sometimes called ES Modules or ECMAScript Modules). The npm packages are used on the server side.
+
+Step 3: Download the sample data
+The Northwind Orders application uses the venerable Northwind database for sample data. The Northwind Database originally shipped with Microsoft Access, then SQL Server, and now is available as a test OData service from the OData organization. In this step, you'll download the entire Northwind database from this test service to local JSON files, which are used by the Northwind Orders application.
+
+Using a command line tool in your working directory, type:
+
+npm run db-download
+This will create a JSON file in the northwindDB folder for each table in the Northwind database. The appliction reads and writes these JSON files. It's generous to call these files a "database", but it works well for a single-user lab environment.
+
+Step 4: Configure the app settings
+In a code editor, open the working folder you created in Step 2. Copy the .env_sample file to a new file called .env and open the new file. It will look like this:
+
+COMPANY_NAME=Northwind Traders
+PORT=3978
+
+HOST_NAME=something.ngrok.io
+TENANT_ID=00000000-0000-0000-0000-000000000000
+CLIENT_ID=00000000-0000-0000-0000-000000000000
+CLIENT_SECRET=xxxxx
+Fill in the information you've gathered so far, including your ngrok hostname and the information from the app registration.
+
+Step 5: Run the application
+To run the application, open a command line in your working folder and type:
+
+npm start
+At this point you should be able to browse to your ngrok URL and use the application. Note that due to the ngrok tunnel, you can try your app from anywhere on the Internet.
+
+You will quickly be directed to the Microsoft login page.
+
+Log in using one of the accounts you set up with an employee ID in Exercise 3, and you should be presented with the app's home page. The home page shows the employee name and picture from the Northwind database.
+
+Home page
+
+Select "My Orders" in the top navigation bar to view the employee's orders.
+
+My Orders page
+
+You can click on any order to view the details.
+
+Viewing an order
+
+From here you can select on any product to view its details. Much of the data is hyperlinked in this fashion.
+
+You can also select on "Products" in the top navigation to view a list of product categories.
+
+View product categories
+
+From there you can select into a product category to view a list of products, and then you can select into a product to see its details. The product detail page shows all the orders for the product, which leads to a list of orders, and so you can select your way around the sample data.
+
+Try logging out and logging in; you should be able to view the orders for another user in your developer tenant who has an employee ID set to a Northwind employee ID.
+
+Congratulations!
+When you have finished this lab,
+please click this button to let us know!
+
+No personal information is collected; we only want to count how many people have completed the labs so we can continue to fund this work!
+
+Known issues
+While it will work on mobile devices, the application is not responsive and will not look good on these devices. This may be addressed in a future version of the lab.
+
+For the latest issues, or to file a bug report, see the GitHub issues list for this repository.
+
+Next steps
+After completing this lab, you may continue to the next lab in this learning path, A02-after-teams-sso: Creating a Teams app with Azure ADO SSO.
+
+
+Step 1: Start ngrok
+Before you can register your application, you will need to start ngrok to obtain the URL for your application. In the command line tool of your choice, navigate to the folder where you've saved ngrok.exe and run this command:
+
+ngrok http 3978
+The terminal will display a screen like this; note the https forwarding URL for use in this lab. ngrok will tunnel requests on this URL to your local host on port 3978 for easy debugging.
+
+Save this URL for use throughout the labs.
+
+ngrok output
+
+Warning
+
+Do not stop ngrok for the duration of these labs. If you do stop ngrok and are assigned a new URL, this page lists all the exercises which involve the ngrok URL so you can easily update it.
+
+Step 2: Register your application in Azure Active Directory
+Navigate to the Microsoft 365 admin center at https://admin.microsoft.com/ and log in as the administrator of your new dev tenant.
+
+In the left navigation, select "Show More" to reveal the full list of admin centers, and then select "Azure Active Directory". This will bring you to the Azure AD admin center.
+
+Navigating to the M365 Admin site
+
+Select "Azure Active Directory" again in the left navigation bar.
+Navigating to the M365 Admin site
+
+This will bring you to the overview of your Azure AD tenant. Note that a "tenant" is a single instance of Azure Active Directory, with its own users, groups, and app registrations. Verify that you're in the developer tenant you just created, and select "App Registrations" in the navigation bar.
+Opening App Registrations
+
+You will be shown a list of applications (if any) registered in the tenant. Select "+ New Registration" at the top to register a new application.
+Adding a registration
+
+You will be presented with the "Register an application" form.
+
+Register an application form
+
+Enter a name for your application 1️⃣.
+Under "Supported account types" select "Accounts in any organizational directory" 2️⃣. This will allow your application to be used in your customer's tenants.
+Under "Redirect URI", select "Single-page application (SPA)" 3️⃣ and enter the ngrok URL you saved earlier 4️⃣.
+Select the "Register" button 5️⃣
+You will be presented with the application overview. There are two values on this screen you need to copy for use later on; those are the Application (client) ID 1️⃣ and the Directory (tenant) ID 2️⃣.
+
+Application overview screen
+
+When you've recorded these values, navigate to "Certificates & secrets" 3️⃣.
+
+Adding a secret
+
+Now you will create a client secret, which is like a password for your application to use when it needs to authenticate with Azure AD.
+
+Select "+ New client secret" 1️⃣
+Enter a description 2️⃣ and select an expiration date 3️⃣ for your secret
+Select "Add" to add your secret. 4️⃣
+The secret will be displayed just this once on the "Certificates and secrets" screen. Copy it now and store it in a safe place.
+
+Copy the app secret
+
+Managing app secrets is an ongoing responsibility
+
+App secrets have a limited lifetime, and if they expire your application may stop working. You can have multiple secrets, so plan to roll them over as you would with a digital certificate.
+
+Keep your secrets secret!
+
+Give each developer a free developer tenant and register their apps in their tenants so each developer has his or her own app secrets. Limit who has access to app secrets for production. If you're running in Microsoft Azure, a great place to store your secrets is Azure KeyVault. You could deploy an app just like this one and store sensitive application settings in Keyvault. See this article for more information.
+
+Step 3: Verify permission to call the Microsoft Graph API
+The app registration created an identity for your application; now we need to add permission to call the Microsoft Graph API. The Microsoft Graph is a RESTful API that allows you to access data in Azure AD and Microsoft 365, including Microsoft Teams.
+
+While still in the app registration, navigate to "API Permissions" 1️⃣ and notice there is already a permission there, "User.Read" 2️⃣.
+Adding a permission
+
+The permission is for calling the Microsoft Graph, and it allows reading the logged-in user's profile, which includes the user's Employee ID. This permission is "delegated" (it acts on behalf of the logged-in user). For an explanation of application vs. delegated permissions, see this documentation or watch this video.
+
+Note
+
+If "User.Read" permission isn't already configured as in the screen shot above (it's included by default in newly registered applications), you need to click "Add a permission", then "Microsoft Graph", then "Delegated permissions", and then find and select the "User.Read" permission.
+
+More information
+
+Understanding Single Sign-On (SSO) with Azure AD
+ 
+Learn about multi-tenant applications
+The Northwind Orders application uses the Employee ID value in each users's Azure AD profile to locate the user in the Employees table in the Northwind database. The names probably won't match unless you rename them but in a real application the employees and Microsoft 365 users would be the same people.
+
+Step 4: Consent to the permission
+You have added the permission but nobody has consented to it. If you return to the permission page for your app, you can see that the new permission has not been granted. 1️⃣ To fix this, select the "Grant admin consent for " button and then agree to grant the consent 2️⃣. When this is complete, the message "Granted for " should be displayed for each permission.
+
+Grant consent
+
+Step 5: Expose an API
+The Northwind Orders app is a full stack application, with code running in the web browser and web server. The server code will validate each call from the browser using Azure Active Directory. To allow this, we need to expose an API in our Azure AD application. This will allow the server to validate Azure AD access tokens from the web browser.
+
+Select "Expose an API" 1️⃣ and then "Add a scope"2️⃣. Scopes expose an application's permissions; what you're doing here is adding a permission that your application's browser code can use it when calling the server.
+
+Expose an API
+
+On the "Add a scope" flyout, edit the Application ID URI to include your ngrok URL between the "api://" and the client ID. Select the "Save and continue" button to proceed.
+
+Set the App URI
+
+Now that you've defined the application URI, the "Add a scope" flyout will allow you to set up the new permission scope. Fill in the form as follows: - Scope name: access_as_user - Who can consent: Admins only - Admin consent display name: Access as the logged in user - Admin consent description: Access Northwind services as the logged in user - (skip User consent fields) - Ensure the State is set to "Enabled" - Select "Add scope"
+
+Add the scope
+
+Exercise 5: Configure and run the application
+Step 1: Download the starting application
+Begin by downloading the app-camp repository at https://github.com/microsoft/app-camp. Select the "Code" button and clone or download the content to your computer.
+
+Download the lab source code
+
+The starting code is in the src/create-core-app/aad/A01-begin-app/ folder. Copy this folder to another location on your computer; this will be your working copy to keep the original source separate. Folders are also provided with the final code for the other labs.
+
+Note
+
+Be sure to copy the A01-begin-app folder to a working location where you can modify the contents as you complete the labs. That way you'll still have a clean copy to start from or to compare with your work.
+
+Step 2: Install the app's dependencies
+Using a command line tool of your choice, navigate to your working copy of the A01-begin-app directory and type the command:
+
+npm install
+This will install the libraries required to run the server side of your solution.
+
+Note
+
+The client-side code is not bundled as it uses JavaScript Modules (sometimes called ES Modules or ECMAScript Modules). The npm packages are used on the server side.
+
+Step 3: Download the sample data
+The Northwind Orders application uses the venerable Northwind database for sample data. The Northwind Database originally shipped with Microsoft Access, then SQL Server, and now is available as a test OData service from the OData organization. In this step, you'll download the entire Northwind database from this test service to local JSON files, which are used by the Northwind Orders application.
+
+Using a command line tool in your working directory, type:
+
+npm run db-download
+This will create a JSON file in the northwindDB folder for each table in the Northwind database. The appliction reads and writes these JSON files. It's generous to call these files a "database", but it works well for a single-user lab environment.
+
+Step 4: Configure the app settings
+In a code editor, open the working folder you created in Step 2. Copy the .env_sample file to a new file called .env and open the new file. It will look like this:
+
+COMPANY_NAME=Northwind Traders
+PORT=3978
+
+HOST_NAME=something.ngrok.io
+TENANT_ID=00000000-0000-0000-0000-000000000000
+CLIENT_ID=00000000-0000-0000-0000-000000000000
+CLIENT_SECRET=xxxxx
+Fill in the information you've gathered so far, including your ngrok hostname and the information from the app registration.
+
+Step 5: Run the application
+To run the application, open a command line in your working folder and type:
+
+npm start
+At this point you should be able to browse to your ngrok URL and use the application. Note that due to the ngrok tunnel, you can try your app from anywhere on the Internet.
+
+You will quickly be directed to the Microsoft login page.
+
+Log in using one of the accounts you set up with an employee ID in Exercise 3, and you should be presented with the app's home page. The home page shows the employee name and picture from the Northwind database.
+
+Home page
+
+Select "My Orders" in the top navigation bar to view the employee's orders.
+
+My Orders page
+
+You can click on any order to view the details.
+
+Viewing an order
+
+From here you can select on any product to view its details. Much of the data is hyperlinked in this fashion.
+
+You can also select on "Products" in the top navigation to view a list of product categories.
+
+View product categories
+
+From there you can select into a product category to view a list of products, and then you can select into a product to see its details. The product detail page shows all the orders for the product, which leads to a list of orders, and so you can select your way around the sample data.
+
+Try logging out and logging in; you should be able to view the orders for another user in your developer tenant who has an employee ID set to a Northwind employee ID.
+
+Congratulations!
+When you have finished this lab,
+please click this button to let us know!
+
+No personal information is collected; we only want to count how many people have completed the labs so we can continue to fund this work!
+
+Known issues
+While it will work on mobile devices, the application is not responsive and will not look good on these devices. This may be addressed in a future version of the lab.
+
+For the latest issues, or to file a bug report, see the GitHub issues list for this repository.
+
+Step 1: Start ngrok
+Before you can register your application, you will need to start ngrok to obtain the URL for your application. In the command line tool of your choice, navigate to the folder where you've saved ngrok.exe and run this command:
+
+ngrok http 3978
+The terminal will display a screen like this; note the https forwarding URL for use in this lab. ngrok will tunnel requests on this URL to your local host on port 3978 for easy debugging.
+
+Save this URL for use throughout the labs.
+
+ngrok output
+
+Warning
+
+Do not stop ngrok for the duration of these labs. If you do stop ngrok and are assigned a new URL, this page lists all the exercises which involve the ngrok URL so you can easily update it.
+
+Step 2: Register your application in Azure Active Directory
+Navigate to the Microsoft 365 admin center at https://admin.microsoft.com/ and log in as the administrator of your new dev tenant.
+
+In the left navigation, select "Show More" to reveal the full list of admin centers, and then select "Azure Active Directory". This will bring you to the Azure AD admin center.
+
+Navigating to the M365 Admin site
+
+Select "Azure Active Directory" again in the left navigation bar.
+Navigating to the M365 Admin site
+
+This will bring you to the overview of your Azure AD tenant. Note that a "tenant" is a single instance of Azure Active Directory, with its own users, groups, and app registrations. Verify that you're in the developer tenant you just created, and select "App Registrations" in the navigation bar.
+Opening App Registrations
+
+You will be shown a list of applications (if any) registered in the tenant. Select "+ New Registration" at the top to register a new application.
+Adding a registration
+
+You will be presented with the "Register an application" form.
+
+Register an application form
+
+Enter a name for your application 1️⃣.
+Under "Supported account types" select "Accounts in any organizational directory" 2️⃣. This will allow your application to be used in your customer's tenants.
+Under "Redirect URI", select "Single-page application (SPA)" 3️⃣ and enter the ngrok URL you saved earlier 4️⃣.
+Select the "Register" button 5️⃣
+You will be presented with the application overview. There are two values on this screen you need to copy for use later on; those are the Application (client) ID 1️⃣ and the Directory (tenant) ID 2️⃣.
+
+Application overview screen
+
+When you've recorded these values, navigate to "Certificates & secrets" 3️⃣.
+
+Adding a secret
+
+Now you will create a client secret, which is like a password for your application to use when it needs to authenticate with Azure AD.
+
+Select "+ New client secret" 1️⃣
+Enter a description 2️⃣ and select an expiration date 3️⃣ for your secret
+Select "Add" to add your secret. 4️⃣
+The secret will be displayed just this once on the "Certificates and secrets" screen. Copy it now and store it in a safe place.
+
+Copy the app secret
+
+Managing app secrets is an ongoing responsibility
+
+App secrets have a limited lifetime, and if they expire your application may stop working. You can have multiple secrets, so plan to roll them over as you would with a digital certificate.
+
+Keep your secrets secret!
+
+Give each developer a free developer tenant and register their apps in their tenants so each developer has his or her own app secrets. Limit who has access to app secrets for production. If you're running in Microsoft Azure, a great place to store your secrets is Azure KeyVault. You could deploy an app just like this one and store sensitive application settings in Keyvault. See this article for more information.
+
+Step 3: Verify permission to call the Microsoft Graph API
+The app registration created an identity for your application; now we need to add permission to call the Microsoft Graph API. The Microsoft Graph is a RESTful API that allows you to access data in Azure AD and Microsoft 365, including Microsoft Teams.
+
+While still in the app registration, navigate to "API Permissions" 1️⃣ and notice there is already a permission there, "User.Read" 2️⃣.
+Adding a permission
+
+The permission is for calling the Microsoft Graph, and it allows reading the logged-in user's profile, which includes the user's Employee ID. This permission is "delegated" (it acts on behalf of the logged-in user). For an explanation of application vs. delegated permissions, see this documentation or watch this video.
+
+Note
+
+If "User.Read" permission isn't already configured as in the screen shot above (it's included by default in newly registered applications), you need to click "Add a permission", then "Microsoft Graph", then "Delegated permissions", and then find and select the "User.Read" permission.
+
+More information
+
+Understanding Single Sign-On (SSO) with Azure AD
+ 
+Learn about multi-tenant applications
+The Northwind Orders application uses the Employee ID value in each users's Azure AD profile to locate the user in the Employees table in the Northwind database. The names probably won't match unless you rename them but in a real application the employees and Microsoft 365 users would be the same people.
+
+Step 4: Consent to the permission
+You have added the permission but nobody has consented to it. If you return to the permission page for your app, you can see that the new permission has not been granted. 1️⃣ To fix this, select the "Grant admin consent for " button and then agree to grant the consent 2️⃣. When this is complete, the message "Granted for " should be displayed for each permission.
+
+Grant consent
+
+Step 5: Expose an API
+The Northwind Orders app is a full stack application, with code running in the web browser and web server. The server code will validate each call from the browser using Azure Active Directory. To allow this, we need to expose an API in our Azure AD application. This will allow the server to validate Azure AD access tokens from the web browser.
+
+Select "Expose an API" 1️⃣ and then "Add a scope"2️⃣. Scopes expose an application's permissions; what you're doing here is adding a permission that your application's browser code can use it when calling the server.
+
+Expose an API
+
+On the "Add a scope" flyout, edit the Application ID URI to include your ngrok URL between the "api://" and the client ID. Select the "Save and continue" button to proceed.
+
+Set the App URI
+
+Now that you've defined the application URI, the "Add a scope" flyout will allow you to set up the new permission scope. Fill in the form as follows: - Scope name: access_as_user - Who can consent: Admins only - Admin consent display name: Access as the logged in user - Admin consent description: Access Northwind services as the logged in user - (skip User consent fields) - Ensure the State is set to "Enabled" - Select "Add scope"
+
+Add the scope
+
+Exercise 5: Configure and run the application
+Step 1: Download the starting application
+Begin by downloading the app-camp repository at https://github.com/microsoft/app-camp. Select the "Code" button and clone or download the content to your computer.
+
+Download the lab source code
+
+The starting code is in the src/create-core-app/aad/A01-begin-app/ folder. Copy this folder to another location on your computer; this will be your working copy to keep the original source separate. Folders are also provided with the final code for the other labs.
+
+Note
+
+Be sure to copy the A01-begin-app folder to a working location where you can modify the contents as you complete the labs. That way you'll still have a clean copy to start from or to compare with your work.
+
+Step 2: Install the app's dependencies
+Using a command line tool of your choice, navigate to your working copy of the A01-begin-app directory and type the command:
+
+npm install
+This will install the libraries required to run the server side of your solution.
+
+Note
+
+The client-side code is not bundled as it uses JavaScript Modules (sometimes called ES Modules or ECMAScript Modules). The npm packages are used on the server side.
+
+Step 3: Download the sample data
+The Northwind Orders application uses the venerable Northwind database for sample data. The Northwind Database originally shipped with Microsoft Access, then SQL Server, and now is available as a test OData service from the OData organization. In this step, you'll download the entire Northwind database from this test service to local JSON files, which are used by the Northwind Orders application.
+
+Using a command line tool in your working directory, type:
+
+npm run db-download
+This will create a JSON file in the northwindDB folder for each table in the Northwind database. The appliction reads and writes these JSON files. It's generous to call these files a "database", but it works well for a single-user lab environment.
+
+Step 4: Configure the app settings
+In a code editor, open the working folder you created in Step 2. Copy the .env_sample file to a new file called .env and open the new file. It will look like this:
+
+COMPANY_NAME=Northwind Traders
+PORT=3978
+
+HOST_NAME=something.ngrok.io
+TENANT_ID=00000000-0000-0000-0000-000000000000
+CLIENT_ID=00000000-0000-0000-0000-000000000000
+CLIENT_SECRET=xxxxx
+Fill in the information you've gathered so far, including your ngrok hostname and the information from the app registration.
+
+Step 5: Run the application
+To run the application, open a command line in your working folder and type:
+
+npm start
+At this point you should be able to browse to your ngrok URL and use the application. Note that due to the ngrok tunnel, you can try your app from anywhere on the Internet.
+
+You will quickly be directed to the Microsoft login page.
+
+Log in using one of the accounts you set up with an employee ID in Exercise 3, and you should be presented with the app's home page. The home page shows the employee name and picture from the Northwind database.
+
+Home page
+
+Select "My Orders" in the top navigation bar to view the employee's orders.
+
+My Orders page
+
+You can click on any order to view the details.
+
+Viewing an order
+
+From here you can select on any product to view its details. Much of the data is hyperlinked in this fashion.
+
+You can also select on "Products" in the top navigation to view a list of product categories.
+
+View product categories
+
+From there you can select into a product category to view a list of products, and then you can select into a product to see its details. The product detail page shows all the orders for the product, which leads to a list of orders, and so you can select your way around the sample data.
+
+Try logging out and logging in; you should be able to view the orders for another user in your developer tenant who has an employee ID set to a Northwind employee ID.
+
+Congratulations!
+When you have finished this lab,
+please click this button to let us know!
+
+No personal information is collected; we only want to count how many people have completed the labs so we can continue to fund this work!
+
+Known issues
+While it will work on mobile devices, the application is not responsive and will not look good on these devices. This may be addressed in a future version of the lab.
+
+For the latest issues, or to file a bug report, see the GitHub issues list for this repository.

@@ -1,0 +1,634 @@
+Web app that signs in users: App registration
+03/21/2025
+Applies to: Green circle with a white check mark symbol. Workforce tenants White circle with a gray X symbol. External tenants (learn more)
+This article explains the app registration steps for a web app that signs in users.
+To register your application, you can use:
+The web app quickstarts. In addition to being a great first experience with creating an application, quickstarts in the Azure portal contain a button named Make this change for me. You can use this button to set the properties you need, even for an existing app. Adapt the values of these properties to your own case. In particular, the web API URL for your app is probably going to be different from the proposed default, which will also affect the sign-out URI.
+The Azure portal to register your application manually.
+PowerShell and command-line tools.
+Register an app by using the quickstarts
+You can use the following link to bootstrap the creation of your web application:
+Register an application
+Register an app by using the Azure portal
+ Note
+The portal to use is different depending on whether your application runs in the Microsoft Azure public cloud or in a national or sovereign cloud. For more information, see National clouds.
+Sign in to the Microsoft Entra admin center.
+If you have access to multiple tenants, use the Settings icon  in the top menu to switch to the tenant in which you want to register the application from the Directories + subscriptions menu.
+Browse to Entra ID > App registrations, select New registration.
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+When the Register an application page appears, enter your application's registration information:
+Enter a Name for your application, for example AspNetCore-WebApp. Users of your app might see this name, and you can change it later.
+Choose the supported account types for your application. (See Supported account types.)
+For Redirect URI, add the type of application and the URI destination that will accept returned token responses after successful authentication. For example, enter https://localhost:44321.
+Select Register.
+Under Manage, select Authentication and then add the following information:
+In the Web section, add https://localhost:44321/signin-oidc as a Redirect URI.
+In Front-channel logout URL, enter https://localhost:44321/signout-oidc.
+Select Save.
+Register an app by using PowerShell
+You can also register an application with Microsoft Graph PowerShell, using the New-MgApplication.
+Here's an idea of the code. For a fully functioning code, see this sample
+PowerShell
+Copy
+# Connect to the Microsoft Graph API, non-interactive is not supported for the moment (Oct 2021)
+Write-Host "Connecting to Microsoft Graph"
+if ($tenantId -eq "") {
+   Connect-MgGraph -Scopes "User.Read.All Organization.Read.All Application.ReadWrite.All" -Environment $azureEnvironmentName
+}
+else {
+   Connect-MgGraph -TenantId $tenantId -Scopes "User.Read.All Organization.Read.All Application.ReadWrite.All" -Environment $azureEnvironmentName
+}
+   
+$context = Get-MgContext
+$tenantId = $context.TenantId
+# Get the user running the script
+$currentUserPrincipalName = $context.Account
+$user = Get-MgUser -Filter "UserPrincipalName eq '$($context.Account)'"
+# get the tenant we signed in to
+$Tenant = Get-MgOrganization
+$tenantName = $Tenant.DisplayName
+   
+$verifiedDomain = $Tenant.VerifiedDomains | where {$_.Isdefault -eq $true}
+$verifiedDomainName = $verifiedDomain.Name
+$tenantId = $Tenant.Id
+Write-Host ("Connected to Tenant {0} ({1}) as account '{2}'. Domain is '{3}'" -f  $Tenant.DisplayName, $Tenant.Id, $currentUserPrincipalName, $verifiedDomainName)
+# Create the webApp AAD application
+Write-Host "Creating the AAD application (WebApp)"
+# create the application 
+$webAppAadApplication = New-MgApplication -DisplayName "WebApp" `
+                                                   -Web `
+                                                   @{ `
+                                                         RedirectUris = "https://localhost:44321/", "https://localhost:44321/signin-oidc"; `
+                                                         HomePageUrl = "https://localhost:44321/"; `
+                                                         LogoutUrl = "https://localhost:44321/signout-oidc"; `
+                                                      } `
+                                                      -SignInAudience AzureADandPersonalMicrosoftAccount `
+                                                   #end of command
+$currentAppId = $webAppAadApplication.AppId
+$currentAppObjectId = $webAppAadApplication.Id
+$tenantName = (Get-MgApplication -ApplicationId $currentAppObjectId).PublisherDomain
+#Update-MgApplication -ApplicationId $currentAppObjectId -IdentifierUris @("https://$tenantName/WebApp")
+   
+# create the service principal of the newly created application     
+$webAppServicePrincipal = New-MgServicePrincipal -AppId $currentAppId -Tags {WindowsAzureActiveDirectoryIntegratedApp}
+# add the user running the script as an app owner if needed
+$owner = Get-MgApplicationOwner -ApplicationId $currentAppObjectId
+if ($owner -eq $null)
+{
+   New-MgApplicationOwnerByRef -ApplicationId $currentAppObjectId  -BodyParameter = @{"@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$user.ObjectId"}
+   Write-Host "'$($user.UserPrincipalName)' added as an application owner to app '$($webAppServicePrincipal.DisplayName)'"
+}
+Write-Host "Done creating the webApp application (WebApp)"
+Next step
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+Move on to the next article in this scenario, App's code configuration.
+Web app that signs in users: Code configuration
+07/31/2024
+Applies to: Green circle with a white check mark symbol. Workforce tenants White circle with a gray X symbol. External tenants (learn more)
+This article describes how to configure code for a web app that signs in users.
+Microsoft libraries supporting web apps
+The following Microsoft libraries are used to protect a web app (and a web API):
+Language / framework	Project on
+GitHub	Package	Getting
+started	Sign in users	Access web APIs	Generally available (GA) or
+Public preview1
+.NET	MSAL.NET	Microsoft.Identity.Client	—	Library cannot request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+.NET	Microsoft.IdentityModel	Microsoft.IdentityModel	—	Library cannot request ID tokens for user sign-in.2	Library cannot request access tokens for protected web APIs.2	GA
+ASP.NET Core	Microsoft.Identity.Web	Microsoft.Identity.Web	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Java	MSAL4J	msal4j	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Spring	spring-cloud-azure-starter-active-directory	spring-cloud-azure-starter-active-directory	Tutorial	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Node.js	MSAL Node	msal-node	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Python	MSAL Python	msal	—	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Python	identity	identity	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	--
+(1) Universal License Terms for Online Services apply to libraries in Public preview.
+(2) The Microsoft.IdentityModel library only validates tokens - it can't request ID or access tokens.
+Select the tab that corresponds to the platform you're interested in:
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+Code snippets in this article and the following are extracted from the ASP.NET Core web app incremental tutorial, chapter 1.
+You might want to refer to this tutorial for full implementation details.
+Configuration files
+Web applications that sign in users by using the Microsoft identity platform are configured through configuration files. Those files must specify the following values:
+The cloud instance if you want your app to run in national clouds, for example. The different options include;
+https://login.microsoftonline.com/ for Azure public cloud
+https://login.microsoftonline.us/ for Azure US government
+https://login.microsoftonline.de/ for Microsoft Entra Germany
+https://login.partner.microsoftonline.cn/common for Microsoft Entra China operated by 21Vianet
+The audience in the tenant ID. The options vary depending on whether your app is single tenant or multitenant.
+The tenant GUID obtained from the Azure portal to sign in users in your organization. You can also use a domain name.
+organizations to sign in users in any work or school account
+common to sign in users with any work or school account or Microsoft personal account
+consumers to sign in users with a Microsoft personal account only
+The client ID for your application, as copied from the Azure portal
+You might also see references to the authority, a concatenation of the instance and tenant ID values.
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+In ASP.NET Core, these settings are located in the appsettings.json file, in the "Microsoft Entra ID" section.
+Json
+Copy
+{
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "TenantId": "[Enter the tenantId here]",
+    // Client ID (application ID) obtained from the Azure portal
+    "ClientId": "[Enter the Client Id here]",
+    "CallbackPath": "/signin-oidc",
+    "SignedOutCallbackPath": "/signout-oidc"
+  }
+}
+In ASP.NET Core, another file (properties\launchSettings.json) contains the URL (applicationUrl) and the TLS/SSL port (sslPort) for your application and various profiles.
+Json
+Copy
+{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:3110/",
+      "sslPort": 44321
+    }
+  },
+  "profiles": {
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "webApp": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:3110/"
+    }
+  }
+}
+In the Azure portal, the redirect URIs that you register on the Authentication page for your application need to match these URLs. For the two preceding configuration files, they would be https://localhost:44321/signin-oidc. The reason is that applicationUrl is http://localhost:3110, but sslPort is specified (44321). CallbackPath is /signin-oidc, as defined in appsettings.json.
+In the same way, the sign-out URI would be set to https://localhost:44321/signout-oidc.
+ Note
+SignedOutCallbackPath should set either to portal or the application to avoid conflict while handling the event.
+Initialization code
+The initialization code differences are platform dependent. For ASP.NET Core and ASP.NET, signing in users is delegated to the OpenID Connect middleware. The ASP.NET or ASP.NET Core template generates web applications for the Azure AD v1.0 endpoint. Some configuration is required to adapt them to the Microsoft identity platform.
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+In ASP.NET Core web apps (and web APIs), the application is protected because you have a Authorize attribute on the controllers or the controller actions. This attribute checks that the user is authenticated. Prior to the release of .NET 6, the code initialization was in the Startup.cs file. New ASP.NET Core projects with .NET 6 no longer contain a Startup.cs file. Taking its place is the Program.cs file. The rest of this tutorial pertains to .NET 5 or lower.
+ Note
+If you want to start directly with the new ASP.NET Core templates for Microsoft identity platform, that leverage Microsoft.Identity.Web, you can download a preview NuGet package containing project templates for .NET 5.0. Then, once installed, you can directly instantiate ASP.NET Core web applications (MVC or Blazor). See Microsoft.Identity.Web web app project templates for details. This is the simplest approach as it will do all the following steps for you.
+If you prefer to start your project with the current default ASP.NET Core web project within Visual Studio or by using dotnet new mvc --auth SingleOrg or dotnet new webapp --auth SingleOrg, you'll see code like the following:
+c#
+Copy
+ services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
+         .AddAzureAD(options => Configuration.Bind("AzureAd", options));
+This code uses the legacy Microsoft.AspNetCore.Authentication.AzureAD.UI NuGet package which is used to create an Azure Active Directory v1.0 application. This article explains how to create a Microsoft identity platform v2.0 application which replaces that code.
+Add the Microsoft.Identity.Web and Microsoft.Identity.Web.UI NuGet packages to your project. Remove the Microsoft.AspNetCore.Authentication.AzureAD.UI NuGet package if it's present.
+Update the code in ConfigureServices so that it uses the AddMicrosoftIdentityWebApp and AddMicrosoftIdentityUI methods.
+c#
+Copy
+public class Startup
+{
+ ...
+ // This method gets called by the runtime. Use this method to add services to the container.
+ public void ConfigureServices(IServiceCollection services)
+ {
+  services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+         .AddMicrosoftIdentityWebApp(Configuration, "AzureAd");
+  services.AddRazorPages().AddMvcOptions(options =>
+  {
+   var policy = new AuthorizationPolicyBuilder()
+                 .RequireAuthenticatedUser()
+                 .Build();
+   options.Filters.Add(new AuthorizeFilter(policy));
+  }).AddMicrosoftIdentityUI();
+In the Configure method in Startup.cs, enable authentication with a call to app.UseAuthentication(); and app.MapControllers();.
+c#
+Copy
+// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+ // more code here
+ app.UseAuthentication();
+ app.UseAuthorization();
+ app.MapRazorPages();
+ app.MapControllers();
+ // more code here
+}
+In that code:
+The AddMicrosoftIdentityWebApp extension method is defined in Microsoft.Identity.Web, which;
+Configures options to read the configuration file (here from the "Microsoft Entra ID" section)
+Configures the OpenID Connect options so that the authority is the Microsoft identity platform.
+Validates the issuer of the token.
+Ensures that the claims corresponding to name are mapped from the preferred_username claim in the ID token.
+In addition to the configuration object, you can specify the name of the configuration section when calling AddMicrosoftIdentityWebApp. By default, it's AzureAd.
+AddMicrosoftIdentityWebApp has other parameters for advanced scenarios. For example, tracing OpenID Connect middleware events can help you troubleshoot your web application if authentication doesn't work. Setting the optional parameter subscribeToOpenIdConnectMiddlewareDiagnosticsEvents to true will show you how information is processed by the set of ASP.NET Core middleware as it progresses from the HTTP response to the identity of the user in HttpContext.User.
+The AddMicrosoftIdentityUI extension method is defined in Microsoft.Identity.Web.UI. It provides a default controller to handle sign-in and sign-out.
+For more information about how Microsoft.Identity.Web enables you to create web apps, see Web Apps in microsoft-identity-web.
+A web app that calls web APIs: App registration
+03/26/2025
+Applies to: Green circle with a white check mark symbol. Workforce tenants White circle with a gray X symbol. External tenants (learn more)
+A web app that calls web APIs has the same registration as a web app that signs users in. So, follow the instructions in A web app that signs in users: App registration.
+However, because the web app now also calls web APIs, it becomes a confidential client application. That's why some extra registration is required. The app must share client credentials, or secrets, with the Microsoft identity platform.
+Add a client secret or certificate
+As with any confidential client application, you need to add a secret or certificate to act as that application's credentials so it can authenticate as itself, without user interaction.
+You can add credentials to your client app's registration by using the Azure portal or by using a command-line tool like PowerShell.
+Add client credentials by using the Azure portal
+To add credentials to your confidential client application's app registration, follow the steps in Quickstart: Register an application with the Microsoft identity platform for the type of credential you want to add:
+Add a client secret
+Add a certificate
+Add client credentials by using PowerShell
+Alternatively, you can add credentials when you register your application with the Microsoft identity platform by using PowerShell.
+The active-directory-dotnetcore-daemon-v2 code sample on GitHub shows how to add an application secret or certificate when registering an application:
+For details on how to add a client secret with PowerShell, see AppCreationScripts/Configure.ps1.
+For details on how to add a certificate with PowerShell, see AppCreationScripts-withCert/Configure.ps1.
+API permissions
+Web apps call APIs on behalf of the signed-in user. To do that, they must request delegated permissions. For details, see Add permissions to access your web API.
+A web app that calls web APIs: Code configuration
+07/31/2024
+Applies to: Green circle with a white check mark symbol. Workforce tenants White circle with a gray X symbol. External tenants (learn more)
+In the previous article, you registered an application in Microsoft Entra. This article will show you how to configure the application code, and modify your web app so that it not only signs users in but also now calls web APIs. The application you create uses the OAuth 2.0 authorization code flow to sign the user in. This flow has two steps:
+Request an authorization code. This part delegates a private dialogue with the user to the Microsoft identity platform. During that dialogue, the user signs in and consents to the use of web APIs. When the private dialogue ends successfully, the web app receives an authorization code on its redirect URI.
+Request an access token for the API by redeeming the authorization code.
+Prerequisites
+A web app that calls web APIs: App registration
+Microsoft libraries supporting web apps
+The following Microsoft libraries support web apps:
+Language / framework	Project on
+GitHub	Package	Getting
+started	Sign in users	Access web APIs	Generally available (GA) or
+Public preview1
+.NET	MSAL.NET	Microsoft.Identity.Client	—	Library cannot request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+.NET	Microsoft.IdentityModel	Microsoft.IdentityModel	—	Library cannot request ID tokens for user sign-in.2	Library cannot request access tokens for protected web APIs.2	GA
+ASP.NET Core	Microsoft.Identity.Web	Microsoft.Identity.Web	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Java	MSAL4J	msal4j	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Spring	spring-cloud-azure-starter-active-directory	spring-cloud-azure-starter-active-directory	Tutorial	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Node.js	MSAL Node	msal-node	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Python	MSAL Python	msal	—	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	GA
+Python	identity	identity	Quickstart	Library can request ID tokens for user sign-in.	Library can request access tokens for protected web APIs.	--
+(1) Universal License Terms for Online Services apply to libraries in Public preview.
+(2) The Microsoft.IdentityModel library only validates tokens - it can't request ID or access tokens.
+Select the tab for the platform you're interested in:
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+Client secrets or client certificates
+Given that your web app now calls a downstream web API, provide a client secret or client certificate in the appsettings.json file. You can also add a section that specifies:
+The URL of the downstream web API
+The scopes required for calling the API
+In the following example, the GraphBeta section specifies these settings.
+JSON
+Copy
+{
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "ClientId": "[Enter_the_Application_Id_Here]",
+    "TenantId": "common",
+   // To call an API
+   "ClientCredentials": [
+    {
+      "SourceType": "ClientSecret",
+      "ClientSecret":"[Enter_the_Client_Secret_Here]"
+    }
+  ]
+ },
+ "GraphBeta": {
+    "BaseUrl": "https://graph.microsoft.com/beta",
+    "Scopes": ["user.read"]
+    }
+}
+ Note
+You can propose a collection of client credentials, including a credential-less solution like workload identity federation for Azure Kubernetes. Previous versions of Microsoft.Identity.Web expressed the client secret in a single property "ClientSecret" instead of "ClientCredentials". This is still supported for backwards compatibility but you cannot use both the "ClientSecret" property, and the "ClientCredentials" collection.
+Instead of a client secret, you can provide a client certificate. The following code snippet shows using a certificate stored in Azure Key Vault.
+JSON
+Copy
+{
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "ClientId": "[Enter_the_Application_Id_Here]",
+    "TenantId": "common",
+   // To call an API
+   "ClientCredentials": [
+      {
+        "SourceType": "KeyVault",
+        "KeyVaultUrl": "https://msidentitywebsamples.vault.azure.net",
+        "KeyVaultCertificateName": "MicrosoftIdentitySamplesCert"
+      }
+   ]
+  },
+  "GraphBeta": {
+    "BaseUrl": "https://graph.microsoft.com/beta",
+    "Scopes": ["user.read"]
+  }
+}
+ Warning
+If you forget to change the Scopes to an array, when you try to use the IDownstreamApi the scopes will appear null, and IDownstreamApi will attempt an anonymous (unauthenticated) call to the downstream API, which will result in a 401/unauthenticated.
+Microsoft.Identity.Web provides several ways to describe certificates, both by configuration or by code. For details, see Microsoft.Identity.Web - Using certificates on GitHub.
+Modify the Startup.cs file
+Your web app needs to acquire a token for the downstream API. You specify it by adding the .EnableTokenAcquisitionToCallDownstreamApi() line after .AddMicrosoftIdentityWebApp(Configuration). This line exposes the IAuthorizationHeaderProvider service that you can use in your controller and page actions. However, as you see in the following two options, it can be done more simply. You also need to choose a token cache implementation, for example .AddInMemoryTokenCaches(), in Startup.cs:
+C#
+Copy
+using Microsoft.Identity.Web;
+public class Startup
+{
+  // ...
+  public void ConfigureServices(IServiceCollection services)
+  {
+  // ...
+  services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+          .AddMicrosoftIdentityWebApp(Configuration, "AzureAd")
+            .EnableTokenAcquisitionToCallDownstreamApi(new string[]{"user.read" })
+            .AddInMemoryTokenCaches();
+   // ...
+  }
+  // ...
+}
+The scopes passed to EnableTokenAcquisitionToCallDownstreamApi are optional, and enable your web app to request the scopes and the user's consent to those scopes when they sign in. If you don't specify the scopes, Microsoft.Identity.Web enables an incremental consent experience.
+Microsoft.Identity.Web offers two mechanisms for calling a web API from a web app without you having to acquire a token. The option you choose depends on whether you want to call Microsoft Graph or another API.
+Option 1: Call Microsoft Graph
+If you want to call Microsoft Graph, Microsoft.Identity.Web enables you to directly use the GraphServiceClient (exposed by the Microsoft Graph SDK) in your API actions. To expose Microsoft Graph:
+Add the Microsoft.Identity.Web.GraphServiceClient NuGet package to your project.
+Add .AddMicrosoftGraph() after .EnableTokenAcquisitionToCallDownstreamApi() in the Startup.cs file. .AddMicrosoftGraph() has several overrides. Using the override that takes a configuration section as a parameter, the code becomes:
+C#
+Copy
+using Microsoft.Identity.Web;
+public class Startup
+{
+  // ...
+  public void ConfigureServices(IServiceCollection services)
+  {
+  // ...
+  services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+          .AddMicrosoftIdentityWebApp(Configuration, "AzureAd")
+            .EnableTokenAcquisitionToCallDownstreamApi(new string[]{"user.read" })
+               .AddMicrosoftGraph(Configuration.GetSection("GraphBeta"))
+            .AddInMemoryTokenCaches();
+   // ...
+  }
+  // ...
+}
+Option 2: Call a downstream web API other than Microsoft Graph
+If you want to call an API other than Microsoft Graph, Microsoft.Identity.Web enables you to use the IDownstreamApi interface in your API actions. To use this interface:
+Add the Microsoft.Identity.Web.DownstreamApi NuGet package to your project.
+Add .AddDownstreamApi() after .EnableTokenAcquisitionToCallDownstreamApi() in the Startup.cs file. .AddDownstreamApi() has two arguments, and is shown in the following snippet:
+The name of a service (API), which is used in your controller actions to reference the corresponding configuration
+a configuration section representing the parameters used to call the downstream web API.
+C#
+Copy
+using Microsoft.Identity.Web;
+public class Startup
+{
+  // ...
+  public void ConfigureServices(IServiceCollection services)
+  {
+  // ...
+  services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+          .AddMicrosoftIdentityWebApp(Configuration, "AzureAd")
+            .EnableTokenAcquisitionToCallDownstreamApi(new string[]{"user.read" })
+               .AddDownstreamApi("MyApi", Configuration.GetSection("GraphBeta"))
+            .AddInMemoryTokenCaches();
+   // ...
+  }
+  // ...
+}
+Summary
+As with web APIs, you can choose various token cache implementations. For details, see Microsoft.Identity.Web - Token cache serialization on GitHub.
+The following image shows the various possibilities of Microsoft.Identity.Web and their effect on the Startup.cs file:
+Block diagram showing service configuration options in startup dot C S for calling a web API and specifying a token cache implementation
+ Note
+To fully understand the code examples here, be familiar with ASP.NET Core fundamentals, and in particular with dependency injection and options.
+Code that redeems the authorization code
+ASP.NET Core
+ASP.NET
+Node.js
+Java
+Python
+Microsoft.Identity.Web simplifies your code by setting the correct OpenID Connect settings, subscribing to the code received event, and redeeming the code. No extra code is required to redeem the authorization code. See Microsoft.Identity.Web source code for details on how this works.
+Instead of a client secret, the confidential client application can also prove its identity by using a client certificate or a client assertion. The use of client assertions is an advanced scenario, detailed in Client assertions.
+Token cache
+ Important
+The token-cache implementation for web apps or web APIs is different from the implementation for desktop applications, which is often file based. For security and performance reasons, it's important to ensure that for web apps and web APIs there is one token cache per user account. You must serialize the token cache for each account.
+ASP.NET Core
+ASP.NET
+Java
+Node.js
+Python
+The ASP.NET core tutorial uses dependency injection to let you decide the token cache implementation in the Startup.cs file for your application. Microsoft.Identity.Web comes with prebuilt token-cache serializers described in Token cache serialization. An interesting possibility is to choose ASP.NET Core distributed memory caches:
+C#
+Copy
+// Use a distributed token cache by adding:
+    services.AddMicrosoftIdentityWebAppAuthentication(Configuration, "AzureAd")
+            .EnableTokenAcquisitionToCallDownstreamApi(
+                initialScopes: new string[] { "user.read" })
+            .AddDistributedTokenCaches();
+// Then, choose your implementation.
+// For instance, the distributed in-memory cache (not cleared when you stop the app):
+services.AddDistributedMemoryCache();
+// Or a Redis cache:
+services.AddStackExchangeRedisCache(options =>
+{
+ options.Configuration = "localhost";
+ options.InstanceName = "SampleInstance";
+});
+// Or even a SQL Server token cache:
+services.AddDistributedSqlServerCache(options =>
+{
+ options.ConnectionString = _config["DistCache_ConnectionString"];
+ options.SchemaName = "dbo";
+ options.TableName = "TestCache";
+});
+For details about the token-cache providers, see also Microsoft.Identity.Web's Token cache serialization article, and the ASP.NET Core web app tutorials | Token caches phase of the web apps tutorial.
+Next step
+Securely connect to Microsoft Graph from Teams tabs using SSO
+Say you’re building a Microsoft Teams tab with Single Sign-On. In your tab, you want to connect to Microsoft Graph to show some data from Microsoft 365. Here is how to do it securely.
+Do you use Single Sign-On in your Teams tabs?
+When you’re building Teams tabs, Single Sign-On (SSO) is a must. It significantly improves the user experience. After all, if a person is signed in to Teams, why should they have to sign in to your app again? Teams tabs SSO allows you to automatically sign users to your app with the same account that they use in Teams. But SSO comes with some considerations.
+Enable SSO in your Teams tab
+Enabling SSO in your Teams tab comes down to a few configuration settings. In your Azure AD app registration, you need to configure the API URI, define an API scope, and authorize Teams client applications to access your app.
+Azure AD app configuration for Teams tab Single-Sign On
+Next, in your Teams app’s manifest, you’d specify the domain where your app is hosted, the ID of your Azure AD app, and the API URI you defined previously.
+Teams app manifest with Single Sign-On configuration
+With this setup in place, when users open your Teams tab, you will be able to sign them in automatically and get an access token from the Teams SDK.
+microsoftTeams.authentication.getAuthToken({
+  successCallback: (token: string) => {
+    const decoded: { [key: string]: any; } = jwt_decode(token) as { [key: string]: any; };
+    setName(decoded!.name);
+    microsoftTeams.appInitialization.notifySuccess();
+  },
+  failureCallback: (message: string) => {
+    microsoftTeams.appInitialization.notifyFailure({
+      reason: microsoftTeams.appInitialization.FailedReason.AuthFailed,
+      message
+    });
+  },
+  resources: [process.env.TEAMSSSOTAB_APP_URI as string]
+});
+You can use this token to get some basic information about the user, like their name or email.
+If you want to call Microsoft Graph in your Teams tab, you will need to obtain a new token for it.
+Exchange the Teams SSO access token for an API token using the on-behalf-of flow
+For simplicity, we’ll assume in this article that you use the same Azure AD app for Teams SSO and to secure your API.
+To exchange your Teams SSO token for a token to call Microsoft Graph, you will need to extend your Azure AD app registration with a secret.
+Azure AD app registration secrets in the Azure portal
+Next, in your code, you will need to use the on-behalf-of OAuth flow. It’s a flow that requires using your app’s secret, and which you shouldn’t do from the client. Instead, you would do it from code running on the server where you can hide the secret from users.
+If you’re not using an SDK, like MSAL, you would execute the following web request:
+POST https://login.microsoftonline.com/common/oauth2/v2.0/token
+content-type: application/x-www-form-urlencoded
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&client_id=ea93a2b7-0bfd-4238-b551-b125d14762b4&client_secret=abcdef12-C4~1HJKuWyJHZ~GHIJKL12.&assertion=eyJ0eXAiOiJKV...&scope=https://graph.microsoft.com/.default&requested_token_use=on_behalf_of
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer and requested_token_use=on_behalf_of denote that you want to use the on-behalf-of flow. client_id and client_secret are respectively the ID and secret of your Azure AD app. assertion is the access token you received from Teams SSO. Finally, scope=https://graph.microsoft.com/.default specifies that you’d want to request a token with all Microsoft Graph scopes listed in your Azure AD app registration. You can also choose to use dynamic consent instead, and list here only the scopes you need at this moment.
+Getting token for Microsoft Graph in a Teams tab with SSO
+To exchange the access token you got from the Teams SDK as a part of Single Sign-On, you’d use the on-behalf-of OAuth flow. The Teams SDK is client-side. But the on-behalf-of flow needs to be executed server-side because of the Azure AD app secret that you shouldn’t expose to users. There are two ways to exchange the Teams SSO token for one to call Graph.
+Exchange the token on the server and return the Graph token to the client
+The first approach is to build an API that exchanges the Teams SSO token for a Graph token and returns it to the client. The API itself is anonymous and accepts the Teams SSO token either via the body in a POST request or the query string. You see this approach being mentioned a lot in the context of Teams SSO and Graph because it’s relatively simple to implement.
+Diagram showing the architecture and the flow of the requests and responses between the app and the API
+After completing SSO, the Teams tab calls the API to exchange its Teams SSO token for one for Graph (1). The API calls Azure AD and exchanges the token using the on-behalf-of flow (2). It then returns the token to the client (3) which uses it to call Microsoft Graph and retrieve data from Microsoft 365 (4).
+On one hand, this setup is convenient. Since the API is anonymous, it’s easy to implement. The amount of server-side code is limited to the on-behalf-of flow, and calling Graph is done directly from the client.
+But on the other hand, it does seem odd. Wouldn’t hosting an anonymous API that exposes a token obtained on the server to the client be considered a security risk?
+Typically, you wouldn’t host anonymous APIs unless they were meant for public consumption. And even then, you would want to implement some kind of authentication to control their usage. Also, in the identity world, sending access tokens from the server to the client is something you would definitely not do.
+Yes, anyone can call your API because it’s anonymous, and yes, you’re exposing a token you obtained on the server to the client. But you can only get that token if you send a valid SSO token to your API. If you send an invalid token, the on-behalf-of flow will fail, and you won’t get a token for Graph.
+Still, while the token you send to the API will be validated during the on-behalf-of flow and there is little harm exchanging the token can do by itself, it’s recommended that you secure your APIs and validate any input that your API receives. Here is an alternative approach that you should consider instead.
+Call Graph server-side and return only the data
+Another way to call Microsoft Graph in a Teams tab using SSO is by building a secure API that calls the Graph and returns to the client just the data it needs.
+Diagram showing the architecture and the flow of the requests and responses between the app and the API
+The basics of the setup are still the same. Your app calls the API with the Teams SSO token (1). This time time, because the API is secured with Azure AD, before the code executes, the access token sent in the request will be validated by Azure AD. Next, the API calls Azure AD using the on-behalf-of flow to exchange this token for one for Graph (2). Rather than returning the token to the client, the API calls Graph (3) and returns to the client the data it received from Graph (4).
+The nice thing about this setup is that the API itself is secured with Azure AD and calls to Graph are implemented on the server. The access token for Graph, obtained using the on-behalf-of flow, never leaves your API and your client only gets the data it needs.
+If you built your API on Azure Functions, you could easily secure it using EasyAuth. To have the API accept the Teams tab SSO token, you’d update the EasyAuth configuration by adding your AAD API URI to the list of Allowed Token Audiences.
+Arrow pointing to the Azure AD app API URI in the API's EasyAuth configuration
+The downside is that all calls to Microsoft Graph need to be implemented in your API which becomes a proxy between your app and Graph. What you gain though is an additional layer of security, which for some organizations, is an important factor for choosing the architecture in their apps.
+Summary
+Implementing Single Sign-On in your Teams tabs improves the user experience. Because people are already signed in Teams, they don’t need to separately sign in again to your app.
+If you need to call Microsoft Graph in your Teams tab, you will need to exchange the SSO token for one to call Graph. When implementing the API to exchange the token, you should consider security and validate any input it receives before proceeding.
+0
+Getting error in microsoft api while using SSO feature in teams tab app with multi teanant where sso feature is implement using teams toolkit add feature section by using SSO enabled Tab
+I want to implement sso feature over teams tab app, so I used to team toolkit to implement the feature, The sso is working with my teant microsoft account but not working with other teanant account
+Error Detail mention below:-
+{error: "invalid_resource",…}
+correlation_id: "4c3b68b7-e486-4a0b-9f6b-18daca87d36a"
+error: "invalid_resource"
+error_codes: [500011]
+0: 500011
+error_description: "AADSTS500011: The resource principal named api://myconnectprodc5820ctab.z10.web.core.windows.net/dc64f450-283f-4d88-88ca-2746d5898f15 was not found in the tenant named Contoso. This can happen if the application has not been installed by the administrator of the tenant or consented to by any user in the tenant. You might have sent your authentication request to the wrong tenant.\r\nTrace ID: 43460303-4cfb-4426-af97-d82fff0e6b00\r\nCorrelation ID: 4c3b68b7-e486-4a0b-9f6b-18daca87d36a\r\nTimestamp: 2023-05-30 11:55:44Z"
+error_uri: "https://login.microsoftonline.com/error?code=500011"
+timestamp: "2023-05-30 11:55:44Z"
+trace_id: "43460303-4cfb-4426-af97-d82fff0e6b00"
+===============================================================================================
+POST https://login.microsoftonline.com/5ec8afbc-af51-44e6-87dc-d90f5b953f77/oauth2/v2.0/token 400 (Bad Request)
+(anonymous) @ msal-browser.min-8cecb01.js:1
+(anonymous) @ msal-browser
+==============================================================================================
+payload details:
+client_id:
+5e3ce6c0-2b1f-4285-8d4b-75ee78787346
+scope:
+api://myconnectprodc5820ctab.z10.web.core.windows.net/dc64f450-283f-4d88-88ca-2746d5898f15/.default openid profile offline_access
+grant_type:
+refresh_token
+client_info:
+1
+x-client-SKU:
+msal.js.browser
+x-client-VER:
+2.19.0
+x-client-OS:
+ 
+x-client-CPU:
+ 
+x-ms-lib-capability:
+retry-after, h429
+x-client-current-telemetry:
+5|61,0,,,|,
+x-client-last-telemetry:
+5|0|61,7f9cc446-4a2e-45ac-87ef-55257d77f401|invalid_resource|1,0
+client-request-id:
+f92f2e44-60d3-4a82-9655-05e0347d369e
+refresh_token:
+0.AVAAvK_IXlGv5kSH3NkPW5U_d8DmPF4fK4VCjUt17nh4c0Z_AJ8.AgABAAEAAAD--DLA3VO7QrddgJg7WevrAgDs_wUA9P9L-NHcSdt1rFT1kQ5tIqlFsPhVRFKRoqeH9b2WN1RuAh985KMjgz7Y_tXk4IpwCSNB2nZBo9_iYCqAiUVPxtnrMYobUc_L-5uzAt64bGTOVbDdGCyuYS3O9r-0ZwUzvo8VkfqSqyyKInSxNMcvSjZlGSUjGkDGDRLsVvI6ys7g8__leM8P_agpEeEmgvEuPp-LA8sKanopWIcEmy8CchIwsWv7FtwcqLJppVfv7EP40avv6dE1Djg26HuSewbt81K8iBdNwXm4lgBpcNDlhxRATuoOJoLeI03D7JqueeCmTzDM8SYw0AGamCBwpA-v-DqdQG5Nn_e09yzFe61t2GsQGkF9c0iZ2YyA8UO5l3rHWTfyBoDaKgKwKM54_7SYBF2I-v-GXaw0SLEeR3v7A3fuMsT2meMofz7MCgtYhuefEpDQWnkS9pPT1ZsRWYhKAAzUQaXXafoEM1VQwbiueHxRojDF8g0EqPCIbmzYKoP-nsGFm_fDsOonYc7s8UmaImmMfn_S-gzSAiRQpkbTnNxY6jjSUMBrYakjOQ94oh2vcSAGhHTih2IxmAUbrcZve4qxF25zN8xZwcoK21oM9vY6AZBcmGsEtUQ8y1nGkOT_Reg6CZgZbb3NxS-qQ-kuGNPrFavhBDIqQQpfZ8kqZs4AlJnqP2MWn4N9moek0hECPwRNEXulZroDc7CMnsHw_GiKl05CAGOlywny2IhMIp1T8hhzrD5JRzRo117clyeHwtNEf37OM1oMrffBLvL7RZ9YN18eAE5605qHoMGN9fldyy4OBnZfr9vgTzwy7sVRXpv7xzmPzh9XHq4LYIQtc5yi8DthHDTLbVp64V1O6gQo1JOEufbJ0NMrmuzl2HpYzQ91sr1APKBZ2Z7bnh62JZqBMl7V_2GSfhhGY01l2IRpy3VWUcs7XRB5w_KvEe4VhZXzK67ltg-wF0k2Bj8l4JzkfJmgUOVcCF-_7hYdfo6sVgkAeZpE1WDsJJ9esjhxbNEY1CzlxuTcd1PMXe5vt68LLvW5ebj0JR6WsH8ZfHgqRIgUG-jTkBYILPauZhU
+X-AnchorMailbox:
+Oid:83675ef5-a7ce-411e-912f-117d9bbca371@5ec8afbc-af51-44e6-87dc-d90f5b953f77
+Expecting Multi tenant login feature
+microsoft-teamsteams-toolkitmicrosoft-teams-js
+Share
+Improve this question
+Follow
+asked Jul 12, 2023 at 10:34
+vikram singh's user avatar
+vikram singh
+122 bronze badges
+Add a comment
+1 Answer
+Sorted by:
+Highest score (default)
+0
+When SSO is enabled, Teams Toolkit will by default provision a single-tenant Azure AD app, which means only user and guest accounts in the same directory as your M365 account can successfully sign in to your Teams app.
+we are using auth code flow for authentication now, latest projects created by Teams toolkit will not contain simple auth service. Now you can refer to this for multi tenant apps.
+Get data from Azure SQL using an API
+aklive
+46Reputation points
+Aug 29, 2022, 3:41 PM
+Hello, how can I get the data from a sql table in azure via an API?
+I have a view in azure sql table that I'd like to access using an API. I am using "GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/schemas/{schemaName}/tables/{tableName}?api-version=2022-02-01-preview" which returns 200 Ok in postman but I do not see any data in the response.
+How do I use the API outside of Postman to actually retrieve data?
+Azure SQL Database
+I have the same question 
+0
+{count} votes
+GeethaThatipatri-MSFT
+29,557 Reputation points• Microsoft Employee • Moderator
+Aug 31, 2022, 3:26 PM
+Hi, @aklive Thanks for posting your question in the Microsoft Q&A forum.
+As per the 200 response I Assume this API only gets metadata about a table, not the actual data, however will check with the internal team and provide you with more details.
+Here is the documentation you can refer to
+Regards
+Geetha
+ 
+Sign in to comment
+ Accepted answer
+GeethaThatipatri-MSFT
+29,557 Reputation points• Microsoft Employee • Moderator
+Sep 1, 2022, 2:02 PM
+Hi, @aklive as I mentioned Microsoft.SQL APIs are control plane/management APIs. They are not returning any actual database content and schema.
+Microsoft.SQL has not onboarded any ARM data plane API framework. Based on my understanding, you could only retrieve database content and schema via T-SQL clients or Database Connectivity drivers (JDBC, ODBC, etc).
+Via the doc, this Database-tables API returns limited metadata as Database Tables - Get - REST API (Azure SQL Database) | Microsoft Learn
+237075-image.png
+Please let me know if you need any additional information.
+Regards
+Geetha
+Please don't forget to click on 130616-image.png or upvote 130671-image.png button whenever the information provided helps you. Original posters help the community find answers faster by identifying the correct answer.
+Please sign in to rate this answer.
+Sign in to comment
+2 additional answers
+suchintya paul
+6Reputation points
+Aug 31, 2022, 10:24 PM
+Hi @aklive , The SQL REST APIs just provide endpoints to manage SQL Resources. They are not meant for data manipulation.
+236727-image.png
+Regards
+Please sign in to rate this answer.
+1 person found this answer helpful.
+Sign in to comment
+Sérgio Terenas
+1Reputation point
+Jan 12, 2023, 1:44 PM
+I’ve watched a Microsoft Mechanics video recently where they demoed a REST API to fetch data off an Azure SQL database. Believe it’s not GA yet but will be soon. I’m also after it! There’s not yet docs about it but you should find the video that shows it.
+Please sign in to rate this answer.
+Sign in to comment
+Sign in to answer
+Question activity

@@ -1,0 +1,3436 @@
+=== 0 ===
+What's new in Data API builder version 1.5 (April 2025)
+06/11/2025
+Release notes and updates for Data API builder (DAB) version 1.5
+Release 1.5: Data API builder for Azure Databases
+Introducing: Health Endpoint
+This release improves how DAB communicates its runtime state. Previously, the root URL returned a simple health result:
+JSON
+Copy
+{
+  "status": "Healthy",
+  "version": "1.5.50",
+  "app-name": "dab_oss_1.5.50"
+}
+That response shows that validation (similar to dab validate) runs and the engine is active—but it doesn't reflect the actual health of data sources or endpoints.
+Now, the /health endpoint includes basic config details and health checks:
+JSON
+Copy
+{
+  "status": "Unhealthy",
+  "version": "1.5.50",
+  "app-name": "dab_oss_1.5.50",
+  "configuration": {
+    "rest": true,
+    "graphql": true,
+    "caching": false,
+    "telemetry": false,
+    "mode": "Development"
+  },
+  "checks": []
+}
+Checks validate the availability and responsiveness of each data source and endpoint—REST and GraphQL—using thresholds you define.
+Endpoint Safety
+Health endpoints follow DAB’s role-based access model. Checks run in parallel or sequentially depending on settings, and responses are cached to reduce load from polling.
+Introducing: Custom Log-Level
+DAB now supports configurable logging levels. You can set a global default and override it per namespace:
+JSON
+Copy
+{
+  "runtime": {
+    "telemetry": {
+      "log-level": {
+        "default": "trace | debug | information | warning | error | critical | none"
+      }
+    }
+  }
+}
+With per-namespace overrides:
+JSON
+Copy
+{
+  "runtime": {
+    "telemetry": {
+      "log-level": {
+        "default": "warning",
+        "Azure.DataApiBuilder.Service": "information",
+        "Azure.DataApiBuilder.Engine.Authorization": "error",
+        "Microsoft.AspNetCore": "none"
+      }
+    }
+  }
+}
+In production, the Hot Reloads feature supports dynamic updates to log-level. Other config changes are ignored, but log-level changes apply immediately—ideal for diagnosing issues live.
+More.
+Introducing: Aggregation in GraphQL
+DAB now supports grouping and aggregation operations in GraphQL queries for Microsoft SQL Server (MSSQL). You can generate summaries and insights without more backend logic.
+Features:
+Aggregation Types: SUM, AVG, MIN, MAX
+GroupBy Support: Group results by fields
+Optimized for MSSQL: Efficient and reliable query execution
+Improved Logs: Clearer schema generation and execution output
+Implemented across:
+Add types for numeric aggregation
+Add groupBy support and connection updates
+Enable groupBy and aggregation in MSSQL
+More improvements and fixes
+HTTP Cache Headers
+DAB now supports:
+Directive	Meaning
+no-cache	Use cached data only after revalidating with the server
+no-store	Don’t cache the response at all
+only-if-cached	Use cached data only; fail if unavailable
+More.
+Enhanced: OpenTelemetry
+Previously, DAB supported only default ASP.NET Core spans. This release adds custom spans and metrics for REST and GraphQL.
+Metrics:
+Active Requests: Real-time count of running requests
+Total Requests: Cumulative count since startup
+Total Errors: Cumulative failures and exceptions
+These metrics improve visibility into runtime behavior and lay the foundation for deeper telemetry.
+Enhanced: Entra ID Auth Provider
+DAB originally used the AzureAd enum to configure Azure Active Directory. Microsoft has since renamed it to Entra ID.
+This release introduces EntraId as the preferred value. The old enum (AzureAd) still works for backward compatibility, but EntraId aligns with current branding.
+=== 0.5 ===
+Quickstart: Use Data API builder with Azure SQL and Azure Container Apps
+07/18/2025
+In this quickstart, you deploy Data API builder (DAB) as a Docker container to Azure Container Apps. You use an Azure Developer CLI (AZD) template to deploy DAB along with an Azure SQL database using the latest best practices. The template also deploys a sample web application that connects to the DAB endpoint using GraphQL.
+Prerequisites
+Azure Developer CLI
+.NET 9.0
+If you don't have an Azure account, create a free account before you begin.
+Initialize the project
+Use the Azure Developer CLI (azd) to create an Azure SQL account, deploy DAB as a containerized solution, and deploy a containerized sample application. The sample application uses DAB to query sample data.
+Open a terminal in an empty directory.
+If you're not already authenticated, authenticate to the Azure Developer CLI using azd auth login. Follow the steps specified by the tool to authenticate to the CLI using your preferred Azure credentials.
+Azure CLI
+Copy
+azd auth login
+Use azd init to initialize the project.
+Azure CLI
+Copy
+azd init --template dab-azure-sql-quickstart
+During initialization, configure a unique environment name.
+Ensure that Docker is running on your machine before continuing to the next step.
+Deploy the full solution to Azure using azd up. The Bicep templates deploy an Azure SQL account DAB to Azure Container Apps, and a sample web application.
+Azure CLI
+Copy
+azd up
+During the provisioning process, select your subscription and desired location. Wait for the provisioning process to complete. The process can take approximately seven minutes.
+Once the provisioning of your Azure resources is done, a URL to the running web application is included in the output.
+Output
+Copy
+Deploying services (azd deploy)
+(✓) Done: Deploying service api
+- Endpoint: <https://[container-app-sub-domain].azurecontainerapps.io>
+(✓) Done: Deploying service web
+- Endpoint: <https://[container-app-sub-domain].azurecontainerapps.io>
+SUCCESS: Your up workflow to provision and deploy to Azure completed in 7 minutes 0 seconds.
+Record the values for the URL of the api and web services. You use these values later in this guide.
+Configure the database connection
+Now, browse to each containerized application in Azure Container Apps to validate that they're working as expected.
+First, navigate to the URL for the api service. This URL links to the running DAB instance.
+Observe the JSON output from DAB. It should indicate that the DAB container is running and the status is healthy.
+JSON
+Copy
+{
+  "status": "healthy",
+  "version": "1.4.35",
+  "app-name": "dab_oss_1.4.35"
+}
+Navigate to the relative /swagger path for the DAB instance. This URL should open the Swagger UI REST integrated development environment (IDE).
+In the Swagger IDE, run a GET request for all rows in the Azure SQL products table.
+Finally, navigate to the URL for the web service. This URL links to the running sample web application that connects to the GraphQL endpoint you accessed in the previous step.
+Observe the running web application and review the output data.
+Screenshot of the running web application on Azure Container Apps.
+Clean up
+When you no longer need the sample application or resources, remove the corresponding deployment and all resources.
+Remove the deployment from your Azure subscription.
+Azure CLI
+Copy
+azd down
+Delete the running codespace to maximize your storage and core entitlements if you're using GitHub Codespaces.
+Next step
+Quickstart: Use Data API builder with SQL
+07/17/2025
+In this Quickstart, you build a set of Data API builder configuration files to target a local SQL database.
+Prerequisites
+Docker
+.NET 8
+A data management client
+If you don't have a client installed, install Azure Data Studio
+ Tip
+Alternatively, open this Quickstart in GitHub Codespaces with all developer prerequisites already installed. Simply bring your own Azure subscription. GitHub accounts include an entitlement of storage and core hours at no cost. For more information, see included storage and core hours for GitHub accounts.
+Open in GitHub Codespaces
+Install the Data API builder CLI
+Install the Microsoft.DataApiBuilder package from NuGet as a .NET tool.
+Use dotnet tool install to install the latest version of the Microsoft.DataApiBuilder with the --global argument.
+.NET CLI
+Copy
+dotnet tool install --global Microsoft.DataApiBuilder
+ Note
+If the package is already installed, update the package instead using dotnet tool update.
+.NET CLI
+Copy
+dotnet tool update --global Microsoft.DataApiBuilder
+Verify that the tool is installed with dotnet tool list using the --global argument.
+.NET CLI
+Copy
+dotnet tool list --global
+Configure the local database
+Start by configuring and running the local database to set the relevant credentials. Then, you can seed the database with sample data.
+Get the latest copy of the mcr.microsoft.com/mssql/server:2022-latest container image from Docker Hub.
+shell
+Copy
+docker pull mcr.microsoft.com/mssql/server:2022-latest
+Start the docker container by setting the password, accepting the end-user license agreement (EULA), and publishing port 1433. Replace <your-password> with a custom password.
+shell
+Copy
+docker run \
+    --env "ACCEPT_EULA=Y" \
+    --env "MSSQL_SA_PASSWORD=<your-password>" \
+    --publish 1433:1433 \
+    --detach \
+    mcr.microsoft.com/mssql/server:2022-latest
+Connect to your local database using your preferred data management environment. Examples include, but aren't limited to: SQL Server Management Studio and and the SQL Server extension for Visual Studio Code.
+ Tip
+If you're using default networking for your Docker Linux container images, the connection string will likely be Server=localhost,1433;User Id=sa;Password=<your-password>;TrustServerCertificate=True;Encrypt=True;. Replace <your-password> with the password you set earlier.
+Create a new bookshelf database and use the database for your remaining queries.
+SQL
+Copy
+DROP DATABASE IF EXISTS bookshelf;
+GO
+CREATE DATABASE bookshelf;
+GO
+USE bookshelf;
+GO
+Create a new dbo.authors table and seed the table with basic data.
+SQL
+Copy
+DROP TABLE IF EXISTS dbo.authors;
+GO
+CREATE TABLE dbo.authors
+(
+    id int not null primary key,
+    first_name nvarchar(100) not null,
+    middle_name nvarchar(100) null,
+    last_name nvarchar(100) not null
+)
+GO
+INSERT INTO dbo.authors VALUES
+    (01, 'Henry', null, 'Ross'),
+    (02, 'Jacob', 'A.', 'Hancock'),
+    (03, 'Sydney', null, 'Mattos'),
+    (04, 'Jordan', null, 'Mitchell'),
+    (05, 'Victoria', null, 'Burke'),
+    (06, 'Vance', null, 'DeLeon'),
+    (07, 'Reed', null, 'Flores'),
+    (08, 'Felix', null, 'Henderson'),
+    (09, 'Avery', null, 'Howard'),
+    (10, 'Violet', null, 'Martinez')
+GO
+Create configuration files
+Create a baseline configuration file using the DAB CLI. Then, add a development configuration file with your current credentials.
+Create a typical configuration file using dab init. Add the --connection-string argument with your database connection string from the first section. Replace <your-password> with the password you set earlier in this guide. Also, add the Database=bookshelf value to the connection string.
+.NET CLI
+Copy
+dab init --database-type "mssql" --host-mode "Development" --connection-string "Server=localhost,1433;User Id=sa;Database=bookshelf;Password=<your-password>;TrustServerCertificate=True;Encrypt=True;"
+Add an Author entity using dab add.
+.NET CLI
+Copy
+dab add Author --source "dbo.authors" --permissions "anonymous:*"
+Test API with the local database
+Now, start the Data API builder tool to validate that your configuration files are merged during development.
+Use dab start to run the tool and create API endpoints for your entity.
+.NET CLI
+Copy
+dab start
+The output of the tool should include the address to use to navigate to the running API.
+Output
+Copy
+      Successfully completed runtime initialization.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: <http://localhost:5000>
+info: Microsoft.Hosting.Lifetime[0]
+ Tip
+In this example, the application is running on localhost at port 5000. Your running application may have a different address and port.
+First, try the API manually by issuing a GET request to /api/Author.
+ Tip
+In this example, the URL would be https://localhost:5000/api/Author. You can navigate to this URL using your web browser.
+Next, navigate to the Swagger documentation page at /swagger.
+ Tip
+In this example, the URL would be https://localhost:5000/swagger. Again, you can navigate to this URL using your web browser.
+Next step
+=== 1 ===
+What is Data API builder for Azure Databases?
+06/23/2025
+Data API builder (DAB) provides a REST API over a database. It also provides a GraphQL API. It supports not just SQL Server, but Azure SQL Database, Azure Cosmos DB, PostgreSQL, MySQL, and SQL Data Warehouse. DAB runs in any cloud or on-prem, and it is open source and free to use. It's secure, feature-rich, and a foundational component of Microsoft Fabric—which is another way of saying it’s high-performance and capable of handling massive data operations.
+Data API builder replaces most custom data APIs that perform generic CRUD (Create, Read, Update, Delete) operations against a database. DAB is independent of language, technology, and framework. It requires zero code and a single configuration file. Best of all, it’s truly free, with no premium tier, and runs statelessly anywhere.
+Illustration of the Data API builder mascot, which is a database with a construction hat featuring a cloud logo.
+Data API builder is designed for developers. DAB features a cross-platform CLI, Open Telemetry, and Health Checks with native OpenAPI, Swagger for REST endpoints, and Nitro (previously called Banana Cake Pop) for GraphQL endpoints. Its stateless, Docker-friendly container can be secured with EasyAuth, Microsoft Entra Identity, or any JSON Web Token (JWT) server an enterprise chooses. It has a flexible policy engine, granular security controls, and automatically passes claims data to the SQL session context.
+Data API builder (DAB) supports multiple backend data sources simultaneously, including relational and NoSQL sources. DAB also integrates seamlessly with Application Insights. The configuration file can reflect relationships in the database or define new, virtual ones with support for hot reloading. GraphQL endpoints allow multiple nested Create statements within a single transaction, while REST endpoints feature in-memory caching and rich support for OData-like query string keywords.
+DAB natively integrates with Azure Static Web Apps. It also works great with Azure Container Apps, Azure Container Instances, Azure Kubernetes Services, and Azure Web Apps for Containers. DAB works with these services while fully supporting custom, on-premises deployments.
+DAB supports:
+SQL Server
+Azure SQL
+Azure Cosmos DB for NoSQL
+PostgreSQL
+Azure Database for PostgreSQL
+Azure Cosmos DB for PostgreSQL
+MySQL
+Azure Database for MySQL
+Azure SQL Data Warehouse
+DAB can reduce a typical codebase by a third, eliminate suites of unit tests, shorten CI/CD pipelines, and introduce standards and advanced capabilities typically reserved for the largest development teams. It’s secure and feature-rich while remaining incredibly simple, scalable, and observable.
+Architecture
+This diagram breaks down the relationship between all of the components of the Data API builder.
+Diagram that shows an overview of the Data API Builder architecture. The diagram includes schema files, abstractions, configuration files, and resulting GraphQL+REST endpoints.
+Key Features
+Support for NoSQL collections
+Support for relational tables, views, and stored procedures
+Support multiple, simultaneous data sources
+Support for authentication via OAuth2/JWT
+Support for EasyAuth and Microsoft Entra Identity
+Role-based authorization using received claims
+Item-level security via policy expressions
+REST endpoints
+POST, GET, PUT, PATCH, DELETE
+Filtering, sorting, and pagination
+In-memory cache
+Support for OpenAPI
+GraphQL endpoints
+Queries and mutations
+Filtering, sorting and pagination
+Relationship navigation
+Dynamic schemas
+Easy development via dedicated CLI
+Integration for Static Web Apps via Database Connection
+Open Source & free
+=== 2 ===
+Install the Data API builder command-line interface
+07/17/2025
+In this guide, you go through the steps to install the Data API builder (DAB) command-line interface (CLI) on your local machine. You can then use the CLI to perform the most common actions with DAB. The CLI is distributed as a .NET tool.
+Prerequisites
+.NET 8
+Install the CLI
+Install the Microsoft.DataApiBuilder package from NuGet as a .NET tool.
+Use dotnet tool install to install the latest version of the Microsoft.DataApiBuilder with the --global argument.
+.NET CLI
+Copy
+dotnet tool install --global Microsoft.DataApiBuilder
+ Note
+If the package is already installed, update the package instead using dotnet tool update.
+.NET CLI
+Copy
+dotnet tool update --global Microsoft.DataApiBuilder
+Verify that the tool is installed with dotnet tool list using the --global argument.
+.NET CLI
+Copy
+dotnet tool list --global
+Verify that the CLI is installed
+Installing the .NET tool makes the dab command available on your local machine.
+Use the --version argument to determine the version of your current installation.
+.NET CLI
+Copy
+dab --version
+ Important
+If you are running on Linux or macOS, you could see an error when invoking dab directly. To resolve this error, add the .NET global tools to your PATH. For more information, see troubleshooting Data API builder installation.
+Observe the output of the previous command. Assuming the current version of the DAB CLI is 1.0.0, the command would output would include the following content.
+Output
+Copy
+Microsoft.DataApiBuilder 1.0.0
+Related content
+=== 3 ===
+Build and run Data API builder from source code
+07/17/2025
+Data API builder (DAB) is an open-source project hosted on GitHub. At any time, you can download the source code, modify the code, and run the project directly from source. This guide includes all the steps necessary to build the project directly from its source code.
+Prerequisites
+GitHub account
+Git
+This tutorial assumes a basic familiarity with Git commands and tooling.
+.NET 8
+Fork and clone the repository
+Get started by creating your own fork of the azure/data-api-builder GitHub repository. This fork allows you to persist your own changes. If you so choose, you can always open a pull request and suggest the changes to the upstream repository.
+Navigate to https://github.com/azure/data-api-builder/fork.
+Create a fork of the repository in your own account or organization. Wait for the forking operation to complete before continuing.
+Open a new terminal.
+Clone the fork.
+Bash
+Copy
+git clone https://github.com/<your-username>/data-api-builder.git
+ Tip
+Alternatively, you can open the fork or the original repository as a GitHub Codespace.
+Build the src/Azure.DataApiBuilder.sln solution.
+Bash
+Copy
+dotnet build src/Azure.DataApiBuilder.sln
+Run the engine
+The Azure.DataApiBuilder solution includes multiple projects. To run the tool from source, run the Azure.DataApiBuilder.Service project passing in a configuration file.
+In the root directory, create a new file named dab-config.json.
+ Tip
+The .gitignore file automatically ignores any DAB configuration files.
+Add the following content to the configuration file.
+JSON
+Copy
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "Server=localhost,1433;Initial Catalog=Library;User Id=sa;Password=<your-password>;TrustServerCertificate=true;"
+  },
+  "entities": {
+    "book": {
+      "source": "dbo.Books",
+      "permissions": [
+        {
+          "actions": [
+            "read"
+          ],
+          "role": "anonymous"
+        }
+      ]
+    }
+  }
+}
+ Important
+This is a sample configuration that assumes you have a SQL Server available on your local machine. If you do not, you can run a Docker container for SQL Server with your sample data. For more information, see creating sample data.
+Run the src/Service/Azure.DataApiBuilder.Service.csproj project. Use the --ConfigFileName argument to specify the configuration file created in the previous step.
+Bash
+Copy
+dotnet run --project src/Service/Azure.DataApiBuilder.Service.csproj --ConfigFileName ../../dab-config.json 
+ Tip
+The Data API builder engine will try to load the configuration from the dab-config.json file in the same folder, if present. If there is no dab-config.json file, the engine will start anyway but it will not be able to serve anything.
+=== 4 ===
+Implement row-level security with session context in Data API builder
+07/17/2025
+Use the session context feature of SQL to implement row-level security in Data API builder.
+Prerequisites
+Existing SQL server and database.
+Data API builder CLI. Install the CLI
+Create SQL table and data
+Create a table with fictitious data to use in this example scenario.
+Connect to the SQL database using your preferred client or tool.
+Create a table named Revenues with id, category, revenue, and username columns.
+SQL
+Copy
+DROP TABLE IF EXISTS dbo.Revenues;
+CREATE TABLE dbo.Revenues(
+    id int PRIMARY KEY,  
+    category varchar(max) NOT NULL,  
+    revenue int,  
+    username varchar(max) NOT NULL  
+);
+GO
+Insert four sample book rows into the Revenues table.
+SQL
+Copy
+INSERT INTO dbo.Revenues VALUES
+    (1, 'Book', 5000, 'Oscar'),  
+    (2, 'Comics', 10000, 'Oscar'),  
+    (3, 'Journals', 20000, 'Hannah'),  
+    (4, 'Series', 40000, 'Hannah')
+GO
+Test your data with a simple SELECT * query.
+SQL
+Copy
+SELECT * FROM dbo.Revenues
+Create a function named RevenuesPredicate. This function will filter results based on the current session context.
+SQL
+Copy
+CREATE FUNCTION dbo.RevenuesPredicate(@username varchar(max))
+RETURNS TABLE
+WITH SCHEMABINDING
+AS RETURN SELECT 1 AS fn_securitypredicate_result
+WHERE @username = CAST(SESSION_CONTEXT(N'name') AS varchar(max));
+Create a security policy named RevenuesSecurityPolicy using the function.
+SQL
+Copy
+CREATE SECURITY POLICY dbo.RevenuesSecurityPolicy
+ADD FILTER PREDICATE dbo.RevenuesPredicate(username)
+ON dbo.Revenues;
+Run tool
+Run the Data API builder (DAB) tool to generate a configuration file and a single entity.
+Create a new configuration while setting --set-session-context to true.
+.NET CLI
+Copy
+dab init \
+    --database-type mssql \
+    --connection-string "<sql-connection-string>" \
+    --set-session-context true
+Add a new entity named revenue for the dbo.Revenues table.
+.NET CLI
+Copy
+dab add revenue \
+    --source "dbo.Revenues" \
+    --permissions "anonymous:read"
+Start the Data API builder tool.
+.NET CLI
+Copy
+dab start
+Navigate to the http://localhost:5000/api/revenue endpoint. Observe that no data is returned. This behavior occurs because the session context isn't set and no records match the filter predicate.
+Test in SQL
+Test the filter and predicate in SQL directly to ensure it's working.
+Connect to the SQL server again using your preferred client or tool.
+Run the sp_set_session_context to manually set your session context's name claim to the static value Oscar.
+SQL
+Copy
+EXEC sp_set_session_context 'name', 'Oscar';
+Run a typical SELECT * query. Observe that the results are automatically filtered using the predicate.
+SQL
+Copy
+SELECT * FROM dbo.Revenues;  
+=== 5 ===
+Tutorial: Deploy Data API builder to Azure Container Apps with Azure CLI
+06/11/2025
+Data API builder can be quickly deployed to Azure services like Azure Container Apps as part of your application stack. In this tutorial, you use the Azure CLI to automate common tasks when deploying Data API builder to Azure. First, you build a container image with Data API builder and store it in Azure Container Registry. You then deploy the container image to Azure Container Apps with a backing Azure SQL database. The entire tutorial authenticates to each component using managed identities.
+In this tutorial, you:
+Create a managed identity with role-based access control permissions
+Deploy Azure SQL with the sample AdventureWorksLT dataset
+Stage the container image in Azure Container Registry
+Deploy Azure Container App with the Data API builder container image
+If you don't have an Azure subscription, create a free account before you begin.
+Prerequisites
+Azure subscription
+Azure Cloud Shell
+Azure Cloud Shell is an interactive shell environment that you can use through your browser. Use this shell and its preinstalled commands to run the code in this article, without having to install anything on your local environment. To start Azure Cloud Shell:
+Select Try It in a code or command block within this article. Selecting Try it doesn't automatically copy the code or command to Cloud Shell.
+Go to https://shell.azure.com, or select Launch Cloud Shell.
+Select Cloud Shell in the menu bar of the Azure portal (https://portal.azure.com)
+Create container app
+First, create an Azure Container Apps instance with a system-assigned managed identity. This identity is eventually granted role-based access control permissions to access Azure SQL and Azure Container Registry.
+Create a universal SUFFIX variable to use for multiple resource names later in this tutorial.
+Azure CLI
+Copy
+Open Cloud Shell
+let SUFFIX=$RANDOM*$RANDOM
+Create a LOCATION variable with an Azure region you selected to use in this tutorial.
+Azure CLI
+Copy
+Open Cloud Shell
+LOCATION="<azure-region>"
+ Note
+For example, if you want to deploy to the West US region, you would use this script.
+Azure CLI
+Copy
+LOCATION="westus"
+For a list of supported regions for the current subscription, use az account list-locations
+Azure CLI
+Copy
+az account list-locations --query "[].{Name:displayName,Slug:name}" --output table
+For more information, see Azure regions.
+Create a variable named RESOURCE_GROUP_NAME with the resource group name. For this tutorial, we recommend msdocs-dab-*. You use this value multiple times in this tutorial.
+Azure CLI
+Copy
+Open Cloud Shell
+RESOURCE_GROUP_NAME="msdocs-dab$SUFFIX"    
+Create a new resource group using az group create.
+Azure CLI
+Copy
+Open Cloud Shell
+az group create \
+  --name $RESOURCE_GROUP_NAME \
+  --location $LOCATION \
+  --tag "source=msdocs-dab-tutorial"
+Create variables named API_CONTAINER_NAME and CONTAINER_ENV_NAME with uniquely generated names for your Azure Container Apps instance. You use these variables throughout the tutorial.
+Azure CLI
+Copy
+Open Cloud Shell
+API_CONTAINER_NAME="api$SUFFIX"
+CONTAINER_ENV_NAME="env$SUFFIX"
+Use az containerapp env create to create a new Azure Container Apps environment.
+Azure CLI
+Copy
+Open Cloud Shell
+az containerapp env create \ 
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name $CONTAINER_ENV_NAME \
+  --logs-destination none \
+  --location $LOCATION
+Create a new container app using the mcr.microsoft.com/azure-databases/data-api-builder DAB container image and the az containerapp create command. This container app runs successfully, but isn't connected to any database.
+Azure CLI
+Copy
+Open Cloud Shell
+az containerapp create \ 
+  --resource-group $RESOURCE_GROUP_NAME \
+  --environment $CONTAINER_ENV_NAME \
+  --name $API_CONTAINER_NAME \
+  --image "mcr.microsoft.com/azure-databases/data-api-builder" \
+  --ingress "external" \
+  --target-port "5000" \
+  --system-assigned
+Get the principal identifier of the managed identity using az identity show and store the value in a variable named MANAGED_IDENTITY_PRINCIPAL_ID.
+Azure CLI
+Copy
+Open Cloud Shell
+MANAGED_IDENTITY_PRINCIPAL_ID=$( \
+  az containerapp show \ 
+    --resource-group $RESOURCE_GROUP_NAME \
+    --name $API_CONTAINER_NAME \
+    --query "identity.principalId" \
+    --output "tsv" \
+)
+ Tip
+You can always check the output of this command.
+Azure CLI
+Copy
+echo $MANAGED_IDENTITY_PRINCIPAL_ID
+Assign permissions
+Now, assign the system-assigned managed identity permissions to read data from Azure SQL and Azure Container Registry. Additionally, assign your identity permissions to write to Azure Container Registry.
+Create a variable named RESOURCE_GROUP_ID to store the identifier of the resource group. Get the identifier using az group show. You use this variable multiple times in this tutorial.
+Azure CLI
+Copy
+Open Cloud Shell
+RESOURCE_GROUP_ID=$( \
+  az group show \
+    --name $RESOURCE_GROUP_NAME \
+    --query "id" \
+    --output "tsv" \
+)
+ Tip
+You can always check the output of this command.
+Azure CLI
+Copy
+echo $RESOURCE_GROUP_ID
+Use az role assignment create to assign the AcrPush role to your account so you can push containers to Azure Container Registry.
+Azure CLI
+Copy
+Open Cloud Shell
+CURRENT_USER_PRINCIPAL_ID=$( \
+  az ad signed-in-user show \
+    --query "id" \
+    --output "tsv" \
+)
+# AcrPush
+az role assignment create \
+  --assignee $CURRENT_USER_PRINCIPAL_ID \
+  --role "8311e382-0749-4cb8-b61a-304f252e45ec" \
+  --scope $RESOURCE_GROUP_ID
+Assign the AcrPull role to your managed identity using az role assignment create again. This assignment allows the managed identity to pull container images from Azure Container Registry. The managed identity is eventually assigned to an Azure Container Apps instance.
+Azure CLI
+Copy
+Open Cloud Shell
+# AcrPull    
+az role assignment create \
+  --assignee $MANAGED_IDENTITY_PRINCIPAL_ID \
+  --role "7f951dda-4ed3-4680-a7ca-43fe172d538d" \
+  --scope $RESOURCE_GROUP_ID
+Deploy database
+Next, deploy a new server and database in the Azure SQL service. The database uses the AdventureWorksLT sample dataset.
+Create a variable named SQL_SERVER_NAME with a uniquely generated name for your Azure SQL server instance. You use this variable later in this section.
+Azure CLI
+Copy
+Open Cloud Shell
+SQL_SERVER_NAME="srvr$SUFFIX"
+Create a new Azure SQL server resource using az sql server create. Configure the managed identity as the admin of this server.
+Azure CLI
+Copy
+Open Cloud Shell
+az sql server create \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name $SQL_SERVER_NAME \
+  --location $LOCATION \
+  --enable-ad-only-auth \
+  --external-admin-principal-type "User" \
+  --external-admin-name $API_CONTAINER_NAME \
+  --external-admin-sid $MANAGED_IDENTITY_PRINCIPAL_ID
+Use az sql server firewall-rule create to create a firewall rule to allow access from Azure services.
+Azure CLI
+Copy
+Open Cloud Shell
+az sql server firewall-rule create \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --server $SQL_SERVER_NAME \
+  --name "AllowAzure" \
+  --start-ip-address "0.0.0.0" \
+  --end-ip-address "0.0.0.0"
+Use az sql db create to create a database within the Azure SQL server named adventureworks. Configure the database to use the AdventureWorksLT sample data.
+Azure CLI
+Copy
+Open Cloud Shell
+az sql db create \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --server $SQL_SERVER_NAME \
+  --name "adventureworks" \
+  --sample-name "AdventureWorksLT"
+Create a variable named SQL_CONNECTION_STRING with the connection string for the adventureworks database in your Azure SQL server instance. Construct the connection string with the fully-qualified domain name of the server using az sql server show. You use this variable later in this tutorial.
+Azure CLI
+Copy
+Open Cloud Shell
+SQL_SERVER_ENDPOINT=$( \
+  az sql server show \
+    --resource-group $RESOURCE_GROUP_NAME \
+    --name $SQL_SERVER_NAME \
+    --query "fullyQualifiedDomainName" \
+    --output "tsv" \
+)
+SQL_CONNECTION_STRING="Server=$SQL_SERVER_ENDPOINT;Database=adventureworks;Encrypt=true;Authentication=Active Directory Default;"
+ Tip
+You can always check the output of this command.
+Azure CLI
+Copy
+echo $SQL_CONNECTION_STRING
+Build container image
+Next, build a container image using a Dockerfile. Then deploy that container image to a newly created Azure Container Registry instance.
+Create a variable named CONTAINER_REGISTRY_NAME with a uniquely generated name for your Azure Container Registry instance. You use this variable later in this section.
+Azure CLI
+Copy
+Open Cloud Shell
+CONTAINER_REGISTRY_NAME="reg$SUFFIX"
+Create a new Azure Container Registry instance using az acr create.
+Azure CLI
+Copy
+Open Cloud Shell
+az acr create \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name $CONTAINER_REGISTRY_NAME \
+  --sku "Standard" \
+  --location $LOCATION \
+  --admin-enabled false
+Create a multi-stage Dockerfile named Dockerfile. In the file, implement these steps.
+Use the mcr.microsoft.com/dotnet/sdk container image as the base of the build stage
+Install the DAB CLI.
+Create a configuration file for an SQL database connection (mssql) using the DATABASE_CONNECTION_STRING environment variable as the connection string.
+Create an entity named Product mapped to the SalesLT.Product table.
+Copy the configuration file to the final mcr.microsoft.com/azure-databases/data-api-builder container image.
+Dockerfile
+Copy
+FROM mcr.microsoft.com/dotnet/sdk:8.0-cbl-mariner2.0 AS build
+WORKDIR /config
+RUN dotnet new tool-manifest
+RUN dotnet tool install Microsoft.DataApiBuilder
+RUN dotnet tool run dab -- init --database-type "mssql" --connection-string "@env('DATABASE_CONNECTION_STRING')"
+RUN dotnet tool run dab -- add Product --source "SalesLT.Product" --permissions "anonymous:read"
+FROM mcr.microsoft.com/azure-databases/data-api-builder
+COPY --from=build /config /App
+Build the Dockerfile as an Azure Container Registry task using az acr build.
+Azure CLI
+Copy
+Open Cloud Shell
+az acr build \
+  --registry $CONTAINER_REGISTRY_NAME \
+  --image adventureworkslt-dab:latest \
+  --image adventureworkslt-dab:{{.Run.ID}} \
+  --file Dockerfile \
+  .
+Use az acr show to get the endpoint for the container registry and store it in a variable named CONTAINER_REGISTRY_LOGIN_SERVER.
+Azure CLI
+Copy
+Open Cloud Shell
+CONTAINER_REGISTRY_LOGIN_SERVER=$( \
+  az acr show \
+    --resource-group $RESOURCE_GROUP_NAME \
+    --name $CONTAINER_REGISTRY_NAME \
+    --query "loginServer" \
+    --output "tsv" \
+)
+ Tip
+You can always check the output of this command.
+Azure CLI
+Copy
+echo $CONTAINER_REGISTRY_LOGIN_SERVER
+Deploy container image
+Finally, update the Azure Container App with the new custom container image and credentials. Test the running application to validate its connectivity to the database.
+Configure the container app to use the container registry using az containerapp registry set.
+Azure CLI
+Copy
+Open Cloud Shell
+az containerapp registry set \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name $API_CONTAINER_NAME \
+  --server $CONTAINER_REGISTRY_LOGIN_SERVER \
+  --identity "system"
+Use az containerapp secret set to create a secret named conn-string with the Azure SQL connection string.
+Azure CLI
+Copy
+Open Cloud Shell
+az containerapp secret set \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name $API_CONTAINER_NAME \
+  --secrets conn-string="$SQL_CONNECTION_STRING"
+ Important
+This connection string doesn't include any username or passwords. The connection string uses the managed identity to access the Azure SQL database. This makes it safe to use the connection string as a secret in the host.
+Update the container app with your new custom container image using az containerapp update. Set the DATABASE_CONNECTION_STRING environment variable to read from the previously created conn-string secret.
+Azure CLI
+Copy
+Open Cloud Shell
+az containerapp update \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name $API_CONTAINER_NAME \
+  --image "$CONTAINER_REGISTRY_LOGIN_SERVER/adventureworkslt-dab:latest" \
+  --set-env-vars DATABASE_CONNECTION_STRING=secretref:conn-string
+Retrieve the fully qualified domain name of the latest revision in the running container app using az containerapp show. Store that value in a variable named APPLICATION_URL.
+Azure CLI
+Copy
+Open Cloud Shell
+APPLICATION_URL=$( \
+  az containerapp show \
+    --resource-group $RESOURCE_GROUP_NAME \
+    --name $API_CONTAINER_NAME \
+    --query "properties.latestRevisionFqdn" \
+    --output "tsv" \
+)
+ Tip
+You can always check the output of this command.
+Azure CLI
+Copy
+echo $APPLICATION_URL
+Navigate to the URL and test the Product REST API.
+Azure CLI
+Copy
+Open Cloud Shell
+echo "https://$APPLICATION_URL/api/Product"
+ Warning
+Deployment can take up to a minute. If you are not seeing a successful response, wait and refresh your browser.
+Clean up resources
+When you no longer need the sample application or resources, remove the corresponding deployment and all resources.
+Azure CLI
+Copy
+Open Cloud Shell
+az group delete \
+  --name $RESOURCE_GROUP_NAME
+Next step
+=== 6 ===
+Data API builder configuration schema reference
+07/22/2025
+Data API builder requires at least one configuration file to run. This JSON-based file defines your API setup, from environment settings to entity definitions. It begins with a $schema property, which enables schema validation for the rest of the file.
+Top-level properties
+Property	Description
+$schema	URI of the JSON schema for this configuration.
+data-source	Object containing database connectivity settings.
+data-source-files	Array of other configuration file paths.
+runtime	Object configuring runtime behaviors.
+entities	Object defining all entities exposed via REST or GraphQL.
+Data-source properties
+Property	Description
+data-source	Object containing database connectivity settings.
+data-source.database-type	Database type used in the backend (mssql, postgresql, mysql, cosmosdb_nosql, cosmosdb_postgresql).
+data-source.connection-string	Connection string for the selected database type.
+data-source.options	Database-specific options and advanced settings.
+data-source.health	Health check configuration for the data source.
+data-source-files	Array of other configuration file paths.
+Runtime properties
+Property	Description
+runtime	Object configuring runtime behaviors.
+runtime.pagination	Pagination settings for API responses.
+runtime.rest	REST API global configuration.
+runtime.graphql	GraphQL API global configuration.
+runtime.cache	Global response caching configuration.
+runtime.telemetry	Telemetry, logging, and monitoring configuration.
+runtime.health	Global health check configuration.
+Entities properties
+Property	Description
+entities	Object defining all entities exposed via REST or GraphQL.
+entities.entity-name.source	Database source details for the entity.
+entities.entity-name.rest	REST API configuration for the entity.
+entities.entity-name.graphql	GraphQL API configuration for the entity.
+entities.entity-name.permissions	Permissions and access control for the entity.
+entities.entity-name.relationships	Relationships to other entities.
+entities.entity-name.cache	Entity-level caching configuration.
+entities.entity-name.health	Entity-level health check configuration.
+Schema
+Parent	Property	Type	Required	Default
+$root	$schema	string	✔️ Yes	None
+Each configuration file begins with a $schema property, specifying the JSON schema for validation.
+Format
+JSON
+Copy
+{
+  "$schema": <string>
+}
+Example
+JSON
+Copy
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json"
+}
+ Tip
+The latest schema is always available at https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json.
+Versioning
+Schema files are available at specific URLs, ensuring you can use the correct version or the latest available schema.
+https
+Copy
+https://github.com/Azure/data-api-builder/releases/download/<VERSION>-<suffix>/dab.draft.schema.json
+Replace VERSION-suffix with the version you want.
+https
+Copy
+https://github.com/Azure/data-api-builder/releases/download/v0.3.7-alpha/dab.draft.schema.json
+Data source files
+Parent	Property	Type	Required	Default
+$root	data-source-files	string array	❌ No	None
+Data API builder supports multiple configuration files, with one designated as the top-level file managing runtime settings. All configurations share the same JSON schema, allowing runtime settings in any or every file without error. Split entities for better organization.
+Diagram of multiple configuration files referenced as an array within a single configuration file.
+Format
+JSON
+Copy
+{
+  "data-source-files": [ "<string>" ]
+}
+Multiple configuration rules
+Every configuration file must include the data-source property.
+Every configuration file must include the entities property.
+The top-level configuration must include runtime.
+Child configurations can include runtime, but it's ignored.
+Child configuration files can include their own child files.
+Configuration files can be organized into subfolders.
+Entity names must be unique across all configuration files.
+Relationships between entities in different configuration files aren't supported.
+Examples
+JSON
+Copy
+{
+  "data-source-files": [
+    "dab-config-2.json",
+    "my-folder/dab-config-3.json",
+    "my-folder/my-other-folder/dab-config-4.json"
+  ]
+}
+=== 7 ===
+Configuration environments
+07/17/2025
+The Data API builder configuration file supports multiple environments, mirroring the functionality of ASP.NET Core's appSettings.json. This feature enables the use of a base configuration file along with environment-specific files to tailor settings accordingly:
+dab-config.json for base configurations
+dab-config.Development.json for development-specific configurations
+dab-config.Production.json for production-specific configurations
+Setting and selecting environments
+Here's the most common things you should consider when setting or selecting environments.
+Define a Base Configuration: Begin with the dab-config.json file, incorporating all common settings across environments.
+Create Environment-Specific Configurations: Generate files like dab-config.development.json and dab-config.production.json for development and production environments, respectively. Include in these files any settings that diverge from the base configuration, focusing on elements such as the connection-string.
+Environment Variable: Utilize the DAB_ENVIRONMENT variable to specify the active environment. Setting DAB_ENVIRONMENT=development or DAB_ENVIRONMENT=production determines which set of configurations to apply.
+Initialization: On starting the Data API builder with dab start, it identifies the DAB_ENVIRONMENT value, combining dab-config.json with the relevant environment-specific file into a single merged configuration for operational use.
+ Note
+Environment-specific configurations take precedence over the base configuration. If a setting like connection-string is specified in both the base and an environment-specific file, the setting from the environment-specific file is used.
+This approach enhances flexibility and organization in managing configurations across multiple environments, ensuring settings are easily adjustable and clearly defined for each operational context.
+Example
+To illustrate the use of environment-specific connection-string settings in the Data API builder configuration files, consider the following sample setup:
+Base configuration file
+The dab-config.json file contains all common configuration settings that don't vary between different environments. It might not include the connection-string since it differs between development and production environments.
+JSON
+Copy
+{
+  "<all-environments-feature>": {
+    "<property>": <value>
+  }
+  // Note: "connection-string" isn't included here as it varies by environment
+}
+Development environment configuration
+The dab-config.Development.json file overrides or adds to the base configuration for the development environment, including a development-specific connection string directly in the file.
+JSON
+Copy
+{
+  "<development-specific-feature>": {
+    "<property>": <value>
+  },
+  "connection-string": "<development-connection-string>"
+}
+In this development configuration, the connection-string is directly specified, which is a common approach during development for simplicity and ease of use. Replace <development-connection-string> with the actual connection string for the development database.
+Production environment configuration
+For the dab-config.Production.json file, the connection string is securely referenced via an environment variable to avoid hard-coding sensitive information in the configuration files.
+JSON
+Copy
+{
+  "connection-string": "@env('my-connection-string')"
+}
+In the production configuration, @env('my-connection-string') is used to dynamically load the connection string from an environment variable named my-connection-string. This approach enhances security by keeping sensitive information out of version control and allows for easy updates without modifying the application's deployed configuration files.
+Setting environment variables
+Effectively managing environment variables is crucial for the secure and flexible configuration of the Data API builder. Environment variables can be set in two ways:
+Direct System Settings: Configure variables directly within your operating system. This method ensures that the variables are globally recognized across the system but requires administrative access to manage.
+Using a .env File: For a more localized and development-friendly approach, create a .env file containing key-value pairs of your environment variables. Place this file in the same directory as your Data API builder configuration file. This method enhances the ease of use and maintenance of environment variables during development.
+ Note
+The .env filename, like .gitignore and .editorconfig files has no filename, only a file extension. The name is case insensitive but the convention is lower-case.
+Best practices and security
+Process Isolation: When set through a .env file or directly in the system, environment variables are established as process variables, safeguarded from other processes. This isolation can enhance the security of your configuration by limiting exposure to sensitive information.
+Exclusion from Version Control: To prevent the accidental leakage of secrets, include your .env file in your project's .gitignore. This practice ensures that sensitive information, such as connection strings or API keys, isn't inadvertently committed and pushed to version control repositories.
+Practical application
+An .env file not only simplifies the management of environment variables but also allows for the dynamic adjustment of settings without the need to modify system-level configurations. For example:
+plaintext
+Copy
+my-connection-string="Server=tcp:127.0.0.1,1433;User ID=<username>;Password=<password>;"
+ASPNETCORE_URLS="http://localhost:5000;https://localhost:5001"
+DAB_ENVIRONMENT=Development
+Use the .env file to seamlessly integrate these variables into your Data API builder configuration using the @env() function.
+Accessing environment variables
+Use the @env() function to incorporate environment variables into your configuration file, safeguarding sensitive data.
+Example
+JSON
+Copy
+{
+  "connection-string": "@env('my-connection-string')"
+}
+The @env function can be used to access environment variables throughout the configuration file.
+JSON
+Copy
+{
+  "property-name": "@env('variable-name')"
+}
+=== 8 ===
+Data API builder configuration schema reference
+07/22/2025
+Data API builder requires at least one configuration file to run. This JSON-based file defines your API setup, from environment settings to entity definitions. It begins with a $schema property, which enables schema validation for the rest of the file.
+Top-level properties
+Property	Description
+$schema	URI of the JSON schema for this configuration.
+data-source	Object containing database connectivity settings.
+data-source-files	Array of other configuration file paths.
+runtime	Object configuring runtime behaviors.
+entities	Object defining all entities exposed via REST or GraphQL.
+Data-source properties
+Property	Description
+data-source	Object containing database connectivity settings.
+data-source.database-type	Database type used in the backend (mssql, postgresql, mysql, cosmosdb_nosql, cosmosdb_postgresql).
+data-source.connection-string	Connection string for the selected database type.
+data-source.options	Database-specific options and advanced settings.
+data-source.health	Health check configuration for the data source.
+data-source-files	Array of other configuration file paths.
+Runtime properties
+Property	Description
+runtime	Object configuring runtime behaviors.
+runtime.pagination	Pagination settings for API responses.
+runtime.rest	REST API global configuration.
+runtime.graphql	GraphQL API global configuration.
+runtime.cache	Global response caching configuration.
+runtime.telemetry	Telemetry, logging, and monitoring configuration.
+runtime.health	Global health check configuration.
+Entities properties
+Property	Description
+entities	Object defining all entities exposed via REST or GraphQL.
+entities.entity-name.source	Database source details for the entity.
+entities.entity-name.rest	REST API configuration for the entity.
+entities.entity-name.graphql	GraphQL API configuration for the entity.
+entities.entity-name.permissions	Permissions and access control for the entity.
+entities.entity-name.relationships	Relationships to other entities.
+entities.entity-name.cache	Entity-level caching configuration.
+entities.entity-name.health	Entity-level health check configuration.
+Schema
+Parent	Property	Type	Required	Default
+$root	$schema	string	✔️ Yes	None
+Each configuration file begins with a $schema property, specifying the JSON schema for validation.
+Format
+JSON
+Copy
+{
+  "$schema": <string>
+}
+Example
+JSON
+Copy
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json"
+}
+ Tip
+The latest schema is always available at https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json.
+Versioning
+Schema files are available at specific URLs, ensuring you can use the correct version or the latest available schema.
+https
+Copy
+https://github.com/Azure/data-api-builder/releases/download/<VERSION>-<suffix>/dab.draft.schema.json
+Replace VERSION-suffix with the version you want.
+https
+Copy
+https://github.com/Azure/data-api-builder/releases/download/v0.3.7-alpha/dab.draft.schema.json
+Data source files
+Parent	Property	Type	Required	Default
+$root	data-source-files	string array	❌ No	None
+Data API builder supports multiple configuration files, with one designated as the top-level file managing runtime settings. All configurations share the same JSON schema, allowing runtime settings in any or every file without error. Split entities for better organization.
+Diagram of multiple configuration files referenced as an array within a single configuration file.
+Format
+JSON
+Copy
+{
+  "data-source-files": [ "<string>" ]
+}
+Multiple configuration rules
+Every configuration file must include the data-source property.
+Every configuration file must include the entities property.
+The top-level configuration must include runtime.
+Child configurations can include runtime, but it's ignored.
+Child configuration files can include their own child files.
+Configuration files can be organized into subfolders.
+Entity names must be unique across all configuration files.
+Relationships between entities in different configuration files aren't supported.
+Examples
+JSON
+Copy
+{
+  "data-source-files": [
+    "dab-config-2.json",
+    "my-folder/dab-config-3.json",
+    "my-folder/my-other-folder/dab-config-4.json"
+  ]
+}
+Additional resources
+=== 9 ===
+Use functions in configuration
+07/22/2025
+Data API builder supports basic functions within its configuration file to enable more dynamic and portable setups. These functions allow referencing external values like environment variables without hardcoding them.
+Supported functions
+@env()
+Use @env() to reference environment variables at runtime. This function resolves to a string.
+JSON
+Copy
+"connection-string": "@env('SQL_CONN_STRING')"
+This function is commonly used for secrets or values that differ between environments (for example, dev, test, prod).
+Setting environment variables
+There are two supported approaches:
+1. System environment variables
+Set environment variables in your operating system environment. DAB resolves these at runtime.
+2. .env file (recommended)
+Place a .env file in the same directory as your configuration file.
+Example .env:
+env
+Copy
+SQL_CONN_STRING=Server=localhost;User ID=user;Password=pass;
+DAB_ENVIRONMENT=Development
+DAB loads this file when starting up, making the variables available for use with @env().
+Example usage
+In dab-config.json:
+JSON
+Copy
+{
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "@env('SQL_CONN_STRING')"
+  }
+}
+This setup keeps secrets out of source control and allows you to switch environments by changing your .env file or system variables.
+Benefits
+Keeps configuration DRY and portable
+Improves security by avoiding secrets in config files
+Enables environment-specific overrides
+Limitations
+Only supports string values
+Environment variables must exist at runtime or DAB won't start
+Doesn't support computed values or fallback/defaults
+=== 10 ===
+Add more than one data source
+07/22/2025
+Data API builder supports hybrid endpoints through the use of data source files, allowing you to define multiple data sources and their entities in separate configuration files.
+This is useful when:
+You need to expose entities from more than one database
+You want to organize configurations modularly
+You need to manage different data backends independently
+Structure
+To define multiple data sources, create multiple configuration files and reference them in the data-source-files array of the top-level config.
+Top-level file
+JSON
+Copy
+{
+  "data-source-files": [
+    "dab-config-sql.json",
+    "dab-config-cosmos.json"
+  ],
+  "runtime": {
+    "rest": {
+      "enabled": true
+    }
+  }
+}
+Child file: dab-config-sql.json
+JSON
+Copy
+{
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "@env('SQL_CONNECTION_STRING')"
+  },
+  "entities": {
+    "Book": {
+      "source": {
+        "object": "dbo.Books"
+      },
+      "permissions": [
+        { "role": "anonymous", "actions": [ "read" ] }
+      ]
+    }
+  }
+}
+Child file: dab-config-cosmos.json
+JSON
+Copy
+{
+  "data-source": {
+    "database-type": "cosmosdb_nosql",
+    "connection-string": "@env('COSMOS_CONNECTION_STRING')",
+    "database-name": "library"
+  },
+  "entities": {
+    "LoanRecord": {
+      "source": {
+        "object": "LoanRecords"
+      },
+      "permissions": [
+        { "role": "anonymous", "actions": [ "read" ] }
+      ]
+    }
+  }
+}
+Behavior
+Only the top-level file's runtime settings are respected
+Every child file must contain both a data-source and entities section
+Entity names must be globally unique across all files
+Entities defined in separate files cannot reference each other via relationships
+Files can be nested in subfolders as needed
+Benefits
+Clean separation of configuration per backend
+Enables scalable multi-database APIs
+Simplifies maintenance for complex systems
+Limitations
+No relationships across configuration files
+Circular file references are not allowed
+Only the top-level file controls runtime behavior
+=== 11 ===
+Secure your Data API builder solution
+07/17/2025
+Data API builder enables you to quickly expose your data through REST and GraphQL endpoints, making it easier to build modern applications. Because these endpoints can provide access to sensitive data, it's critical to implement robust security measures to protect your solution from unauthorized access and threats.
+This article provides guidance on how to best secure your Data API builder solution.
+Authentication
+Use strong authentication providers: Always configure Data API builder to use a secure authentication provider such as Microsoft Entra ID or Azure Static Web Apps authentication. This configuration ensures only authorized users can access your APIs. For more information, see authentication configuration.
+Avoid hardcoding secrets: Never store authentication secrets or credentials directly in your configuration files or source code. Use secure methods such as environment variables or Azure Key Vault. For more information, see Azure authentication.
+Authorization
+Implement role-based access control (RBAC): Restrict access to entities and actions based on user roles by defining roles and permissions in your configuration. This limits exposure of sensitive data and operations. For more information, see roles.
+Deny by default: By default, entities have no permissions configured, so no one can access them. Explicitly define permissions for each role to ensure only intended users have access. For more information, see authorization.
+Use the X-MS-API-ROLE header for custom roles: Require clients to specify the X-MS-API-ROLE header to access resources with custom roles, ensuring requests are evaluated in the correct security context. For more information, see custom role header.
+Transport security
+Enforce transport layer security for all connections: Ensure all data exchanged between clients and Data API builder is encrypted using transport layer security. Transport layer security (TLS) protects data in transit from interception and tampering. For more information, see TLS enforcement.
+Disable legacy TLS versions: Configure your server to disable outdated TLS versions (such as TLS 1.0 and 1.1) and rely on the operating system's default TLS configuration to support the latest secure protocols. For more information, see disabling legacy TLS versions.
+Configuration security
+Restrict anonymous access: Only allow anonymous access to entities when necessary. Otherwise, require authentication for all endpoints to reduce the risk of unauthorized data exposure. For more information, see anonymous system role.
+Limit permissions to the minimum required: Grant users and roles only the permissions they need to perform their tasks. Avoid using wildcard permissions unless necessary. For more information, see permissions.
+Monitoring and updates
+Monitor and audit access: Detect suspicious activity or unauthorized access attempts by regularly reviewing logs and monitoring access to your Data API builder endpoints. For more information, see Monitor using application insights.
+Keep dependencies up to date: Ensure you have the latest security patches and improvements by regularly updating Data API builder, its dependencies, and your underlying platform. For more information, see DAB versions.
+Related
+Azure authentication
+Local authentication
+Authorization and roles
+Security best practices
+ Note: This article contains content created with AI. Learn more
+=== 12 ===
+Azure Authentication in Data API builder
+07/17/2025
+Data API builder allows developers to define the authentication mechanism (identity provider) they want Data API builder to use to authenticate who is making requests.
+Authentication is delegated to a supported identity provider where access token can be issued. An acquired access token must be included with incoming requests to Data API builder. Data API builder then validates any presented access tokens, ensuring that Data API builder was the intended audience of the token.
+The supported identity provider configuration options are:
+StaticWebApps
+JSON Web Tokens (JWT)
+In Development (AZ Login)
+Using Authentication='Active Directory Default' in Azure SQL Database connection strings means the client will authenticate using Microsoft Entra credentials. The exact authentication method is determined by the environment. When a developer runs az login, the Azure CLI opens a browser window prompting the user to sign in with a Microsoft account or corporate credentials. Once authenticated, Azure CLI retrieves and caches the token linked to the Microsoft Entra identity. This token is then used to authenticate requests to Azure services without requiring credentials in the connection string.
+JSON
+Copy
+"data-source": {
+    "connection-string": "...;Authentication='Active Directory Default';"
+}
+To set up local credentials, simply use az login after you install the Azure CLI.
+Bash
+Copy
+az login
+Azure Static Web Apps authentication (EasyAuth)
+Data API builder expects Azure Static Web Apps authentication (EasyAuth) to authenticate the request, and to provide metadata about the authenticated user in the X-MS-CLIENT-PRINCIPAL HTTP header when using the option StaticWebApps. The authenticated user metadata provided by Static Web Apps can be referenced in the following documentation: Accessing User Information.
+To use the StaticWebApps provider, you need to specify the following configuration in the runtime.host section of the configuration file:
+JSON
+Copy
+"authentication": {
+    "provider": "StaticWebApps"
+}
+Using the StaticWebApps provider is useful when you plan to run Data API builder in Azure, hosting it using App Service and running it in a container: Run a custom container in Azure App Service.
+JWT
+To use the JWT provider, you need to configure the runtime.host.authentication section by providing the needed information to verify the received JWT token:
+JSON
+Copy
+"authentication": {
+    "provider": "AzureAD",
+    "jwt": {
+        "audience": "<APP_ID>",
+        "issuer": "https://login.microsoftonline.com/<AZURE_AD_TENANT_ID>/v2.0"
+    }
+}
+Roles selection
+Once a request is authenticated via any of the available options, the roles defined in the token are used to help determine how permission rules are evaluated to authorize the request. Any authenticated request is automatically assigned to the authenticated system role, unless a user role is requested for use. For more information, see authorization.
+Anonymous requests
+Requests can also be made without being authenticated. In such cases, the request is automatically assigned to the anonymous system role so that it can be properly authorized.
+X-MS-API-ROLE request header
+Data API builder requires the header X-MS-API-ROLE to authorize requests using custom roles. The value of X-MS-API-ROLE must match a role specified in the token. For example, if the token has the role Sample.Role, then X-MS-API-ROLE should also be Sample.Role. For more information, see authorization user roles.
+Related content
+Local authentication
+Authorization
+=== 13 ===
+ocal Authentication in Data API builder
+07/17/2025
+When developing a solution using Data API builder locally, or when running Data API builder on-premises, you need to test the configured authentication and authorization options by simulating a request with a specific role or claim.
+To simulate an authenticated request without configuring an authentication provider (like Microsoft Entra ID, for example), you can utilize either the Simulator or StaticWebApps authentication providers:
+Use the Simulator provider
+Simulator is a configurable authentication provider that instructs the Data API builder engine to treat all requests as authenticated.
+At a minimum, all requests are evaluated in the context of the system role Authenticated.
+If desired, the request is evaluated in the context of any role denoted in the X-MS-API-ROLE Http header.
+ Note
+While the desired role will be honored, authorization permissions defining database policies will not work because custom claims can't be set for the authenticated user with the Simulator provider. Continue to the section Use the StaticWebApps provider for testing database authorization policies.
+1. Update the runtime configuration authentication provider
+Make sure that in the configuration file you're using the Simulator authentication provider and development mode is specified. Refer to this sample host configuration section:
+JSON
+Copy
+"host": {
+  "mode": "development",
+  "authentication": {
+    "provider": "Simulator"
+  }
+}
+2. Specify the role context of the request
+With Simulator as Data API builder's authentication provider, no custom header is necessary to set the role context to the system role Authenticated:
+Bash
+Copy
+curl --request GET \
+  --url http://localhost:5000/api/books \
+To set the role context to any other role, including the system role Anonymous, the X-MS-API-ROLE header must be included with the desired role:
+Bash
+Copy
+curl --request GET \
+  --url http://localhost:5000/api/books \
+  --header 'X-MS-API-ROLE: author' \
+Use the StaticWebApps provider
+The StaticWebApps authentication provider instructs Data API builder to look for a set of HTTP headers only present when running within a Static Web Apps environment. The client sets these HTTP headers when running locally to simulate an authenticated user, including any role membership or custom claims.
+ Note
+Client provided instances of the Http header, X-MS-CLIENT-PRINCIPAL, will only work when developing locally because production Azure Static Web Apps environments drop all client provided instances of that header.
+Make sure that in the configuration file you're using the StaticWebApps authentication provider. Refer to this sample host configuration section:
+JSON
+Copy
+"host": {
+  "mode": "development",
+  "authentication": {
+    "provider": "StaticWebApps"
+  }
+}
+1. Send requests providing a generated X-MS-CLIENT-PRINCIPAL header
+Once Data API builder is running locally and configured to use the StaticWebApps authentication provider, you can generate a client principal object manually using the following template:
+JSON
+Copy
+{  
+  "identityProvider": "test",
+  "userId": "12345",
+  "userDetails": "john@contoso.com",
+  "userRoles": ["author", "editor"]
+}
+Static Web App's authenticated user metadata has the following properties:
+Property	Description
+identityProvider	Any string value.
+userId	A unique identifier for the user.
+userDetails	Username or email address of the user.
+userRoles	An array of the user's assigned roles.
+ Note
+As noted in Static Web Apps documentation, the X-MS-CLIENT-PRINCIPAL header does not contain the claims array.
+In order to be passed with the X-MS-CLIENT-PRINCIPAL header, the JSON payload must be Base64-encoded. You can use any online or offline tool to do that. One such tool is DevToys. A sample Base64-encoded payload that represents the JSON previously referenced:
+HTTP
+Copy
+eyAgCiAgImlkZW50aXR5UHJvdmlkZXIiOiAidGVzdCIsCiAgInVzZXJJZCI6ICIxMjM0NSIsCiAgInVzZXJEZXRhaWxzIjogImpvaG5AY29udG9zby5jb20iLAogICJ1c2VyUm9sZXMiOiBbImF1dGhvciIsICJlZGl0b3IiXQp9
+The following cURL request simulates an authenticated user retrieving the list of available Book entity records in the context of the author role:
+Bash
+Copy
+curl --request GET \
+  --url http://localhost:5000/api/books \
+  --header 'X-MS-API-ROLE: author' \
+  --header 'X-MS-CLIENT-PRINCIPAL: eyAgCiAgImlkZW50aXR5UHJvdmlkZXIiOiAidGVzdCIsCiAgInVzZXJJZCI6ICIxMjM0NSIsCiAgInVzZXJEZXRhaWxzIjogImpvaG5AY29udG9zby5jb20iLAogICJ1c2VyUm9sZXMiOiBbImF1dGhvciIsICJlZGl0b3IiXQp9'
+Related content
+Azure authentication
+Authorization
+Additional resources
+=== 14 ===
+Authorization and roles in Data API builder
+07/22/2025
+Data API builder uses a role-based authorization workflow. Any incoming request, authenticated or not, is assigned to a role. Roles can be System Roles or User Roles. The assigned role is then checked against the defined permissions specified in the configuration to understand what actions, fields, and policies are available for that role on the requested entity.
+Determining the user's role
+No role has default permissions. Once a rule is determined by Data API builder, the entity's permissions must define actions for that role for the request to be successful.
+Token Provided	x-ms-api-role Provided	x-ms-api-role in Token	Resulting Role
+No	No	No	anonymous
+Yes	No	No	authenticated
+Yes	Yes	No	Exception
+Yes	Yes	Yes	x-ms-api-role value
+To have a role other than anonymous or authenticated, the x-ms-api-role header is required.
+ Note
+A request can have only one role. Even if the token indicates multiple roles, the x-ms-api-role value selects which role is assigned to the request.
+System roles
+System roles are built-in roles recognized by Data API builder. A system role is autoassigned to a requestor regardless of the requestor's role membership denoted in their access tokens. There are two system roles: anonymous and authenticated.
+Anonymous system role
+The anonymous system role is assigned to requests executed by unauthenticated users. Runtime configuration defined entities must include permissions for the anonymous role if unauthenticated access is desired.
+Example
+The following Data API builder runtime configuration demonstrates explicitly configuring the system role anonymous to include read access to the Book entity:
+JSON
+Copy
+"Book": {
+    "source": "books",
+    "permissions": [
+        {
+            "role": "anonymous",
+            "actions": [ "read" ]
+        }
+    ]
+}
+When a client application sends a request accessing the Book entity on behalf of an unauthenticated user, the app shouldn't include the Authorization HTTP header.
+Authenticated system role
+The authenticated system role is assigned to requests executed by authenticated users.
+Example
+The following Data API builder runtime configuration demonstrates explicitly configuring the system role authenticated to include read access to the Book entity:
+JSON
+Copy
+"Book": {
+    "source": "books",
+    "permissions": [
+        {
+            "role": "authenticated",
+            "actions": [ "read" ]
+        }
+    ]
+}
+User roles
+User roles are nonsystem roles that are assigned to users within the identity provider you set in the runtime config. For Data API builder to evaluate a request in the context of a user role, two requirements must be met:
+The client app supplied access token must include role claims that list a user's role membership.
+The client app must include the HTTP header X-MS-API-ROLE with requests and set the header's value as the desired user role.
+Role evaluation example
+The following example demonstrates requests made to the Book entity that is configured in the Data API builder runtime configuration as follows:
+JSON
+Copy
+"Book": {
+    "source": "books",
+    "permissions": [
+        {
+            "role": "anonymous",
+            "actions": [ "read" ]
+        },
+        {
+            "role": "authenticated",
+            "actions": [ "read" ]
+        },
+        {
+            "role": "author",
+            "actions": [ "read" ]
+        }
+    ]
+}
+In Static Web Apps, a user is a member of the anonymous role by default. If the user is authenticated, the user is a member of both the anonymous and authenticated roles.
+When a client app sends an authenticated request to Data API builder deployed using Static Web Apps database connections (Preview), the client app supplies an access token that Static Web Apps transforms into JSON:
+JSON
+Copy
+{
+  "identityProvider": "azuread",
+  "userId": "d75b260a64504067bfc5b2905e3b8182",
+  "userDetails": "username",
+  "userRoles": ["anonymous", "authenticated", "author"]
+}
+Because Data API builder evaluates requests in the context of a single role, it evaluates the request in the context of the system role authenticated by default.
+If the client application's request also includes the HTTP header X-MS-API-ROLE with the value author, the request is evaluated in the context of the author role. An example request including an access token and X-MS-API-ROLE HTTP header:
+Bash
+Copy
+curl -k -r GET -H 'Authorization: Bearer ey...' -H 'X-MS-API-ROLE: author' https://localhost:5001/api/Book
+ Important
+A client app's request is rejected when the supplied access token's roles claim doesn't contain the role listed in the X-MS-API-ROLE header.
+Permissions
+Permissions describe:
+Who can make requests on an entity based on role membership?
+What actions (create, read, update, delete, execute) a user can perform?
+Which fields are accessible for a particular action?
+Which extra restrictions exist on the results returned by a request?
+The syntax for defining permissions is described in the runtime configuration article.
+ Important
+There may be multiple roles defined within a single entity's permissions configuration. However, a request is only evaluated in the context of a single role:
+By default, either the system role anonymous or authenticated
+When included, the role set in the X-MS-API-ROLE HTTP header.
+Secure by default
+By default, an entity has no permissions configured, which means no one can access the entity. Additionally, Data API builder ignores database objects when they aren't referenced in the runtime configuration.
+Permissions must be explicitly configured
+To allow unauthenticated access to an entity, the anonymous role must be explicitly defined in the entity's permissions. For example, the book entity's permissions is explicitly set to allow unauthenticated read access:
+JSON
+Copy
+"book": {
+  "source": "dbo.books",
+  "permissions": [{
+    "role": "anonymous",
+    "actions": [ "read" ]
+  }]
+}
+To simplify permissions definition on an entity, assume that if there are no specific permissions for the authenticated role, then the permissions defined for the anonymous role are used. The book configuration shown previously allows any anonymous or authenticated user's to perform read operations on the book entity.
+When read operations should be restricted to authenticated users only, the following permissions configuration should be set, resulting in the rejection of unauthenticated requests:
+JSON
+Copy
+"book": {
+  "source": "dbo.books",
+  "permissions": [{
+    "role": "authenticated",
+    "actions": [ "read" ]
+  }]
+}
+An entity doesn't require and isn't preconfigured with permissions for the anonymous and authenticated roles. One or more user roles can be defined within an entity's permissions configuration and all other undefined roles, system, or user defined, are automatically denied access.
+In the following example, the user role administrator is the only defined role for the book entity. A user must be a member of the administrator role and include that role in the X-MS-API-ROLE HTTP header to operate on the book entity:
+JSON
+Copy
+"book": {
+  "source": "dbo.books",
+  "permissions": [{
+    "role": "administrator",
+    "actions": [ "*" ]
+  }]
+}
+ Note
+To enforce access control for GraphQL queries when using Data API builder with Azure Cosmos DB, you are required to use the @authorize directive in your supplied GraphQL schema file. However, for GraphQL mutations and filters in GraphQL queries, access control still is enforced by the permissions configuration as described previously.
+Actions
+Actions describe the accessibility of an entity within the scope of a role. Actions can be specified individually or with the wildcard shortcut: * (asterisk). The wildcard shortcut represents all actions supported for the entity type:
+Tables and Views: create, read, update, delete
+Stored Procedures: execute
+For more information about actions, see the configuration file documentation.
+Field access
+You can configure which fields should be accessible for an action. For example, you can set which fields to include and exclude from the read action.
+The following example prevents users in the free-access role from performing read operations on Column3. References to Column3 in GET requests (REST endpoint) or queries (GraphQL endpoint) result in a rejected request:
+JSON
+Copy
+    "book": {
+      "source": "dbo.books",
+      "permissions": [
+        {
+          "role": "free-access",
+          "actions": [
+            "create",
+            "update",
+            "delete",
+            {
+              "action": "read",
+              "fields": {
+                "include": [ "Column1", "Column2" ],
+                "exclude": [ "Column3" ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+ Note
+To enforce access control for GraphQL queries when using Data API builder with Azure Cosmos DB, you are required to use the @authorize directive in your supplied GraphQL schema file. However, for GraphQL mutations and filters in GraphQL queries, access control still is enforced by the permissions configuration as described here.
+Item level security
+Database policy expressions enable results to be restricted even further. Database policies translate expressions to query predicates executed against the database. Database policy expressions are supported for the following actions:
+create
+read
+update
+delete
+ Warning
+The execute action, used with stored procedures, does not support database policies.
+ Note
+Database policies are not currently supported by CosmosDB for NoSQL.
+For more information about database policies, see the configuration file documentation.
+Example
+A database policy restricting the read action on the consumer role to only return records where the title is "Sample Title."
+JSON
+Copy
+{
+  "role": "consumer",
+  "actions": [
+    {
+      "action": "read",
+      "policy": {
+        "database": "@item.title eq 'Sample Title'"
+      }
+    }
+  ]
+}
+Related content
+Azure authentication
+Local authentication
+=== 15 ===
+Azure Authentication in Data API builder
+07/17/2025
+Data API builder allows developers to define the authentication mechanism (identity provider) they want Data API builder to use to authenticate who is making requests.
+Authentication is delegated to a supported identity provider where access token can be issued. An acquired access token must be included with incoming requests to Data API builder. Data API builder then validates any presented access tokens, ensuring that Data API builder was the intended audience of the token.
+The supported identity provider configuration options are:
+StaticWebApps
+JSON Web Tokens (JWT)
+In Development (AZ Login)
+Using Authentication='Active Directory Default' in Azure SQL Database connection strings means the client will authenticate using Microsoft Entra credentials. The exact authentication method is determined by the environment. When a developer runs az login, the Azure CLI opens a browser window prompting the user to sign in with a Microsoft account or corporate credentials. Once authenticated, Azure CLI retrieves and caches the token linked to the Microsoft Entra identity. This token is then used to authenticate requests to Azure services without requiring credentials in the connection string.
+JSON
+Copy
+"data-source": {
+    "connection-string": "...;Authentication='Active Directory Default';"
+}
+To set up local credentials, simply use az login after you install the Azure CLI.
+Bash
+Copy
+az login
+Azure Static Web Apps authentication (EasyAuth)
+Data API builder expects Azure Static Web Apps authentication (EasyAuth) to authenticate the request, and to provide metadata about the authenticated user in the X-MS-CLIENT-PRINCIPAL HTTP header when using the option StaticWebApps. The authenticated user metadata provided by Static Web Apps can be referenced in the following documentation: Accessing User Information.
+To use the StaticWebApps provider, you need to specify the following configuration in the runtime.host section of the configuration file:
+JSON
+Copy
+"authentication": {
+    "provider": "StaticWebApps"
+}
+Using the StaticWebApps provider is useful when you plan to run Data API builder in Azure, hosting it using App Service and running it in a container: Run a custom container in Azure App Service.
+JWT
+To use the JWT provider, you need to configure the runtime.host.authentication section by providing the needed information to verify the received JWT token:
+JSON
+Copy
+"authentication": {
+    "provider": "AzureAD",
+    "jwt": {
+        "audience": "<APP_ID>",
+        "issuer": "https://login.microsoftonline.com/<AZURE_AD_TENANT_ID>/v2.0"
+    }
+}
+Roles selection
+Once a request is authenticated via any of the available options, the roles defined in the token are used to help determine how permission rules are evaluated to authorize the request. Any authenticated request is automatically assigned to the authenticated system role, unless a user role is requested for use. For more information, see authorization.
+Anonymous requests
+Requests can also be made without being authenticated. In such cases, the request is automatically assigned to the anonymous system role so that it can be properly authorized.
+X-MS-API-ROLE request header
+Data API builder requires the header X-MS-API-ROLE to authorize requests using custom roles. The value of X-MS-API-ROLE must match a role specified in the token. For example, if the token has the role Sample.Role, then X-MS-API-ROLE should also be Sample.Role. For more information, see authorization user roles.
+Related content
+Local authentication
+Authorization
+=== 16 ===
+Implement row-level security with session context in Data API builder
+07/17/2025
+Use the session context feature of SQL to implement row-level security in Data API builder.
+Prerequisites
+Existing SQL server and database.
+Data API builder CLI. Install the CLI
+Create SQL table and data
+Create a table with fictitious data to use in this example scenario.
+Connect to the SQL database using your preferred client or tool.
+Create a table named Revenues with id, category, revenue, and username columns.
+SQL
+Copy
+DROP TABLE IF EXISTS dbo.Revenues;
+CREATE TABLE dbo.Revenues(
+    id int PRIMARY KEY,  
+    category varchar(max) NOT NULL,  
+    revenue int,  
+    username varchar(max) NOT NULL  
+);
+GO
+Insert four sample book rows into the Revenues table.
+SQL
+Copy
+INSERT INTO dbo.Revenues VALUES
+    (1, 'Book', 5000, 'Oscar'),  
+    (2, 'Comics', 10000, 'Oscar'),  
+    (3, 'Journals', 20000, 'Hannah'),  
+    (4, 'Series', 40000, 'Hannah')
+GO
+Test your data with a simple SELECT * query.
+SQL
+Copy
+SELECT * FROM dbo.Revenues
+Create a function named RevenuesPredicate. This function will filter results based on the current session context.
+SQL
+Copy
+CREATE FUNCTION dbo.RevenuesPredicate(@username varchar(max))
+RETURNS TABLE
+WITH SCHEMABINDING
+AS RETURN SELECT 1 AS fn_securitypredicate_result
+WHERE @username = CAST(SESSION_CONTEXT(N'name') AS varchar(max));
+Create a security policy named RevenuesSecurityPolicy using the function.
+SQL
+Copy
+CREATE SECURITY POLICY dbo.RevenuesSecurityPolicy
+ADD FILTER PREDICATE dbo.RevenuesPredicate(username)
+ON dbo.Revenues;
+Run tool
+Run the Data API builder (DAB) tool to generate a configuration file and a single entity.
+Create a new configuration while setting --set-session-context to true.
+.NET CLI
+Copy
+dab init \
+    --database-type mssql \
+    --connection-string "<sql-connection-string>" \
+    --set-session-context true
+Add a new entity named revenue for the dbo.Revenues table.
+.NET CLI
+Copy
+dab add revenue \
+    --source "dbo.Revenues" \
+    --permissions "anonymous:read"
+Start the Data API builder tool.
+.NET CLI
+Copy
+dab start
+Navigate to the http://localhost:5000/api/revenue endpoint. Observe that no data is returned. This behavior occurs because the session context isn't set and no records match the filter predicate.
+Test in SQL
+Test the filter and predicate in SQL directly to ensure it's working.
+Connect to the SQL server again using your preferred client or tool.
+Run the sp_set_session_context to manually set your session context's name claim to the static value Oscar.
+SQL
+Copy
+EXEC sp_set_session_context 'name', 'Oscar';
+Run a typical SELECT * query. Observe that the results are automatically filtered using the predicate.
+SQL
+Copy
+SELECT * FROM dbo.Revenues;  
+=== 1Security best practices in Data API builder
+06/11/2025
+Diagram of the current location ('Optimize') in the sequence of the deployment guide.
+Diagram of the sequence of the deployment guide including these locations, in order: Overview, Plan, Prepare, Publish, Monitor, and Optimization. The 'Optimize' location is currently highlighted.
+This article includes the current recommended best practices for security in the Data API builder. This article doesn't include an exhaustive list of every security consideration for your Data API builder solution.
+Disable Legacy Versions of TLS at the Server Level
+Data sent between a client and Data API builder should occur over a secure connection to protect sensitive or valuable information. A secure connection is typically established using Transport Layer Security (TLS) protocols.
+As detailed in OWASP's Transport Layer Protection guidance, TLS provides numerous security benefits when implemented correctly:
+Confidentiality - protection against an attacker from reading the contents of traffic.
+Integrity - protection against an attacker modifying traffic.
+Replay prevention - protection against an attacker replaying requests against the server.
+Authentication - allowing the client to verify that they're connected to the real server (note that the identity of the client isn't verified unless client certificates are used).
+Recommendations
+One way to help configure TLS securely is to disable usage of legacy versions of TLS at the server level. Data API builder is built on Kestrel, a cross-platform web server for ASP.NET Core and is configured by default to defer to the operating system's TLS version configuration. Microsoft's TLS best practices for .NET guidance describe the motivation behind such behavior:
+ Note
+TLS 1.2 is a standard that provides security improvements over previous versions. TLS 1.2 will eventually be replaced by the newest released standard TLS 1.3 which is faster and has improved security.
+To ensure .NET Framework applications remain secure, the TLS version should not be hardcoded. .NET Framework applications should use the TLS version the operating system (OS) supports.
+While explicitly defining supported TLS protocol versions for Kestrel is supported, doing so isn't recommended. These definitions translate to an allowlist, which prevents support for future TLS versions as they become available. More information about Kestrel's default TLS protocol version behavior can be found here.
+TLS support
+TLS 1.2 is enabled by default on the latest versions of .NET and many of the latest operating system versions.
+Windows
+macOS
+Linux
+Install .NET on Windows - Microsoft Learn
+Enable support for TLS 1.2 in your environment - Microsoft Entra ID Guidance
+TLS 1.2 support at Microsoft - Microsoft Security Blog
+Additional resources
+=== 18 ===
+onfiguration best practices in Data API builder
+06/11/2025
+Diagram of the current location ('Optimize') in the sequence of the deployment guide.
+Diagram of the sequence of the deployment guide including these locations, in order: Overview, Plan, Prepare, Publish, Monitor, and Optimization. The 'Optimize' location is currently highlighted.
+This article includes the current recommended best practices for configuration in the Data API builder. This article doesn't include an exhaustive list of everything you must configure for your Data API builder solution.
+Name entities using Pascal casing
+When adding an entity to the configuration file, use PascalCasing, so that the generated GraphQL types are easier to read. For example, if you have an entity named CompositeNameEntity the generated GraphQL schema has the following queries and mutations:
+Queries
+compositeNameEntities
+compositeNameEntity_by_pk
+Mutations
+createCompositeNameEntity
+updateCompositeNameEntity
+deleteCompositeNameEntity
+If the entity maps to a stored procedure, the generated query or mutation would be named executeCompositeNameEntity, which is easier and nicer to read.
+Use singular form when naming entities
+When adding an entity to the configuration file, make sure to use the singular form for the name. Data API builder automatically generates the plural form whenever a collection of that entity is returned. You can also manually provide singular and plural forms, by manually adding them to the configuration file. For more information, see GraphQL configuration reference.
+Next step
+=== 19 ===
+Implement level 1 cache
+07/22/2025
+Level 1 cache in Data API builder reduces redundant requests to the database by temporarily caching entity results in memory. This improves performance for frequent queries and avoids hitting the database unnecessarily.
+Enable cache globally
+To enable caching, set the global runtime configuration:
+JSON
+Copy
+"runtime": {
+  "cache": {
+    "enabled": true,
+    "ttl-seconds": 60
+  }
+}
+enabled: Required. Turns on caching globally.
+ttl-seconds: Optional. Defines the default time-to-live (in seconds) for cached items.
+See runtime cache settings.
+Enable cache per entity
+Each entity must also opt in to use cache:
+JSON
+Copy
+"MyEntity": {
+  "cache": {
+    "enabled": true,
+    "ttl-seconds": 30
+  }
+}
+enabled: Required. Enables caching for this specific entity.
+ttl-seconds: Optional. If not specified, inherits from the global TTL.
+See entity cache settings.
+Behavior
+Applies only to REST endpoints.
+Works on a per-route, per-parameter basis.
+Cache is invalidated when data is modified (create, update, delete).
+Entity ttl-seconds overrides global ttl-seconds.
+Notes
+Level 1 cache is in-memory only.
+Best suited for read-heavy scenarios with low data volatility.
+=== 20 ===
+Implement level 2 cache
+07/22/2025
+Level 2 cache in Data API builder will extend beyond the in-memory scope of level 1 cache by supporting distributed caching via Redis. This will allow cache to persist across multiple instances of the DAB runtime and survive process restarts, making it suitable for scalable production deployments.
+Benefits of level 2 cache
+High availability and fault tolerance
+Horizontal scalability
+Reduced database load across services
+Optional TTL settings for fine-tuned cache control
+Status: Coming soon
+This feature is not yet available. We're building level 2 cache now. Stay tuned.
+Redis support
+Redis is a fast, in-memory data store widely adopted for caching scenarios. Its support for key expiration and distributed access makes it ideal for a level 2 cache strategy.
+Shared cache across scaled-out DAB instances
+Persistent cache beyond application restarts
+Faster start time for stateless containers
+Improved performance for high-load, read-intensive workloads
+=== 21 ===
+Using views in Data API builder
+07/22/2025
+Views are supported as alternatives to tables in DAB. A view can be exposed through REST or GraphQL endpoints with minimal configuration.
+Configuration
+To expose a view:
+Set source.type to "view"
+Set source.object to the fully qualified view name
+Define key-fields to identify a row uniquely
+Grant permission using the "read" action (and optionally "create", "update", "delete" if the view is updatable)
+CLI example
+sh
+Copy
+dab add BookDetail \
+  --source dbo.vw_books_details \
+  --source.type "view" \
+  --source.key-fields "id" \
+  --permissions "anonymous:read"
+Configuration example
+JSON
+Copy
+"BookDetail": {
+  "source": {
+    "type": "view",
+    "object": "dbo.vw_books_details",
+    "key-fields": [ "id" ]
+  },
+  "permissions": [
+    {
+      "role": "anonymous",
+      "actions": [ "read" ]
+    }
+  ]
+}
+REST support
+Supports all REST verbs: GET, POST, PUT, PATCH, DELETE
+Default behavior is identical to table-backed entities
+Operations succeed only if the view is updatable and appropriate permissions are set
+Example request
+HTTP
+Copy
+GET /api/BookDetail/42
+Returns the row from vw_books_details with id = 42.
+GraphQL support
+View appears as a GraphQL type
+Queries are always supported
+Mutations are supported only if the view is updatable
+Follows standard DAB GraphQL schema structure
+Permissions
+Use the read action for readonly views
+Use create, update, and delete only if the view is updatable
+Limitations
+key-fields are required
+Views do not support relationships
+Pagination, filtering, and sorting are supported if the view behaves like a table
+=== 22 ===
+Using stored procedures in Data API builder
+07/22/2025
+Stored procedures can be exposed as REST or GraphQL endpoints in DAB. This is useful for scenarios that involve custom logic, filtering, validation, or computed results not handled by simple tables or views.
+Configuration
+To expose a stored procedure:
+Set source.type to "stored-procedure"
+Set source.object to the fully qualified procedure name
+Define the parameters (with types) if necessary
+Set rest.methods (for example, "GET", "POST") or rest: false
+Set graphql.operation to "query" or "mutation", or omit to default to "mutation"
+Grant permission using the "execute" action
+CLI example
+sh
+Copy
+dab add GetCowrittenBooksByAuthor \
+  --source dbo.stp_get_all_cowritten_books_by_author \
+  --source.type "stored-procedure" \
+  --source.params "searchType:s" \
+  --permissions "anonymous:execute" \
+  --rest.methods "get" \
+  --graphql.operation "query"
+Configuration example
+JSON
+Copy
+"GetCowrittenBooksByAuthor": {
+  "source": {
+    "type": "stored-procedure",
+    "object": "dbo.stp_get_all_cowritten_books_by_author",
+    "parameters": {
+      "searchType": "s"
+    }
+  },
+  "rest": {
+    "methods": [ "GET" ]
+  },
+  "graphql": {
+    "operation": "query"
+  },
+  "permissions": [
+    {
+      "role": "anonymous",
+      "actions": [ "execute" ]
+    }
+  ]
+}
+Parameter types (used in CLI and config)
+Code	Type
+s	string
+i	integer
+n	numeric (decimal)
+b	boolean
+d	datetime
+These codes define the type only, not default values.
+REST support
+Supports only GET and POST
+Defaults to POST if methods is omitted
+Sends parameters via query string with GET
+Sends parameters via JSON body with POST
+Disables REST for a stored procedure if "rest": false is set
+Example requests
+GET /api/GetCowrittenBooksByAuthor?author=asimov
+POST /api/GetCowrittenBooksByAuthor
+JSON
+Copy
+{
+  "author": "asimov"
+}
+GraphQL support
+Requires graphql.operation to be "query" or "mutation"
+Fields are autoprefixed with execute, for example, executeGetCowrittenBooksByAuthor
+Parameters are passed as GraphQL arguments
+Example GraphQL
+GraphQL
+Copy
+query {
+  executeGetCowrittenBooksByAuthor(author: "asimov") {
+    id
+    title
+  }
+}
+Limitations
+Only the first result set is returned
+Pagination, filtering, and ordering aren't supported
+Relationships aren't supported
+Requires metadata from sys.dm_exec_describe_first_result_set
+Can't return a single item by key
+No parameter-level authorization
+=== 23 ===
+Entity relationships in Data API builder
+07/22/2025
+Entity relationships allow GraphQL queries to traverse related entities, enabling complex data shapes with a single query. For example:
+GraphQL
+Copy
+{
+  books {
+    items {
+      id
+      title
+      authors {
+        items {
+          first_name
+          last_name
+        }
+      }
+    }
+  }
+}
+To achieve this, DAB must be told how entities are related via the relationships section in the configuration file.
+Configuration
+To define a relationship between entities:
+Use the relationships object inside the entity configuration.
+Provide the target.entity name.
+Set cardinality as "one" or "many".
+Optionally specify source.fields and target.fields.
+Use linking.object when modeling many-to-many relationships without exposing the join table.
+CLI example
+sh
+Copy
+dab update Book \
+  --relationship authors \
+  --target.entity Author \
+  --cardinality many \
+  --relationship.fields "id:id" \
+  --linking.object "dbo.books_authors" \
+  --linking.source.fields "book_id" \
+  --linking.target.fields "author_id"
+Configuration example
+JSON
+Copy
+"Book": {
+  "source": "dbo.books",
+  "relationships": {
+    "authors": {
+      "cardinality": "many",
+      "target.entity": "Author",
+      "source.fields": [ "id" ],
+      "target.fields": [ "id" ],
+      "linking.object": "dbo.books_authors",
+      "linking.source.fields": [ "book_id" ],
+      "linking.target.fields": [ "author_id" ]
+    }
+  }
+}
+One-to-Many
+Use cardinality "many".
+Example: A Series has many Books.
+DAB can infer fields if a foreign key exists.
+sh
+Copy
+dab update Series \
+  --relationship books \
+  --target.entity Book \
+  --cardinality many
+Many-to-One
+Use cardinality "one".
+Example: A Book belongs to one Series.
+sh
+Copy
+dab update Book \
+  --relationship series \
+  --target.entity Series \
+  --cardinality one
+Many-to-Many (linking object)
+Use a join table that is not exposed in GraphQL.
+Define linking fields from source to target via the join table.
+sh
+Copy
+dab update Author \
+  --relationship books \
+  --target.entity Book \
+  --cardinality many \
+  --relationship.fields "id:id" \
+  --linking.object "dbo.books_authors" \
+  --linking.source.fields "author_id" \
+  --linking.target.fields "book_id"
+Many-to-Many (explicit join entity)
+Expose the join table as a GraphQL object.
+Define relationships on all three entities.
+sh
+Copy
+dab add BookAuthor \
+  --source dbo.books_authors \
+  --permissions "anonymous:*"
+dab update BookAuthor \
+  --relationship book \
+  --target.entity Book \
+  --cardinality one \
+  --relationship.fields "book_id:id"
+dab update BookAuthor \
+  --relationship author \
+  --target.entity Author \
+  --cardinality one \
+  --relationship.fields "author_id:id"
+Reciprocal relationships
+To allow navigation in both directions (for example, from Book to Author and from Author to Book), define a second relationship on the target entity that reverses the source and target fields.
+Example
+sh
+Copy
+dab update Author \
+  --relationship books \
+  --target.entity Book \
+  --cardinality many \
+  --relationship.fields "id:id" \
+  --linking.object "dbo.books_authors" \
+  --linking.source.fields "author_id" \
+  --linking.target.fields "book_id"
+This pairs with the Book to Author relationship and enables symmetric traversal in GraphQL:
+GraphQL
+Copy
+{
+  authors {
+    items {
+      first_name
+      books {
+        items {
+          title
+        }
+      }
+    }
+  }
+}
+GraphQL support
+Related fields appear as nested objects.
+Cardinality determines whether a list or single object is returned.
+GraphQL type names and fields match configuration names.
+Limitations
+Relationships require entities to exist in the same config file.
+Only one-hop navigation is supported.
+Cycles and deep nesting aren't optimized.
+REST doesn't support relationships (GraphQL only).
+=== 24 ===
+Use Azure Application Insights in Data API builder
+07/22/2025
+Diagram of the sequence of the deployment guide including these locations, in order: Overview, Plan, Prepare, Publish, Monitor, and Optimization. The 'Monitor' location is currently highlighted.
+Azure Application Insights is a monitoring service that captures telemetry such as request details, performance counters, logs, and exceptions. Integrating it with Data API builder (DAB) helps you diagnose issues and monitor runtime behavior in production.
+Warning Application Insights isn't supported when DAB is hosted using Azure App Service web apps.
+Configuration
+To configure Application Insights in your DAB config:
+CLI example
+sh
+Copy
+dab add-telemetry \
+  --app-insights-enabled true \
+  --app-insights-conn-string "@env('app-insights-connection-string')"
+JSON example
+JSON
+Copy
+"runtime": {
+  ...
+  "telemetry": {
+    "application-insights": {
+      "enabled": true,
+      "connection-string": "@env('app-insights-connection-string')"
+    }
+  }
+  ...
+}
+This assumes app-insights-connection-string is set as an environment variable. You can use an .env file to define it.
+What gets captured
+Type	Description
+Request telemetry	URL, status code, response time
+Trace telemetry	Console logs from DAB
+Exception telemetry	Errors and stack traces
+Performance counters	CPU, memory, network metrics
+View in Azure
+Go to your Application Insights resource in the Azure portal: https://portal.azure.com
+Review logs using this query:
+Kusto
+Copy
+traces
+| order by timestamp
+LogLevel mapping:
+LogLevel	Severity	Value
+Trace	Verbose	0
+Debug	Verbose	0
+Information	Information	1
+Warning	Warning	2
+Error	Error	3
+Critical	Critical	4
+Check Live Metrics
+Screenshot of the live metrics page for Data API builder data in Application Insights.
+Run this query for requests:
+Kusto
+Copy
+requests
+| order by timestamp
+Screenshot of the results of a query for Data API builder application requests in Application Insights.
+Run this query for exceptions:
+Kusto
+Copy
+exceptions
+| order by timestamp
+Screenshot of the results of a query for Data API builder exceptions in Application Insights.
+=== 25 ===
+Use Health Checks and the Health Endpoint
+07/22/2025
+Data API builder provides a /health endpoint to monitor the responsiveness and health of your API’s data sources and entities. This endpoint runs checks against all configured data sources, REST endpoints, and GraphQL entities, validating that they respond within thresholds you set.
+How health checks work
+For each data source, a simple database-specific query verifies connectivity and measures response time.
+For each entity (REST or GraphQL), a query without predicates runs, returning the first N rows to confirm responsiveness.
+The /health endpoint aggregates these results into a comprehensive report indicating overall health.
+Runtime health configuration
+Health checks are controlled in the runtime.health section, which configures the global health endpoint:
+Example runtime health configuration
+JSON
+Copy
+{
+  "runtime": {
+    "health": {
+      "enabled": true,
+      "roles": ["admin", "monitoring"],
+      "cache-ttl-seconds": 10,
+      "max-query-parallelism": 4
+    }
+  }
+}
+Roles behavior
+When host.mode is development, the health endpoint is accessible to everyone without requiring roles; all calls are treated as anonymous.
+When host.mode is production, roles must be explicitly defined to access the comprehensive health endpoint. Omitting roles disables access except for anonymous if specified.
+Multiple roles can be included in the roles array.
+The roles here do not override the roles' permissions for API or GraphQL access. If a role lacks permission to execute an endpoint or query, the health check will reflect a failure.
+At the root path /, a basic health endpoint is always available to everyone with limited information and no health checks.
+Data source health configuration
+Each data source can be configured for health checks individually in data-source.health:
+Property	Description	Default
+enabled	Enable health checks for this data source	true
+name	Unique label shown in the health report	database-type value
+threshold-ms	Maximum allowed time in milliseconds for the health query	1000
+Example:
+JSON
+Copy
+{
+  "data-source": {
+    "health": {
+      "enabled": true,
+      "name": "primary-sql-db",
+      "threshold-ms": 1500
+    }
+  }
+}
+Entity health configuration
+Health checks can also be enabled per entity in entities.{entity-name}.health:
+Property	Description	Default
+enabled	Enable health check for the entity	true
+first	Number of rows returned by the health query	100
+threshold-ms	Maximum allowed time in milliseconds for the query	1000
+Example:
+JSON
+Copy
+{
+  "entities": {
+    "Book": {
+      "health": {
+        "enabled": true,
+        "first": 3,
+        "threshold-ms": 500
+      }
+    }
+  }
+}
+Additional considerations
+The health check cache prevents repeated rapid requests from overwhelming the system by caching the health report for the configured TTL.
+Max query parallelism controls concurrency of checks to speed execution without overloading resources; use this value with care.
+The root / health endpoint provides minimal info with no checks and is always publicly accessible.
+Health check failures respect entity and endpoint authorization — lack of permission results in failure reports, consistent with DAB’s security model.
+=== 26 ===
+Use Filtered Log Levels
+07/22/2025
+Data API builder (DAB) supports customizable, filtered log levels to help you control the verbosity and focus of logs. This allows you to get detailed diagnostics on specific components while keeping other areas quieter, improving your debugging and monitoring experience.
+Logging settings are configured in the runtime.telemetry.log-level section of your configuration. You can specify log levels globally or target specific namespaces or classes for fine-grained control.
+Log level priorities
+The most specific namespace or class name takes precedence.
+The default key sets the base level for all other components not explicitly listed.
+If omitted, DAB uses default levels based on the host mode:
+development mode defaults to Debug (verbose)
+production mode defaults to Error (less verbose)
+Supported log levels
+Trace: Capture the most detailed and fine-grained information, usually only useful for deep troubleshooting or understanding every step in a process.
+Debug: Provide detailed information intended for diagnosing problems and understanding the flow during development.
+Information: Record general, high-level events that describe normal operations and milestones.
+Warning: Indicate unexpected situations or minor issues that do not stop processing but might require attention.
+Error: Log failures that prevent an operation from completing successfully but do not crash the system.
+Critical: Report severe issues that cause system or major feature failure and require immediate intervention.
+None: Disable logging to suppress all messages for the targeted category or component.
+Partial matches of namespace names are supported but must end at a . separator. For example:
+Azure.DataApiBuilder.Core.Configurations.RuntimeConfigValidator
+Azure.DataApiBuilder.Core
+default
+Example configuration
+JSON
+Copy
+{
+  "runtime": {
+    "telemetry": {
+      "log-level": {
+        "Azure.DataApiBuilder.Core.Configurations.RuntimeConfigValidator": "Debug",
+        "Azure.DataApiBuilder.Core": "Information",
+        "default": "Warning"
+      }
+    }
+  }
+}
+In this example:
+Logs from RuntimeConfigValidator class are shown at Debug level.
+Other classes under Azure.DataApiBuilder.Core use Information level.
+All other logs default to Warning level.
+Hot-reload support
+You can update log levels dynamically (hot-reload) in both development and production modes without restarting the application. This helps adjust logging on-the-fly to troubleshoot issues.
+Important namespaces for filtering
+Some common namespaces/classes you may want to filter:
+Azure.DataApiBuilder.Core.Configurations.RuntimeConfigValidator
+Azure.DataApiBuilder.Core.Resolvers.SqlQueryEngine
+Azure.DataApiBuilder.Core.Resolvers.IQueryExecutor
+Azure.DataApiBuilder.Service.HealthCheck.ComprehensiveHealthReportResponseWriter
+Azure.DataApiBuilder.Service.Controllers.RestController
+Azure.DataApiBuilder.Auth.IAuthorizationResolver
+Microsoft.AspNetCore.Authorization.IAuthorizationHandler
+default
+=== 27 ===
+Use Open Telemetry and Activity Traces
+07/22/2025
+Data API Builder (DAB) supports OpenTelemetry for distributed tracing and metrics, enabling you to monitor and diagnose your application's behavior across REST, GraphQL, database operations, and internal middleware.
+Data API builder Traces
+DAB creates OpenTelemetry "activities" for:
+Incoming HTTP requests (REST endpoints)
+GraphQL operations
+Database queries (per entity)
+Internal middleware steps (e.g., request handling, error tracking)
+Each activity includes detailed tags (metadata), such as:
+http.method, http.url, http.querystring, status.code
+action.type (CRUD, GraphQL operation)
+user.role, user-agent
+data-source.type, data-source.name
+api.type (REST or GraphQL)
+Errors and exceptions are also traced with detailed info.
+Data API builder Metrics
+DAB emits OpenTelemetry metrics such as:
+Total Requests: Counter, labeled by HTTP method, status, endpoint, and API type.
+Errors: Counter, labeled by error type, HTTP method, status, endpoint, and API type.
+Request Duration: Histogram (in milliseconds), labeled as above.
+Active Requests: Up/down counter for concurrent requests.
+Metrics use the .NET Meter API and OpenTelemetry SDK.
+Configuration
+Add an open-telemetry section under runtime.telemetry in your config file.
+JSON
+Copy
+{
+    "runtime": {
+        "telemetry": {
+            "open-telemetry": {
+                "enabled": true,
+                "endpoint": "http://otel-collector:4317",
+                "service-name": "dab",
+                "exporter-protocol": "grpc"
+            }
+        }
+    }
+}
+CLI Options
+Configure OpenTelemetry via CLI flags:
+dab configure --otel-enabled true
+dab configure --otel-endpoint "http://otel-collector:4317"
+dab configure --otel-protocol "grpc"
+dab configure --otel-service-name "dab"
+dab configure --otel-headers
+Export and Visualization
+Telemetry is exported via .NET OpenTelemetry SDK to your configured backend such as Azure Monitor or Jaeger. Ensure your backend is running and reachable at the specified endpoint.
+Implementation Notes
+Traces and metrics cover all REST, GraphQL, and DB operations
+Middleware and error handlers also emit telemetry
+Context is propagated through requests
+=== 28 ===
+Sample Library App - Azure SQL and Data API builder with Blazor
+06/27/2024
+This documentation provides an in-depth guide to setting up and utilizing the development environment for the Library App.
+Open in GitHub Codespaces Open in Dev Container
+Overview
+The Data API builder and Azure SQL dev container template offers a streamlined environment for developing applications with a backend powered by Azure SQL and Data API builder, along with a Blazor frontend. This template provides a consistent development environment across different machines and ensures compatibility with your application stack.
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. You can try out development containers with GitHub Codespaces or Visual Studio Code Remote - Containers.
+This is a sample project that lets you try out either option in a few easy steps. We have a variety of other vscode-remote-try-* sample projects, too.
+Note: If you already have a Codespace or dev container, you can jump to the About this template section.
+Setting up the development container
+GitHub Codespaces
+Follow these steps to open this sample in a Codespaces:
+Click the Code drop-down menu and select the Codespaces tab.
+Click on Create codespaces on main at the bottom of the pane.
+For more info, check out the GitHub documentation.
+VS Code Dev Containers
+If you already have VS Code and Docker installed, you can click the badge above or here to get started. Clicking these links will cause VS Code to automatically install the Dev Containers extension if needed, clone the source code into a container volume, and spin up a dev container for use.
+Follow these steps to open this sample in a container using the VS Code Dev Containers extension:
+If this is your first time using a development container, please ensure your system meets the pre-reqs (i.e. have Docker installed) in the getting started steps.
+To use this repository, you can either open the repository in an isolated Docker volume:
+Press F1 and select the Dev Containers: Try a Sample... command.
+Choose the ".NET Core" sample, wait for the container to start, and try things out!
+Note: Under the hood, this will use the Dev Containers: Clone Repository in Container Volume... command to clone the source code in a Docker volume instead of the local filesystem. Volumes are the preferred mechanism for persisting container data.
+Or open a locally cloned copy of the code:
+Clone this repository to your local filesystem.
+Press F1 and select the Dev Containers: Open Folder in Container... command.
+Select the cloned copy of this folder, wait for the container to start, and try things out!
+About this template
+This template sets up two containers: one for the Dev Container housing .NET and Data API builder, and another for Microsoft SQL Server. Upon connection, you'll find yourself in an Ubuntu environment, with easy access to the database container on localhost port 1433. Within the Dev Container, you'll discover supporting scripts located in the .devcontainer/sql folder, essential for configuring the Library sample database.
+The SQL container is deployed from the latest developer edition of Microsoft SQL 2022. The database(s) are made available directly in the Codespace/VS Code through the MSSQL extension with a connection labeled LocalDev. The default sa user password is set using the .devcontainer/.env file. The default SQL port is mapped to port 1433 in .devcontainer/docker-compose.yml.
+Data API builder is seamlessly integrated into the .NET container. Included in this repository is a preconfigured database, utilized by DAB to generate REST and GraphQL endpoints. For manual testing, leverage the dab_http_request.sh file found in the scripts folder. This script offers multiple HTTP request calls, aiding in understanding Data API builder's interactions with the database. Data API builder provides a Swagger UI accessible at http://127.0.0.1:5000/swagger for exploring and testing REST endpoints. Additionally, a GraphQL endpoint is available at http://127.0.0.1:5000/graphql, powered by Banana Cakepop utility, enabling intuitive interaction with the GraphQL layer.
+Furthermore, the Blazor project, a simple web application, serves as the frontend for this development environment. It seamlessly integrates with Data API builder's GraphQL and REST endpoints, providing a user-friendly interface for interacting with the database. Leveraging the power of Data API builder, the Blazor project facilitates smooth communication between the frontend and backend components, ensuring efficient data retrieval and manipulation.
+By harnessing Data API builder's capabilities, the Blazor project simplifies the development process, enabling developers to focus on building robust, feature-rich web applications without the complexities of backend infrastructure. Whether it's fetching data from the database, executing complex queries, or performing CRUD operations, the Blazor project provides a seamless and intuitive user experience for interacting with the underlying data layer.
+To get started with this project, simple execute the VS Code Tasks from the next section section. These tasks will help you to run Data API builder, also to trust the HTTPS certificate for the Blazor project, and run the Blazor project.
+Note: While the SQL Server container employs a standard version of SQL Server, all database development within this dev container can be validated for Azure SQL Database using the SQL Database Project. The SQL Database project is preconfigured with the target platform set as Azure SQL Database.
+VS Code Tasks
+This dev container template includes multiple tasks that can help with common actions. You can access these tasks by opening the Command Palette in VS Code. Here's how:
+To open the Command Palette, press F1 or Ctrl+Shift+P.
+Type "Run Task" and select "Tasks: Run Task".
+Choose the task you want to run from the list.
+Verify database schema and data
+This task opens the verifyDatabase.sql file in your workspace and executes the SQL query using the ms-mssql.mssql extension. This task is optional however it can help you to become familiar with the sample Library database tables and data included in this dev container template.
+Run Data API builder (DAB)
+This task starts the DAB server with the specified configuration file. It runs the command dab start --config=dab.config.json --no-https-redirect in the dab directory of your workspace.
+Build SQL Database project
+This task builds the SQL Database project. It runs the command dotnet build in the database/Library directory of your workspace.
+This task is optional, but it's useful to verify the database schema. You can use this SQL Database project to make changes to the database schema and deploy it to the SQL Server container.
+Trust HTTPS certificate for Data API builder
+This task trusts the HTTPS certificate for Data API builder. It runs the command dotnet dev-certs https in the /dab directory of your workspace.
+Trust HTTPS certificate for Blazor project
+This task trusts the HTTPS certificate for the Blazor project. It runs the command dotnet dev-certs https --trust in the app/BlazorLibrary directory of your workspace.
+Note: Make sure to complete the certificate tasks before running the Blazor project.
+Build Blazor project
+This task builds the Blazor project. It runs the command dotnet build in the app/BlazorLibrary directory of your workspace.
+Run Blazor project
+This task runs the Blazor project. It runs the command dotnet watch run in the app/BlazorLibrary directory of your workspace.
+Changing the sa password
+To adjust the sa password, you need to modify the .env file located within the .devcontainer directory. This password is crucial for the creation of the SQL Server container and the deployment of the Library database using the database/Library/bin/Debug/Library.dacpac file.
+The password must comply with the following rules:
+It should have a minimum length of eight characters.
+It should include characters from at least three of the following categories: uppercase letters, lowercase letters, numbers, and nonalphanumeric symbols.
+Database deployment
+By default, a demo database titled Library is created using a DAC package. The deployment process is automated through the postCreateCommand.sh script, which is specified in the devcontainer.json configuration:
+JSON
+Copy
+"postCreateCommand": "bash .devcontainer/sql/postCreateCommand.sh 'database/Library/bin/Debug'"
+Automated Database Deployment
+The postCreateCommand.sh script handles the database deployment by performing the following steps:
+Loads the SA_PASSWORD from the .env file.
+Waits for the SQL Server to be ready by attempting to connect multiple times.
+Checks for .dacpac files in the specified directory (database/Library/bin/Debug).
+Deploys each .dacpac file found to the SQL Server.
+Using the SQL Database Projects Extension
+You can use the SQL Database Projects extension to deploy the database schema. The Library.sqlproj project is located in the database/Library folder and can be built using the Build SQL Database project task. The output .dacpac files should be placed in the ./bin/Debug folder for deployment.
+Adding another service
+You can add other services to your .devcontainer/docker-compose.yml file as described in Docker's documentation. However, if you want anything running in this service to be available in the container on localhost, or want to forward the service locally, be sure to add this line to the service config:
+YAML
+Copy
+# Runs the service on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+network_mode: service:db
+Using the forwardPorts property
+By default, web frameworks and tools often only listen to localhost inside the container. As a result, we recommend using the forwardPorts property to make these ports available locally.
+This project uses the 5000 and 5001 ports for DAB, and the port 1433 for SQL Server:
+JSON
+Copy
+"forwardPorts": [5000, 5001, 1433]
+Note: You can add additional ports to this list as needed.
+The ports property in docker-compose.yml publishes rather than forwards the port. This will not work in a cloud environment like Codespaces and applications need to listen to * or 0.0.0.0 for the application to be accessible externally. Fortunately the forwardPorts property does not have this limitation.
+=== 29 ===
+Jamstack Todo App with Azure Static Web Apps, Data API builder, and Azure SQL Database
+06/19/2024
+A sample Todo app built with Vue.js that uses Azure Static Web Apps, Data API builder and Azure SQL Database.
+The Todo application allows to
+Create either public or private todos
+Update or delete todos
+Mark a todo as completed
+Drag and drop to reorder todos
+it uses the following features
+Backend REST API via Data API builder
+Authentication via Easy Auth configured to use GitHub
+Authorization via Data API builder policies
+Data API builder hosted in Azure via Static Web Apps "Database Connections"
+Local development
+Fork the repository and clone it to your local machine.
+Make sure you have the .NET Core 6, Node 16 and Static Web Apps CLI installed.
+Deploy the database
+Deploy the database project to an SQL Server or Azure SQL Emulator instance using VS Code Database Projects extension or manually using the sqlpackage tool.
+If you don't have a SQL Server or Azure SQL Emulator installed locally, you can use the updated sqlcmd tool download the latest version of SQL Server and run it withint a container. (Note: make sure you have Docker installed on your machine first)
+Install the sqlcmd tool, using the documentation available here.
+Then download the latest version of SQL Server:
+shell
+Copy
+sqlcmd create mssql --accept-eula --user-database TodoDB --context-name todo-demo
+once download is finished, make sure the container is running:
+shell
+Copy
+sqlcmd start todo-demo
+Get the connection string via
+shell
+Copy
+sqlcmd config connection-strings
+and the copy the ADO.NET connection string to the clipboard. It will look like this:
+Copy
+Server=<server>;Initial Catalog=master;Persist Security Info=False;User ID=<admin-user>;Password=<admin-password>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;
+Now create a .env text file and paste the connection string in there, so that the value it is assigned to the AZURE_SQL_DEPLOY_USER environment variable. It should look like this:
+shell
+Copy
+AZURE_SQL_DEPLOY_USER='Server=<server>;Initial Catalog=master;Persist Security Info=False;User ID=<admin-user>;Password=<admin-password>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;'
+in the .env file just created, replace the Initial Catalog value from master to TodoDB.
+The deploy-db.ps1 script can be used to deploy the database to a local SQL Server instance or Azure SQL Emulator. It will create a new database called TodoDB and a new user called todo_dab_user.
+Run the app locally
+Once database has been deployed, build the Vue fronted via
+shell
+Copy
+swa build
+If you haven't create an .env file yet, create one in the root folder, and the AZURE_SQL_APP_USER environment variable to set it to the connection string pointing to the local SQL Server instance or Azure SQL Emulator:
+shell
+Copy
+AZURE_SQL_APP_USER='Server=<server>;Database=TodoDB;User ID=<username>;Password=<password>;TrustServerCertificate=true;'
+if you have used the provided script to deploy the database, the connection string will be:
+shell
+Copy
+AZURE_SQL_APP_USER='Server=<server>;Database=TodoDB;User ID=todo_dab_user;Password=rANd0m_PAzzw0rd!;TrustServerCertificate=true;'
+please notice that the <server> value is the same as the one used to deploy the database. If you used sqlcmd to create the database, use sqlcmd config connection-strings to see that <server> is for you. If you only have one instance of SQL Server installed, it will be localhost.
+Then start the app locally using the following command:
+shell
+Copy
+swa start --data-api-location ./swa-db-connections
+Deploy to Azure
+Make sure you have the AZ CLI installed.
+Setup the Static Web App resource
+Create a Resource Group if you don't have one already:
+shell
+Copy
+az group create -n <resource-group> -l <location>
+then create a new Static Web App using the following command:
+shell
+Copy
+az staticwebapp create -n <name> -g <resource-group>
+once it has been created, get the Static Web App deployment token:
+shell
+Copy
+az staticwebapp secrets list --name <name> --query "properties.apiKey" -o tsv
+Take the token and add it to the repository secrets as AZURE_STATIC_WEB_APPS_API_TOKEN.
+Get the connection string to Azure SQL DB
+Create a new Azure SQL Server if you don't have one already:
+shell
+Copy
+az sql server create -n <server-name> -g <resource-group> -l <location> --admin-user <admin-user> --admin-password <admin-password>
+and set yourself as the AD admin. To do that get your user object id:
+shell
+Copy
+az ad signed-in-user show --query objectId -o tsv
+and get the display name:
+shell
+Copy
+az ad signed-in-user show --query displayName -o tsv
+The create the AD admin in Azure SQL server:
+shell
+Copy
+az sql server ad-admin create --display-name <display-name> --object-id <object-id> --server <server-name> -g <resource-group>
+Make sure that Azure Services can connect to the created Azure SQL server:
+shell
+Copy
+az sql server firewall-rule create -n AllowAllWindowsAzureIps -g <resource-group> --server <server-name> --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
+Make sure to read more details about how to configure the firewall here: Connections from inside Azure
+Get the connection string (don't worry if the TodoDB database doesn't exist yet, it will be created later automatically):
+shell
+Copy
+az sql db show-connection-string -s <server-name> -n TodoDB -c ado.net
+Replace the <username> and <password> in the connection string with those for a user that can perform DDL (create/alter/drop) operations on the database, and then create a new secret in the repository called AZURE_SQL_CONNECTION_STRING with the value of the connection string.
+Push the repository to GitHub
+Push the repo to GitHub to kick off the deployment.
+Configure the Static Web App Database Connection
+Once the deployment has completed, navigate to the Static Web App resource in the Azure Portal and click on the Database connection item under Settings. Click on Link existing database to connect to the Azure SQL server and the TodoDB that was created by the deployment.
+You can use the sample application user that is created during the database deployment phase:
+User: todo_dab_user
+Password: rANd0m_PAzzw0rd!
+=== 30 ===
+Jamstack Library App with Azure Static Web Apps, Data API builder, and Azure SQL Database
+06/18/2024
+A sample app of Static Web Apps with Database connections for a React app and Azure SQL database
+Features
+This project uses the database connections feature of Static Web Apps to provide the following functionality:
+CRUD access to database contents with REST or GraphQL
+Built-in authorization with Static Web Apps authentication
+Support for database relationships with GraphQL
+Getting Started
+Prerequisites
+An Azure SQL database with the tables created
+NodeJS
+An Azure Static Web App resource
+To get started locally
+Clone this repository
+Navigate to library directory & open with VSCode
+Set the DATABASE_CONNECTION_STRING environment variable to your connection string in your terminal/cmd/powershell. Alternatively, paste your database connection string directly into swa-db-connections/staticwebapp.database.config.json (not recommended) (ensure that you remove this secret from your source code before pushing to GitHub/remote repository)
+Run swa start http://localhost:3000 --run "cd library-demo && npm i && npm start" swa-db-connections
+cd library-demo && npm i && npm start will install needed npm packages and run your React app
+--data-api-location swa-db-connections indicates to the SWA CLI that your database connections configurations are in the swa-db-connections folder Alternatively, you can start all these projects manually an make use of SWA CLI's other args
+You can now use your Static Web App Library Demo Application. It supports authorization, such that anyone logged in with SWA CLI's authentication emulation with the admin role will have CRUD access, while anonymous users are limited to read access. See the configurations detailed in staticwebapp.database.config.json
+To deploy
+Commit all your changes and push to your repository.
+You do not need to change your configuration file's data-source object, since this will be overwritten by your Static Web App resource when you connect a database.
+(If you have paste your connection string directly in your configuration file, ensure that you remove it to avoid making your database connection string public)
+Go to your Static Web App resource in the portal. Go to the Database connection tab.
+Ensure that your database is ready for connection. It should be configured to accept network requests from Azure services. If you plan to use managed identity as a connection type, ensure that you've configured the managed identity within your database.
+Link your database to your default environment. Select your database & enter the credentials.
+Troubleshooting
+Ensure your Azure database is configured to accept network requests
+Ensure that your configuration files have been placed in your repository and included in your build process.
+Ensure that your managed identity has been configured within your database.
+Screenshots
+Home page:
+alt text
+Non-logged in users receive 403's when they try to Create as configured in swa-db-connections/staticwebapp.database.config.json
+alt text
+Non-logged in users receive 403's when they try to Delete as configured in swa-db-connections/staticwebapp.database.config.json
+alt text
+Log in page with admin role
+alt text
+Non-logged in users receive succesful 201's when they try to Create as configured in swa-db-connections/staticwebapp.database.config.json
+=== 31 ===
+Sample devcontainer for Data API builder and Azure SQL Database
+06/11/2024
+Open in GitHub Codespaces Open in Dev Container
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. You can try out development containers with GitHub Codespaces or Visual Studio Code Remote - Containers.
+This is a sample project that lets you try out either option in a few easy steps. We have a variety of other vscode-remote-try-* sample projects, too.
+Note: If you already have a Codespace or dev container, you can jump to the About this section.
+Setting up the development container
+GitHub Codespaces
+Follow these steps to open this sample in a Codespaces:
+Click the Code drop-down menu and select the Codespaces tab.
+Click on Create codespaces on main at the bottom of the pane.
+For more info, check out the GitHub documentation.
+VS Code Dev Containers
+If you already have VS Code and Docker installed, you can click the badge above or here to get started. Clicking these links will cause VS Code to automatically install the Dev Containers extension if needed, clone the source code into a container volume, and spin up a dev container for use.
+Follow these steps to open this sample in a container using the VS Code Dev Containers extension:
+If this is your first time using a development container, please ensure your system meets the pre-reqs (i.e. have Docker installed) in the getting started steps.
+To use this repository, you can either open the repository in an isolated Docker volume:
+Press F1 and select the Dev Containers: Try a Sample... command.
+Choose the ".NET Core" sample, wait for the container to start, and try things out!
+Note: Under the hood, this will use the Dev Containers: Clone Repository in Container Volume... command to clone the source code in a Docker volume instead of the local filesystem. Volumes are the preferred mechanism for persisting container data.
+Or open a locally cloned copy of the code:
+Clone this repository to your local filesystem.
+Press F1 and select the Dev Containers: Open Folder in Container... command.
+Select the cloned copy of this folder, wait for the container to start, and try things out!
+About this template
+This template creates two containers, one for the Dev Container that includes .NET and Data API builder and one for Microsoft SQL Server. You will be connected to the Ubuntu, and from within that container the MS SQL container will be available on localhost port 1433. The Data API builder container also includes supporting scripts in the .devcontainer/sql folder used to configure the Library sample database.
+DevContainers-AzureSQL
+The SQL container is deployed from the latest developer edition of Microsoft SQL 2022. The database(s) are made available directly in the Codespace/VS Code through the MSSQL extension with a connection labeled "LocalDev". The default sa user password is set using the .devcontainer/.env file. The default SQL port is mapped to port 1433 in .devcontainer/docker-compose.yml.
+Data API builder is a .NET Core application that provides a RESTful API for interacting with the database. This sample repository includes a preconfigured database, that is used by DAB to create the REST and GraphQL endpoints. Swagger UI offers a web-based UI that provides information about the REST endpoint, using the generated OpenAPI specification available at the default path: http://localhost:5000/swagger/index.html. Entities configured to be available via GraphQL are available at the default path: http://localhost:5000/graphql.
+If you wan to run some manual tests, you can use the dab_http_request.sh file included in the scriptsfolder. This sh file includes multiple http request calls you can to understand how the Data API builder to interact with the database.
+Note: While the SQL Server container employs a standard version of SQL Server, all database development within this Dev Container can be validated for Azure SQL Database using the SQL Database Project. The SQL Database project is preconfigured with the target platform set as Azure SQL Database.
+Visual Code Tasks
+We have added several tasks to this repository to help with common actions. You can access these tasks by opening the Command Palette in VS Code. Here's how:
+Press F1 or Ctrl+Shift+P to open the Command Palette.
+Type "Run Task" and select "Tasks: Run Task".
+Choose the task you want to run from the list.
+Execute SQL Query (Verify database)
+This task opens the verifyDatabase.sql file in your workspace and executes the SQL query in it. It uses the ms-mssql.mssql extension to execute the query. This task is part of the build group and is the default task that runs when you run the build task group.
+Build SQL Database project (Optional)
+This task builds the SQL Database project. It runs the command dotnet build in the database/Library directory of your workspace.
+This task is optional, but it is useful to verify the database schema. You can use this SQL Database project to make changes to the database schema and deploy it to the SQL Server container.
+Deploy SQL Database Project (Optional)
+This task involves deploying the SQL Database project to your SQL Server container. It executes the postCreateCommand.sh script found in the .devcontainer/sql directory of your workspace.
+The postCreateCommand.sh script requires one argument: the path to the directory containing the .dacpac file for the SQL Database project. In this scenario, that directory is database/Library/bin/Debug.
+It utilizes the sqlpackage command-line utility to update the database schema using the .dacpac file, employing authentication credentials from the .env file situated in the .devcontainer directory.
+Trust HTTPS certificate for Data API builder (DAB)
+As this Dev Container users .NET 8, you need to trust the .NET HTTPS certificate before starting the Data API builder engine. This task runs the command dotnet dev-certs https --trust.
+Start Data API builder (DAB) engine
+This task starts the DAB engine using the configuration file located at dab/dab.config.json. It executes the command dab start --config=dab.config.json --no-https-redirect within the dab directory of your workspace.
+Note: Remember to check the Swagger and GraphQL endpoints after starting the DAB engine.
+Changing the SA password
+To adjust the sa password, you need to modify the .env file located within the .devcontainer directory. This password is crucial for the creation of the SQL Server container and the deployment of the Library database using the database/Library/bin/Debug/Library.dacpac file.
+The password must comply with the following rules:
+It should have a minimum length of 8 characters.
+It should include characters from at least three of the following categories: uppercase letters, lowercase letters, numbers, and non-alphanumeric symbols.
+Database deployment
+By default, a demo database titled Library is created using a DAC package. The deployment process is automated through the postCreateCommand.sh script, which is specified in the devcontainer.json configuration:
+JSON
+Copy
+"postCreateCommand": "bash .devcontainer/sql/postCreateCommand.sh 'database/Library/bin/Debug'"
+Automated Database Deployment
+The postCreateCommand.sh script handles the database deployment by performing the following steps:
+Loads the SA_PASSWORD from the .env file.
+Waits for the SQL Server to be ready by attempting to connect multiple times.
+Checks for .dacpac files in the specified directory (database/Library/bin/Debug).
+Deploys each .dacpac file found to the SQL Server.
+Using the SQL Database Projects Extension
+You can use the SQL Database Projects extension to deploy the database schema. The Library.sqlproj project is located in the database/Library folder and can be built using the Build SQL Database project task. The output .dacpac files should be placed in the ./bin/Debug folder for deployment.
+Verifying the Database Schema
+The verifyDatabase.sql file in the database/Library folder can be used to verify the database schema after deployment. You can run this script using the Execute SQL Query VS Code task.
+This setup ensures that your databases are properly deployed and ready to use after the container is created.
+Adding another service
+You can add other services to your .devcontainer/docker-compose.yml file as described in Docker's documentation. However, if you want anything running in this service to be available in the container on localhost, or want to forward the service locally, be sure to add this line to the service config:
+YAML
+Copy
+# Runs the service on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+network_mode: service:db
+Using the forwardPorts property
+By default, web frameworks and tools often only listen to localhost inside the container. As a result, we recommend using the forwardPorts property to make these ports available locally.
+JSON
+Copy
+"forwardPorts": [9000]
+The ports property in docker-compose.yml publishes rather than forwards the port. This will not work in a cloud environment like Codespaces and applications need to listen to * or 0.0.0.0 for the application to be accessible externally. Fortunately the forwardPorts property does not have this limitation.
+Contributing
+This project welcomes contributions and suggestions. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
+This project has adopted the Microsoft Open Source Code of Conduct. For more information see the Code of Conduct FAQ or contact opencode@microsoft.com with any additional questions or comments.
+Trademarks
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow Microsoft's Trademark & Brand Guidelines. Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party's policies.
+=== 32 ===
+Data API builder command-line interface
+07/22/2025
+The Data API builder command-line interface (CLI) (dab CLI or dab) is a command line tool that streamlines the local development experience for applications using Data API builder.
+ Tip
+The Data API builder CLI comes with an integrated help system. To get a list of what commands are available, use the --help option on the dab command.
+sh
+Copy
+dab --help
+To get help on a specific command, use the --help option. For example, to learn more about the init command:
+sh
+Copy
+dab init --help
+init
+Initializes the runtime configuration for the Data API builder runtime engine. It creates a new JSON file with the properties provided as options.
+Syntax
+sh
+Copy
+dab init [options]
+Examples
+sh
+Copy
+dab init --config "dab-config.mssql.json" --database-type mssql --connection-string "@env('SQL_CONNECTION_STRING')"
+sh
+Copy
+dab init --database-type mysql --connection-string "@env('MYSQL_CONNECTION_STRING')" --graphql.multiple-create.enabled true
+Options
+Options	Option Required	Default Value	Value Required	Value Type	Description
+--database-type	✔️ Yes		✔️ Yes	string	Type of database to connect. Supported values: mssql, cosmosdb_nosql, cosmosdb_postgresql, mysql, postgresql.
+--connection-string	❌ No	""	✔️ Yes	string	Connection details to connect to the database.
+--cosmosdb_nosql-database	✔️ Yes ¹		✔️ Yes	string	Database name for Cosmos DB for NoSql.
+--cosmosdb_nosql-container	❌ No		✔️ Yes	string	Container name for Cosmos DB for NoSql.
+--graphql-schema	✔️ Yes ¹		✔️ Yes	string	GraphQL schema Path
+--set-session-context	❌ No	false	❌ No		Enable sending data to MsSql using session context.
+--host-mode	❌ No	production	✔️ Yes	string	Specify the Host mode - development or production
+--cors-origin	❌ No	""	✔️ Yes	string	Specify the list of allowed origins.
+--auth.provider	❌ No	StaticWebApps	✔️ Yes	string	Specify the Identity Provider.
+--rest.path	❌ No	/api	✔️ Yes	string	Specify the REST endpoint's prefix.
+--rest.enabled	❌ No	true	✔️ Yes	boolean	Enables REST endpoint for all entities.
+--rest.request-body-strict	❌ No	true	✔️ Yes		Doesn't allow extraneous fields in request body.
+--graphql.path	❌ No	/graphql	✔️ Yes	string	Specify the GraphQL endpoint's prefix.
+--graphql.enabled	❌ No	true	✔️ Yes	boolean	Enables GraphQL endpoint for all entities.
+--graphql.multiple-create.enabled	❌ No	false	✔️ Yes		Enables multiple create functionality in GraphQL.
+--auth.audience	❌ No		✔️ Yes	string	Identifies the recipients that the Json Web Token (JWT) is intended for.
+--auth.issuer	❌ No		✔️ Yes	string	Specify the party that issued the JWT token.
+-c,--config	❌ No	dab-config.json	✔️ Yes	string	Path to config file.
+¹ This option is only required when --database-type is set to cosmosdb_nosql.
+add
+Add new database entity to the configuration file. Make sure you already have a configuration file before executing this command, otherwise it returns an error.
+Syntax
+sh
+Copy
+dab add [entity-name] [options]
+Examples
+sh
+Copy
+dab add Book -c "dab-config.MsSql.json" --source dbo.books --permissions "anonymous:*"
+Options
+Options	Option Required	Default Value	Value Required	Value Type	Description
+-s,--source	✔️ Yes		✔️ Yes	string	Name of the source table or container.
+--permissions	✔️ Yes		✔️ Yes	string	Permissions required to access the source table or container. Format: [role]:[actions].
+--source.type	❌ No	table	✔️ Yes	string	Type of the database object. Supported values: table, view, stored-procedure.
+--source.params	❌ No		✔️ Yes, if proc has params	string	A dictionary of stored procedure parameters and their data types. Supported data types are string, number, and boolean. Parameters are specified in the format: paramName:type. For example: --source.params "id:number,isActive:boolean,name:string".
+--source.key-fields	✔️ Yes ¹		✔️ Yes	string	One or more fields to be used as primary keys for tables and views only. Comma separated values. Example --source.key-fields "id,name,type".
+--rest	❌ No	case-sensitive entity name	✔️ Yes	string	Route for REST API. Examples: --rest: false -> Disables REST API calls for this entity. --rest: true -> Entity name becomes the rest path. --rest: "customPathName" -> Provided customPathName becomes the REST path.
+--rest.methods	❌ No	post	✔️ Yes	string	HTTP actions to be supported for stored procedure. Specify the actions as a comma separated list. Valid HTTP actions are:[get, post, put, patch, delete].
+--graphql	❌ No	case-sensitive entity name	✔️ Yes	Bool/String	Entity type exposed for GraphQL. Examples: --graphql: false -> disables graphql calls for this entity. --graphql: true -> Exposes the entity for GraphQL with default names. The singular form of the entity name is considered for the query and mutation names. --graphql: "customQueryName" -> Explicitly sets the singular value while DAB pluralizes the provided value for queries and mutations. --graphql: "singularName:pluralName" -> Sets both the singular and plural values (delimited by a colon :) used for queries and mutations.
+--graphql.operation	❌ No	mutation	✔️ Yes	string	GraphQL operation to be supported for stored procedure. Supported values: query, mutation.
+--fields.include	❌ No		✔️ Yes	string	Fields with permission to access.
+--fields.exclude	❌ No		✔️ Yes	string	Fields excluded from the action lists.
+--policy-database	❌ No		✔️ Yes	string	Specify an OData style filter rule that is injected in the query sent to the database.
+-c,--config	❌ No	dab-config.json	✔️ Yes	string	Path to config file.
+¹ This option is only required when --source.type is set to view.
+update
+Update the properties of any database entity in the configuration file.
+ Note
+dab update supports all the options that are supported by dab add. Additionally, it also supports the listed options.
+Syntax
+sh
+Copy
+dab update [entity-name] [options]
+Examples
+sh
+Copy
+dab update Publisher --permissions "authenticated:*"
+Options
+Options	Option Required	Default Value	Value Required	Value Type	Description
+--relationship	❌ No		✔️ Yes	string	Specify relationship between two entities. Provide the name of the relationship.
+--cardinality	✔️ Yes ¹		✔️ Yes	string	Specify cardinality between two entities. Could be one or many.
+--target.entity	✔️ Yes ¹		✔️ Yes	string	Another exposed entity that the source entity relates to.
+--linking.object	❌ No		✔️ Yes	string	Database object that is used to support an M:N relationship.
+--linking.source.fields	❌ No		✔️ Yes	string	Database fields in the linking object to connect to the related item in the source entity. Comma separated fields.
+--linking.target.fields	❌ No		✔️ Yes	string	Database fields in the linking object to connect to the related item in the target entity. Comma separated fields.
+--relationship.fields	❌ No		✔️ Yes	string	Specify fields to be used for mapping the entities. Example: --relationship.fields "id:book_id". Here, id represents column from sourceEntity, while book_id from targetEntity. Foreign keys are required between the underlying sources if not specified.
+-m,--map	❌ No		✔️ Yes	string	Specify mappings between database fields and GraphQL and REST fields. Format: --map "backendName1:exposedName1, backendName2:exposedName2,...".
+¹ This option is only required when the --relationship option is used.
+export
+Export the required schema as a file and save to disk based on the options.
+Syntax
+sh
+Copy
+dab export [options]
+Examples
+sh
+Copy
+dab export --graphql -o ./schemas
+Options
+Options	Option Required	Default Value	Value Required	Value Type	Description
+--graphql	❌ No	false	❌ No		Export GraphQL schema.
+-o,--output	✔️ Yes		✔️ Yes	string	Specify the directory to save the schema file.
+-g,--graphql-schema-file	❌ No	schema.graphql	✔️ Yes	string	Specify the name of the Graphql schema file.
+-c,--config	❌ No	dab-config.json	✔️ Yes	string	Path to config file.
+start
+Start the runtime engine with the provided configuration file for serving REST and GraphQL requests.
+Syntax
+sh
+Copy
+dab start [options]
+Examples
+sh
+Copy
+dab start
+Options
+Options	Option Required	Default Value	Value Required	Value Type	Description
+--verbose	❌ No		❌ No		Specify logging level as informational.
+--LogLevel	❌ No	Debug when hostMode=development, else Error when HostMode=Production	✔️ Yes	string	Specify logging level as provided value. example: debug, error, information, etc.
+--no-https-redirect	❌ No		✔️ Yes	-	Disables automatic https redirects.
+-c,--config	❌ No	dab-config.json	✔️ Yes	string	Path to config file.
+ Note
+You can't use --verbose and --LogLevel at the same time. For more information about different logging levels, see .NET log levels.
+validate
+Validates the runtime config file used by the Data API builder runtime engine. The validation process ensures that the config file is compliant with the schema and contains all the required information for the runtime engine to function correctly.
+Syntax
+sh
+Copy
+dab validate [options]
+Examples
+sh
+Copy
+dab validate
+Options
+Options	Option Required	Default Value	Value Type	Description
+-c,--config	❌ No	dab-config.json	string	Path to the config file that is the target of validation.
+configure
+The dab configure command is designed to simplify updating data-source and runtime config properties. For the entities section, use the dab update command.
+Syntax
+sh
+Copy
+dab configure [options] [value]
+Data Source options
+Section	Data Source Configuration	Type
+Core	--data-source.database-type	enumeration
+Core	--data-source.connection-string	string
+Options	--data-source.options.database	string
+Options	--data-source.options.container	string
+Options	--data-source.options.schema	string
+Options	--data-source.options.set-session-context	boolean (true, false)
+Example
+sh
+Copy
+dab configure --data-source.database-type mssql
+dab configure --data-source.database-type "mssql"
+Runtime options
+Section	Runtime Configuration	Type
+REST	--runtime.rest.enabled	boolean (true, false)
+REST	--runtime.rest.path	string
+REST	--runtime.rest.request-body-strict	boolean (true, false)
+GraphQL	--runtime.graphql.enabled	boolean (true, false)
+GraphQL	--runtime.graphql.path	string
+GraphQL	--runtime.graphql.depth-limit	integer
+GraphQL	--runtime.graphql.allow-introspection	boolean (true, false)
+GraphQL	--runtime.graphql.multiple-mutations.create.enabled	boolean (true, false)
+Host	--runtime.host.mode	enumeration
+Host	--runtime.host.cors.origins	array of strings
+Host	--runtime.host.cors.allow-credentials	boolean (true, false)
+Host	--runtime.host.authentication.provider	enumeration
+Host	--runtime.host.authentication.jwt.audience	array of strings
+Host	--runtime.host.authentication.jwt.issuer	string
+Cache	--runtime.cache.enabled	boolean (true, false)
+Cache	--runtime.cache.ttl-seconds	integer
+Example
+sh
+Copy
+dab configure --runtime.rest.enabled true
+dab configure --runtime.rest.enabled "true"
+Related content
+Functions reference
+Configuration reference
+Additional resources
+Events
+MCP DevDays
+Jul 22, 2 PM - Jul 22, 2 PM
+Accelerate your productivity, build the future
+Register Today
+=== 33 ===
+Database-specific features for Data API builder
+06/11/2025
+Data API builder allows each database to have its own specific features. This article details the features that are supported for each database.
+Database version support
+Many traditional databases require a minimum version to be compatible with Data API builder (DAB).
+Minimum Supported Version
+SQL Server	2016
+MySQL	8
+PostgreSQL	11
+Conversely, Azure cloud database services work with DAB out of the box without requiring a specific version.
+Minimum Supported Version
+Azure SQL	n/a
+Azure Cosmos DB for NoSQL	n/a
+Azure Cosmos DB for PostgreSQL	n/a
+Azure SQL and SQL Server
+There are a few specific properties that are unique to SQL including both Azure SQL and SQL Server.
+SESSION_CONTEXT
+Azure SQL and SQL Server support the use of the SESSION_CONTEXT function to access the current user's identity. This feature is useful when you want to apply the native support for row level security (RLS) available in Azure SQL and SQL Server.
+For Azure SQL and SQL Server, Data API builder can take advantage of SESSION_CONTEXT to send user specified metadata to the underlying database. Such metadata is available to Data API builder by virtue of the claims present in the access token. The data sent to the database can then be used to configure an extra level of security (for example, by configuring Security policies) to further prevent access to data in operations like SELECT, UPDATE, DELETE. The SESSION_CONTEXT data is available to the database during the database connection until that connection is closed. The same data can be used inside a stored procedure as well.
+For more information about setting SESSION_CONTEXT data, see sp_set_session_context (Transact-SQL).
+Configure SESSION_CONTEXT using the options property of the data-source section in the configuration file. For more information, see data-source configuration reference.
+JSON
+Copy
+{
+  ...
+  "data-source": {
+    "database-type": "mssql",
+    "options": {
+      "set-session-context": true
+    },
+    "connection-string": "<connection-string>"
+  },
+  ...
+}
+Alternatively, use the --set-session-context argument with the dab init command.
+Console
+Copy
+dab init --database-type mssql --set-session-context true
+All of the claims present in the EasyAuth/JWT token are sent via the SESSION_CONTEXT to the underlying database. All the claims present in the token are translated into key-value pairs passed via SESSION_CONTEXT query. These claims include, but aren't limited to:
+Description
+aud	Audience
+iss	Issuer
+iat	Issued at
+exp	Expiration time
+azp	Application identifier
+azpacr	Authentication method of the client
+name	Subject
+uti	Unique token identifier
+For more information on claims, see Microsoft Entra ID access token claims reference.
+These claims are translated into a SQL query. This truncated example illustrates how sp_set_session_context is used in this context:
+SQL
+Copy
+EXEC sp_set_session_context 'aud', '<AudienceID>', @read_only = 1;
+EXEC sp_set_session_context 'iss', 'https://login.microsoftonline.com/<TenantID>/v2.0', @read_only = 1;
+EXEC sp_set_session_context 'iat', '1637043209', @read_only = 1;
+...
+EXEC sp_set_session_context 'azp', 'a903e2e6-fd13-4502-8cae-9e09f86b7a6c', @read_only = 1;
+EXEC sp_set_session_context 'azpacr', 1, @read_only = 1;
+..
+EXEC sp_set_session_context 'uti', '_sSP3AwBY0SucuqqJyjEAA', @read_only = 1;
+EXEC sp_set_session_context 'ver', '2.0', @read_only = 1;
+You can then implement row-level security (RLS) using the session data. For more information, see implement row-level security with session context.
+Azure Cosmos DB
+There are a few specific properties that are unique to various APIs in Azure Cosmos DB.
+Schema in API for NoSQL
+Azure Cosmos DB for NoSQL is schema-agnostic. In order to use Data API builder with the API for NoSQL, you must create a GraphQL schema file that includes the object type definitions representing your container's data model. Data API builder also expects your GraphQL object type definitions and fields to include the GraphQL schema directive authorize when you want to enforce more restrictive read access than anonymous.
+For example, this schema file represents a Book item within a container. This item contains, at a minimum, title and Authors properties.
+GraphQL
+Copy
+type Book @model(name:"Book"){
+  id: ID
+  title: String @authorize(roles:["metadataviewer","authenticated"])
+  Authors: [Author]
+}
+This example schema corresponds to the following entity configuration in the DAB configuration file. For more information, see entities configuration reference.
+JSON
+Copy
+{
+  ...
+  "Book": {
+    "source": "Book",
+    "permissions": [
+      {
+        "role": "anonymous",
+        "actions": [ "read" ]
+      },
+      {
+        "role": "metadataviewer",
+        "actions": [ "read" ]
+      }
+    ]
+  }
+  ...
+}
+The @authorize directive with roles:["metadataviewer","authenticated"] restricts access to the title field to only users with the roles metadataviewer and authenticated. For authenticated requestors, the system role authenticated is automatically assigned, eliminating the need for an X-MS-API-ROLE header.
+If the authenticated request needs to be executed in context of metadataviewer, it should be accompanied with a request header of type X-MS-API-ROLE set to metadataviewer. However, if anonymous access is desired, you must omit the authorized directive.
+The @model directive is utilized to establish a correlation between this GraphQL object type and the corresponding entity name in the runtime config. The directive is formatted as: @model(name:"<Entity_Name>")
+As a deeper example, the @authorize directive can be applied at the top-level type definition. This application restricts access to the type and its fields exclusively to the roles specified within the directive.
+GraphQL
+Copy
+type Series @model(name:"Series") @authorize(roles:["editor","authenticated"]) {
+  id: ID
+  title: String
+  Books: [Book]
+}
+JSON
+Copy
+{
+  "Book": {
+    "source": "Series",
+    "permissions": [
+      {
+        "role": "authenticated",
+        "actions": [ "read" ]
+      },
+      {
+        "role": "editor",
+        "actions": [ "*" ]
+      }
+    ]
+  }
+}
+Cross-container queries in API for NoSQL
+GraphQL operations across containers aren't supported. The engine responds with an error message stating, Adding/updating Relationships is currently not supported in Azure Cosmos DB for NoSQL.
+You can work around this limitation by updating your data model to store entities within the same container in an embedded format. For more information, see data modeling in Azure Cosmos DB for NoSQL.
+=== 34 ===
+OpenAPI in Data API builder
+07/22/2025
+The OpenAPI specification is a language-agnostic standard for documenting HTTP APIs. Data API builder supports OpenAPI by:
+Generating metadata for all REST-enabled entities defined in the runtime configuration
+Compiling that metadata into a valid OpenAPI schema
+Exposing the schema through a visual UI (Swagger) or as a serialized JSON file
+OpenAPI description document
+Data API builder generates an OpenAPI description document using the runtime configuration and the database metadata for each REST-enabled entity.
+The schema is built using the OpenAPI.NET SDK and conforms to the OpenAPI Specification v3.0.1. It is output as a JSON document.
+You can access the OpenAPI document at:
+HTTP
+Copy
+GET /{rest-path}/openapi
+[!NOTE] By default, the rest-path is api. This value is configurable. See REST configuration for details.
+Swagger UI
+Swagger UI provides an interactive, web-based view of the API based on the OpenAPI schema.
+In Development mode, Data API builder exposes Swagger UI at:
+HTTP
+Copy
+GET /swagger
+This endpoint is not nested under the rest-path to avoid conflicts with user-defined entities.
+Additional resources
+=== 35 ===
+Host REST endpoints in Data API builder
+07/17/2025
+Data API builder provides a RESTful web API that enables you to access tables, views, and stored procedures from a connected database. Entities represent a database object in Data API builder's runtime configuration. An entity must be set in the runtime configuration in order for it to be available on the REST API endpoint.
+Call a REST API method
+To read from or write to a resource (or entity), you construct a request using the following pattern:
+HTTP
+Copy
+{HTTP method} https://{base_url}/{rest-path}/{entity}
+ Note
+All components of the URL path, including entities and query parameters, are case sensitive.
+The components of a request include:
+Description
+{HTTP method}	The HTTP method used on the request to Data API builder
+{base_url}	The domain (or localhost server and port) which hosts an instance of Data API builder
+{rest-path}	The base path of the REST API endpoint set in the runtime configuration
+{entity}	The name of the database object as defined in the runtime configuration
+Here's an example GET request on the book entity residing under the REST endpoint base /api in a local development environment localhost:
+HTTP
+Copy
+GET https://localhost:5001/api/Book
+HTTP methods
+Data API builder uses the HTTP method on your request to determine what action to take on the request designated entity. The following HTTP verbs are available, dependent upon the permissions set for a particular entity.
+Method	Description
+GET	Get zero, one or more items
+POST	Create a new item
+PATCH	Update an item with new values if one exists. Otherwise, create a new item
+PUT	Replace an item with a new one if one exists. Otherwise, create a new item
+DELETE	Delete an item
+Rest path
+The rest path designates the location of Data API builder's REST API. The path is configurable in the runtime configuration and defaults to /api. For more information, see REST path configuration.
+Entity
+Entity is the terminology used to reference a REST API resource in Data API builder. By default, the URL route value for an entity is the entity name defined in the runtime configuration. An entity's REST URL path value is configurable within the entity's REST settings. For more information, see entity configuration.
+Result set format
+The returned result is a JSON object with this format:
+JSON
+Copy
+{
+    "value": []    
+}
+The items related to the requested entity are available in the value array. For example:
+JSON
+Copy
+{
+  "value": [
+    {
+      "id": 1000,
+      "title": "Foundation"
+    },
+    {
+      "id": 1001,
+      "title": "Foundation and Empire"
+    }
+  ]
+}
+ Note
+Only the first 100 items are returned by default.
+GET
+Using the GET method you can retrieve one or more items of the desired entity.
+URL Parameters
+REST endpoints allow you to retrieve an item by its primary key using URL parameters. For entities with a single primary key, the format is straightforward:
+HTTP
+Copy
+GET /api/{entity}/{primary-key-column}/{primary-key-value}
+To retrieve a book with an ID of 1001, you would use:
+HTTP
+Copy
+GET /api/book/id/1001
+For entities with compound primary keys, where more than one column is used to uniquely identify a record, the URL format includes all key columns in sequence:
+HTTP
+Copy
+GET /api/{entity}/{primary-key-column1}/{primary-key-value1}/{primary-key-column2}/{primary-key-value2}
+If a books entity has a compound key consisting of id1 and id2, you would retrieve a specific book like this:
+HTTP
+Copy
+GET /api/books/id1/123/id2/abc
+For example:
+Here’s how a call would look:
+HTTP
+Copy
+### Retrieve a book by a single primary key
+GET /api/book/id/1001
+### Retrieve an author by a single primary key
+GET /api/author/id/501
+### Retrieve a book by compound primary keys (id1 and id2)
+GET /api/books/id1/123/id2/abc
+### Retrieve an order by compound primary keys (orderId and customerId)
+GET /api/orders/orderId/789/customerId/456
+### Retrieve a product by compound primary keys (categoryId and productId)
+GET /api/products/categoryId/electronics/productId/987
+### Retrieve a course by compound primary keys (departmentCode and courseNumber)
+GET /api/courses/departmentCode/CS/courseNumber/101
+Query parameters
+REST endpoints support the following query parameters (case sensitive) to control the returned items:
+$select: returns only the selected columns
+$filter: filters the returned items
+$orderby: defines how the returned data is sorted
+$first and $after: returns only the top n items
+Query parameters can be used together.
+$select
+The query parameter $select allow to specify which fields must be returned. For example:
+HTTP
+Copy
+### Get all fields
+GET /api/author
+### Get only first_name field
+GET /api/author?$select=first_name
+### Get only first_name and last_name fields
+GET /api/author?$select=first_name,last_name
+ Note
+If any of the requested fields don't exist or isn't accessible due to configured permissions, a 400 - Bad Request is returned.
+The $select query parameter, also known as "projection," is used to control the size of the data returned in an API response. With only needed columns, $select reduces the payload size, which can improve performance by minimizing parsing time, reducing bandwidth usage, and speeding up data processing. This optimization extends to the database. There, only the requested columns are retrieved.
+$filter
+The value of the $filter option is a predicate expression (an expression that returns a boolean result) using entity's fields. Only items where the expression evaluates to True are included in the response. For example:
+HTTP
+Copy
+### Get books titled "Hyperion" (Equal to)
+GET /api/book?$filter=title eq 'Hyperion'
+### Get books not titled "Hyperion" (Not equal to)
+GET /api/book?$filter=title ne 'Hyperion'
+### Get books published after 1990 (Greater than)
+GET /api/book?$filter=year gt 1990
+### Get books published in or after 1990 (Greater than or equal to)
+GET /api/book?$filter=year ge 1990
+### Get books published before 1991 (Less than)
+GET /api/book?$filter=year lt 1991
+### Get books published in or before 1990 (Less than or equal to)
+GET /api/book?$filter=year le 1990
+### Get books published between 1980 and 1990 (Logical and)
+GET /api/book?$filter=year ge 1980 and year le 1990
+### Get books published before 1960 or titled "Hyperion" (Logical or)
+GET /api/book?$filter=year le 1960 or title eq 'Hyperion'
+### Get books not published before 1960 (Logical negation)
+GET /api/book?$filter=not (year le 1960)
+### Get books published in 1970 or later, and either titled "Foundation" or with more than 400 pages (Grouping)
+GET /api/book?$filter=(year ge 1970 or title eq 'Foundation') and pages gt 400
+The operators supported by the $filter option are:
+Operator	Type	Description	Example
+eq	Comparison	Equal	title eq 'Hyperion'
+ne	Comparison	Not equal	title ne 'Hyperion'
+gt	Comparison	Greater than	year gt 1990
+ge	Comparison	Greater than or equal	year ge 1990
+lt	Comparison	Less than	year lt 1990
+le	Comparison	Less than or equal	year le 1990
+and	Logical	Logical and	year ge 1980 and year lt 1990
+or	Logical	Logical or	year le 1960 or title eq 'Hyperion'
+not	Logical	Logical negation	not (year le 1960)
+( )	Grouping	Precedence grouping	(year ge 1970 or title eq 'Foundation') and pages gt 400
+ Note
+$filter is a case-sensitive argument.
+The $filter query parameter in Azure Data API Builder might remind some users of OData, and that’s because it was directly inspired by OData’s filtering capabilities. The syntax is nearly identical, making it easy for developers who are already familiar with OData to pick up and use. This similarity was intentional, aimed at providing a familiar and powerful way to filter data across different APIs.
+Filtering on Dates
+When filtering on date or datetime fields in Data API builder, use unquoted ISO 8601 format (yyyy-MM-ddTHH:mm:ssZ). This approach is required for operators like ge, le, gt, and lt.
+Wrong format
+Copy
+$filter=Date ge '2025-01-01'         // quotes not allowed  
+$filter=Date ge datetime'2025-01-01' // OData-style not supported  
+Correct format
+Copy
+$filter=Date ge 2025-01-01T00:00:00Z and Date le 2025-01-05T00:00:00Z
+Exact dates with or
+If range filters cause issues, you can match exact dates:
+Copy
+$filter=ClassId eq 2 and (
+  Date eq 2025-01-01T00:00:00Z or
+  Date eq 2025-01-02T00:00:00Z or
+  Date eq 2025-01-03T00:00:00Z
+)
+Code Example
+Tip: Always UrlEncode the full $filter query before sending it.
+HTTP
+C#
+JavaScript/TypeScript
+Python
+HTTP
+Copy
+GET https://localhost:5001/api/Entity?$filter=Date ge 2025-01-01T00:00:00Z and Date le 2025-01-05T00:00:00Z
+$orderby
+The value of the orderby parameter is a comma-separated list of expressions used to sort the items.
+Each expression in the orderby parameter value might include the suffix desc to ask for a descending order, separated from the expression by one or more spaces.
+For example:
+HTTP
+Copy
+### Order books by title in ascending order
+GET /api/book?$orderby=title
+### Order books by title in ascending order
+GET /api/book?$orderby=title asc
+### Order books by title in descending order
+GET /api/book?$orderby=title desc
+### Order books by year of publication in ascending order, then by title in ascending order
+GET /api/book?$orderby=year asc, title asc
+### Order books by year of publication in descending order, then by title in ascending order
+GET /api/book?$orderby=year desc, title asc
+### Order books by number of pages in ascending order, then by title in descending order
+GET /api/book?$orderby=pages asc, title desc
+### Order books by title in ascending order, then by year of publication in descending order
+GET /api/book?$orderby=title asc, year desc
+ Note
+$orderBy is a case-sensitive argument.
+The $orderby query parameter is valuable for sorting data directly on the server, easily handled on the client-side as well. However, it becomes useful when combined with other query parameters, such as $filter and $first. The parameter lets pagination maintain a stable and predictable dataset as you paginate through large collections.
+$first and $after
+The $first query parameter limits the number of items returned in a single request. For example:
+HTTP
+Copy
+GET /api/book?$first=5
+This request returns the first five books. The $first query parameter in Azure Data API Builder is similar to the TOP clause in SQL. Both are used to limit the number of records returned from a query. Just as TOP in SQL allows you to specify the quantity of rows to retrieve, $first lets you control the number of items returned by the API. $first is useful when you want to fetch a small subset of data, such as the first 10 results, without retrieving the entire dataset. The main advantage is efficiency, as it reduces the amount of data transmitted and processed.
+ Note
+In Azure Data API builder, the number of rows returned by default is limited by a setting in the configuration file. Users can override this limit using the $first parameter to request more rows, but there's still a configured maximum number of rows that can be returned overall. Additionally, there's a limit on the total megabytes that can be returned in a single response, which is also configurable.
+If more items are available beyond the specified limit, the response includes a nextLink property:
+JSON
+Copy
+{
+    "value": [],
+    "nextLink": "dab-will-generate-this-continuation-url"
+}
+The nextLink can be used with the $after query parameter to retrieve the next set of items:
+HTTP
+Copy
+GET /api/book?$first={n}&$after={continuation-data}
+This continuation approach uses cursor-based pagination. A unique cursor is a reference to a specific item in the dataset, determining where to continue retrieving data in the next set. Unlike index pagination that use offsets or indexes, cursor-based pagination doesn't rely on skipping records. Cursor continuation makes it more reliable with large datasets or frequently changing data. Instead, it ensures a smooth and consistent flow of data retrieval by starting exactly where the last query left off, based on the cursor provided.
+For example:
+HTTP
+Copy
+### Get the first 5 books explicitly
+GET /api/book?$first=5
+### Get the next set of 5 books using the continuation token
+GET /api/book?$first=5&$after={continuation-token}
+### Get the first 10 books, ordered by title
+GET /api/book?$first=10&$orderby=title asc
+### Get the next set of 10 books after the first set, ordered by title
+GET /api/book?$first=10&$after={continuation-token}&$orderby=title asc
+### Get books without specifying $first (automatic pagination limit)
+GET /api/book
+### Get the next set of books using the continuation token without specifying $first
+GET /api/book?$after={continuation-token}
+POST
+Create a new item for the specified entity. For example:
+HTTP
+Copy
+POST /api/book
+Content-type: application/json
+{
+  "id": 2000,
+  "title": "Do Androids Dream of Electric Sheep?"
+}
+The POST request creates a new book. All the fields that can't be nullable must be supplied. If successful the full entity object, including any null fields, is returned:
+JSON
+Copy
+{
+  "value": [
+    {
+      "id": 2000,
+      "title": "Do Androids Dream of Electric Sheep?",
+      "year": null,
+      "pages": null
+    }
+  ]
+}
+PUT
+PUT creates or replaces an item of the specified entity. The query pattern is:
+HTTP
+Copy
+PUT /api/{entity}/{primary-key-column}/{primary-key-value}
+For example:
+HTTP
+Copy
+PUT /api/book/id/2001
+Content-type: application/json
+{  
+  "title": "Stranger in a Strange Land",
+  "pages": 525
+}
+If there's an item with the specified primary key 2001, the provided data completely replaces that item. If instead an item with that primary key doesn't exist, a new item is created.
+In either case, the result is something like:
+JSON
+Copy
+{
+  "value": [
+    {
+      "id": 2001,
+      "title": "Stranger in a Strange Land",
+      "year": null,
+      "pages": 525
+    }
+  ]
+}
+The If-Match: * HTTP Request Header
+The HTTP header If-Match: * ensures an update operation is performed only if the resource exists. If the resource does not exist, the operation will fail with HTTP Status Code: 404 Not Found. If the If-Match header is omitted, the default behavior is to perform an upsert, which creates the resource if it does not already exist.
+Example:
+HTTP
+Copy
+PUT /api/Books/2001 HTTP/1.1
+If-Match: *
+Content-Type: application/json
+{
+  "title": "Stranger in a Strange Land",
+  "pages": 525
+}
+ Note
+If you specify a value other than * in the If-Match header, Data API builder will return a 400 Bad Request error, as ETag-based matching is not supported.
+PATCH
+PATCH creates or updates the item of the specified entity. Only the specified fields are affected. All fields not specified in the request body aren't affected. If an item with the specified primary key doesn't exist, a new item is created.
+The query pattern is:
+HTTP
+Copy
+PATCH /api/{entity}/{primary-key-column}/{primary-key-value}
+For example:
+HTTP
+Copy
+PATCH /api/book/id/2001
+Content-type: application/json
+{    
+  "year": 1991
+}
+The result is something like:
+JSON
+Copy
+{
+  "value": [
+    {
+      "id": 2001,
+      "title": "Stranger in a Strange Land",
+      "year": 1991,
+      "pages": 525
+    }
+  ]
+}
+The If-Match: * HTTP Request Header
+The HTTP header If-Match: * ensures an update operation is performed only if the resource exists. If the resource does not exist, the operation will fail with HTTP Status Code: 404 Not Found. If the If-Match header is omitted, the default behavior is to perform an upsert, which creates the resource if it does not already exist.
+Example:
+HTTP
+Copy
+PATCH /api/Books/2001 HTTP/1.1
+If-Match: *
+Content-Type: application/json
+{
+    "year": 1991
+}
+ Note
+If you specify a value other than * in the If-Match header, Data API builder will return a 400 Bad Request error, as ETag-based matching is not supported.
+DELETE
+DELETE deletes the item of the specified entity. The query pattern is:
+HTTP
+Copy
+DELETE /api/{entity}/{primary-key-column}/{primary-key-value}
+For example:
+HTTP
+Copy
+DELETE /api/book/id/2001
+If successful, the result is an empty response with status code 204.
+Database transactions for REST API requests
+To process POST, PUT, PATCH, and DELETE API requests; Data API builder constructs and executes the database queries in a transaction.
+The following table lists the isolation levels with which the transactions are created for each database type.
+Database Type	Isolation Level	More information
+Azure SQL (or) SQL Server	Read Committed	Azure SQL
+MySQL	Repeatable Read	MySQL
+PostgreSQL	Read Committed	PostgreSQL
+=== 36 ===
+Pagination in REST or GraphQL
+07/22/2025
+Payload pagination lets a Data API point to extremely large datasets without overwhelming the client or the API itself. Instead of returning all rows at once, Data API builder automatically breaks responses into pages, improving performance and protecting system resources.
+This paging system works with both REST and GraphQL endpoints, and it includes built-in support for cursor-based navigation. Even when querying busy or fast-changing tables, cursor-based pagination helps deliver stable, consistent results across page loads.
+What is Cursor Navigation?
+Index navigation returns rows by position, like "rows 51 to 100." This works fine for static data but breaks if rows are added or removed between requests. The result is often skipped or duplicated rows.
+Cursor navigation avoids this by using a stable reference, such as a unique ID or internal token, to remember where the previous page ended. This keeps pagination reliable even if the underlying data changes between calls.
+For example, if a user loads 50 rows and new data is inserted before the next page request, cursor navigation still picks up exactly where the previous call left off. This behavior is built into Data API builder using $first and $after in REST, or first and after in GraphQL.
+Requesting Pages with $after (REST) or after (GraphQL)
+Once the first page is retrieved, the response includes a continuation token. In REST, this comes as a nextLink URL. In GraphQL, it appears as an endCursor value inside a pageInfo object. You can use that token with $after or after to request the next page of results without skipping or repeating data.
+REST Example with $after
+HTTP
+Copy
+GET /api/products?$first=3&$after=eyJpZCI6MywidHMiOjE3MDA4MDg1NTU1fQ==
+This call returns the next 3 items starting after the item represented by the token. Here’s what the REST payload might look like:
+JSON
+Copy
+{
+  "value": [
+    { "id": 1, "name": "Item A" },
+    { "id": 2, "name": "Item B" },
+    { "id": 3, "name": "Item C" }
+  ],
+  "nextLink": "/api/products?$first=3&$after=eyJpZCI6MywidHMiOjE3MDA4MDg1NTU1fQ=="
+}
+The nextLink field contains a ready-to-use continuation URL. The client can call this to get the next page.
+GraphQL Example with after
+In GraphQL, there is no nextLink. Instead, you must explicitly request pageInfo to receive the cursor and check if more pages are available.
+GraphQL
+Copy
+query {
+  products(first: 3) {
+    items {
+      id
+      name
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+Sample GraphQL response:
+JSON
+Copy
+{
+  "data": {
+    "products": {
+      "items": [
+        { "id": 1, "name": "Item A" },
+        { "id": 2, "name": "Item B" },
+        { "id": 3, "name": "Item C" }
+      ],
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "eyJpZCI6MywidHMiOjE3MDA4MDg1NTU1fQ=="
+      }
+    }
+  }
+}
+To get the next page, supply the endCursor value using the after parameter:
+GraphQL
+Copy
+query {
+  products(first: 3, after: "eyJpZCI6MywidHMiOjE3MDA4MDg1NTU1fQ==") {
+    items {
+      id
+      name
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+Controlling the Payload
+Data API builder gives developers flexible ways to control how much data is returned in a single request. This applies to both REST and GraphQL endpoints and helps avoid overloading the client or the API.
+Understanding runtime.pagination.default-page-size
+The runtime.pagination.default-page-size setting defines how many rows are returned by default when no explicit limit is specified. This setting applies to both REST and GraphQL queries.
+REST Example using $first
+HTTP
+Copy
+GET /api/products?$first=10 HTTP/1.1
+Host: myapi.com
+GraphQL Example using first
+GraphQL
+Copy
+query {
+  products(first: 10) {
+    items {
+      id
+      name
+    }
+  }
+}
+In both cases, the response will return only 10 items, even if more exist. This allows UIs to stay responsive and helps manage bandwidth and processing.
+Understanding runtime.pagination.max-page-size
+The runtime.pagination.max-page-size setting defines the upper limit for any request, even when a higher value is requested using $first or first. This prevents users from requesting excessively large payloads that could degrade performance.
+ Note
+Setting $first=-1 (or first: -1 in GraphQL) tells the API to return the maximum number of rows allowed by max-page-size. This gives consumers an easy way to request the full limit without knowing its exact value.
+Understanding runtime.host.max-response-size-md
+The runtime.host.max-response-size-md setting controls the total response size in megabytes, regardless of row count. This is useful when rows include large fields such as NVARCHAR(MAX), JSON, or binary data.
+Even a small number of rows can create a large payload depending on the column types. This setting protects the API and clients from heavy responses that could exceed memory or network limits.
+These settings work together to balance performance, safety, and flexibility across both REST and GraphQL.
+=== 37 ===
+=== 38 ===
+=== 39 ===
+=== 40 ===
+=== 41 ===
+=== 42 ===
+=== 43 ===
+=== 44 ===
+=== 45 ===
+=== 46 ===
+=== 47 ===
+=== 48 ===
+=== 49 ===
+=== 50 ===

@@ -1,0 +1,1482 @@
+Integrate web apps
+07/04/2023
+You can provide an enriched user experience by integrating the features of an existing web application into Microsoft Teams platform. This document gives an overview of prerequisites to integrate web applications with Teams, Power platform to create Power apps, Power Virtual Agents, Virtual Assistant, app templates, Shift connectors, Moodle LMS, create a Share-to-Teams button for your website, adding a Teams tab in SharePoint, creating deep links, and integrate device capabilities. Ensure that you follow the Teams design guidelines to make your app native to Teams.
+
+Prerequisites
+For effective integration, ensure to have a better understanding of the following prerequisites:
+
+Teams capabilities.
+SharePoint requirements for file and data storage.
+API requirements.
+Authentication.
+Deep linking of your app with Teams.
+Map your app's use cases to Teams platform capabilities.
+Determine your app's entry points, such as personal use, collaboration, or both.
+Low code platforms
+Low code platforms provide an intuitive approach to software development and require little or no coding to build applications and processes. You can create custom apps easily with low code platforms. These platforms consist of a visual interface, connectors to back end services, and a built-in app lifecycle management system to build, debug, deploy, and maintain applications. Microsoft provides the following innovative gateways to rapidly build Teams-compatible apps using low code attributes:
+
+Microsoft Power platform.
+Microsoft Teams app templates.
+Microsoft Power platform
+Microsoft Power platform combines four robust Microsoft technologies, such as Power BI, Power Apps, Power Automate, and Power Virtual Agents in one powerful application platform. These technologies empower you to build solutions, automate processes, analyze data, and create virtual agents within a unified and integrated environment.
+
+ Note
+
+You must not use Microsoft Power Platform to create apps that are to be published to the Microsoft Teams Store. Microsoft Power Platform apps can be published to an organization’s app store only.
+
+Power Apps
+With Power Apps, you can build business apps that connect to your business data and are tailored to your organization's needs. Power Apps enables a wide range of app scenarios to solve business challenges through canvas apps. After building the app, you can export it from the Power Apps maker portal and embed in Teams.
+
+Power Virtual Agents
+Power Virtual Agent is a no code, guided graphical interface solution. Built on the Microsoft Power Platform and the Bot Framework. It empowers every member of your team to create and maintain rich conversational chatbots that easily integrate with the Teams platform. You can design, develop, and publish intelligent virtual agents for Teams without having to set up a development environment, create a web service, or directly register with the Bot Framework.
+
+Create Virtual Assistant
+Virtual Assistant is a Microsoft open-source template that enables you to create a robust conversational solution while maintaining full control of user experience, organizational branding, and necessary data.
+
+App templates
+You can use app template to create custom made apps to suit your organizational needs. App templates are production-ready apps for Microsoft Teams that are community driven, open-source, and available on GitHub. Each template contains detailed instructions to deploy and install the app for your organization. It provides a ready-to-use application that you can install and start using immediately.
+
+Install Moodle LMS
+Moodle is a popular open-source Learning Management System (LMS). It's now integrated with Teams. This integration helps educators and teachers to collaborate around Moodle courses, ask questions about grades and assignments, and stay updated with notifications directly within Teams.
+
+Create a Share-to-Teams button for your website
+Third-party websites can use the launcher script to embed Share to Teams buttons on their webpages. When you select the button, it launches the Share to Teams experience in a pop-up window. It allows you to share a link directly to any person or Microsoft Teams channel without switching context.
+
+Add a Microsoft Teams tab in SharePoint
+You can get a rich integration experience between Teams and SharePoint by adding a Teams tab in SharePoint as an SPFx web part.
+
+Create deep link
+You can create deep links to the entities in Teams. You can create links to information and features within Teams. These deep links navigate to content and information within your tab. You can use deep links to link your app with Teams as they tie together multiple pieces of an app for a more native Teams experience. For more information, see Configure deep links.
+
+Integrate device capabilities
+Teams platform is continuously enhancing developer capabilities aligning with built-in first-party experiences. The enhanced Teams platform allows partners to access and integrate the native device capabilities, such as camera, QR or barcode scanner, photo gallery, microphone, and location using dedicated APIs available in Microsoft Teams JavaScript client library.
+
+Integrate People Picker
+You can integrate the Teams native people picker control that allows users to search and select people in the web app experience.
+
+Integrate Teams in your external app
+You can embed your own experiences into Teams by building Teams apps. If you'd like to reverse this model and integrate Teams or other communication capabilities into your own external app experience, see Azure Communication Services. Azure Communication Services is cloud-based services with REST APIs and client libraries to help you integrate communication into your own custom applications. You can embed generic or Teams-styled React Web components for calling and chat with the help of the UI library.
+
+Azure Communication Services applications can use public preview functionality to interoperate with Teams and enable your custom application to join Teams meetings anonymously. For example, you can integrate video calling into a mobile banking application and allow end-users to virtually meet with bank employees using Teams.
+
+You can also integrate Microsoft 365 identity to build external applications that embed video and PSTN calling on behalf of a Teams user. If you've used Skype for Business SDKs in the past, these capabilities as part of Azure Communication Services are recommended as a replacement.
+
+See also
+Determine your app's entry points
+Authenticate users in Microsoft Teams
+Create low-code custom apps for Microsoft Teams
+Add a Power Virtual Agents chatbot
+Create virtual assistant
+App templates for Microsoft Teams
+Production-ready Shift Connectors
+Install Moodle LMS
+Share to Teams from web apps
+Add a Teams tab to SharePoint
+Create deep links
+People picker control
+
+Considerations for Teams integration
+01/23/2025
+You can make web apps suitable with Microsoft Teams' social and collaborative features, by properly integrating them with Teams.
+
+The different types of apps, which you can integrate with Teams are as follows:
+
+Standalone apps: A standalone app is a single-page or large, and complex app. The user can use some aspects of it in Teams.
+Collaboration apps: An app already built for the social and collaborative features inherent to Teams.
+Microsoft SharePoint: A SharePoint page you want to surface in Teams.
+You can map and follow the appropriate guideline applicable to your integration scenario. This document gives an overview of Teams capabilities, SharePoint requirements for file and data storage, API requirements, authentication, and deep linking of your app with Teams.
+
+Get to know Teams platform capabilities
+ Important
+
+Microsoft 365 Connectors (previously called Office 365 Connectors) are nearing deprecation, and the creation of new Microsoft 365 Connectors will soon be blocked. For more information on the schedule and how the Workflows app provides a more flexible and secure experience, see retirement of Microsoft 365 connectors within Microsoft Teams.
+
+How can you create a webhook in Teams?
+
+To automatically post to a chat or channel when a webhook request is received, use the predefined workflow templates or create a workflow from scratch using the When a Teams webhook request is received trigger. For more information, see post a workflow when a webhook request is received in Microsoft Teams.
+
+For more information about the When a Teams webhook request is received trigger, see Microsoft Teams - Webhook.
+
+If you've already built Office 365 Connectors:
+
+Create a Power Automate connector: Power Automate enhances the widely used Workflows apps in Teams. It's the scalable and secure approach to transmit data programmatically into and out of Teams. If you adopt this method, you can create workflow templates for posting alerts from your product to Teams channels. This approach simplifies user adoption of the new method. For more information, see Power Automate for enterprise developers, ISVs, and partners.
+
+Update your Teams app: You can enhance your current Teams app. For example, you can enable users to set up proactive messages based on trigger events within your system. For more information, see how bots can post to channels through proactive messages.
+
+Known issues
+
+Workflows app can't post in private channels as a flow bot. However, it can post on behalf of a user.
+Workflows support Adaptive Cards only. It doesn't support the older message card format that Office 365 Connectors use. Workflows don't support using the message card format. For more information, see how to convert connector message card format to Adaptive Card.
+Workflows don't offer third-party connectors such as DataDog and Jenkins.
+Workflows can only be created in your default environment.
+Limitations
+
+Workflows are linked only to specific users (referred to as owners of the workflow) and not to a Teams team or channel. Workflows can become orphan flows in the absence of an owner if no co-owners assigned. To maintain continuity in the business process automated by the flow, admins can add one or more co-owners and grant them full control over the workflow. They can also add authentication for connections, if any, and enable the flow if it has been disabled. For more information, see manage orphan flows.
+
+Integration scenarios: Standalone apps, collaboration apps, SharePoint
+
+Your Teams app must include required and expected collaborative features. To work with app integration, it's important to familiarize with Teams development terminology.
+
+Common app features	Teams platform capabilities
+Embedded webpage, homepage, or webview	Tabs
+Tabs extended across Microsoft 365
+Share shortcuts and extensions	Message extensions
+Message extensions for Outlook
+Action shortcuts and extensions	Message extensions
+Chatbots	Bots
+Channel notifications	Bots
+Incoming Webhooks
+Connectors for Microsoft 365 Groups
+Message external services	Bots
+Outgoing Webhooks
+Modals	Dialogs (referred as task modules in TeamsJS v1.x)
+Content-rich cards	Adaptive Cards
+Determine a subset of functionality
+Integration scenarios: Standalone apps
+
+Integrating all features of an existing application into Teams often leads to a forced or unnatural user experience, particularly in larger apps. Start with the most impactful features and those that integrates more naturally with Teams. You can allow users to launch the main app and access its full set of features.
+
+The following are the prerequisites to integrate your app with Teams.
+
+Map your app's use cases to Teams platform capabilities.
+Determine your app's entry points. Is it for personal use, for collaboration, or for both?
+Understand SharePoint requirements and options
+Integration scenarios: SharePoint
+
+To integrate an existing SharePoint page as a Teams tab, you must consider the following:
+
+It must be a modern SharePoint online page.
+Only personal tabs are supported. You can't integrate your page as a channel tab.
+Alternatively, you can build a Teams tab using the SharePoint Framework.
+
+Aim towards multitenancy
+Integration scenarios: Standalone apps, collaboration apps, SharePoint
+
+If your app is used by multiple organizations, consider multitenant hosting. It makes your product scalable and simplifies the distribution.
+
+Review your APIs
+Integration scenarios: Standalone apps, collaboration apps
+
+Your app's APIs and data structures must support the app when integrating with Teams. To extend the support, you must augment the APIs and data structures with contextual information about Teams for identity mapping, deep-link support, and incorporating Microsoft Graph.
+
+See how to get context for your Teams tab or bot.
+
+Understand authentication options
+Integration scenarios: Standalone apps, collaboration apps, SharePoint
+
+Microsoft Entra ID is the identity provider for Teams. If your app uses a different identity provider, you must either do an identity mapping exercise or combine with Microsoft Entra ID.
+
+Teams has single sign-on (SSO) mechanisms with Microsoft Entra ID for third-party apps. It also provides the guidance for authentication flows to other identity providers using standards such as OAuth and OpenID Connect, known as OIDC.
+
+ Important
+
+Third-party apps are available in Government Community Cloud (GCC) but aren't available for GCC High, Department of Defense (DoD), and Teams operated by 21Vianet. Third-party apps are turned off by default for GCC. To turn on third-party apps for GCC, see manage app permission policies and manage apps.
+
+For SharePoint pages, you can only use SSO and can't add another Microsoft Entra ID if you want SSO to work for another app as the ID is the SharePoint app.
+
+Learn more about authentication in Teams.
+
+Follow Teams design guidelines
+Integration scenarios: Standalone apps, collaboration apps
+
+Ensure to follow Teams design guidelines to make your app native to Teams. You can't migrate an existing app content to a Teams tab. For more information on app design, see Fluent Design System.
+
+Maximize deep linking
+Integration scenarios: Standalone apps, collaboration apps, SharePoint
+
+You can create links to information and features within Teams. Use deep links to link your app with Teams as they tie together multiple pieces of an app for a more native Teams experience.
+
+Be smart when messaging users
+Integration scenarios: Standalone apps, collaboration apps, SharePoint
+
+Use a bot in your Teams app for multi-threaded conversation, as it offers more flexibility than a webhook.
+
+Bots also allow you to send proactive messages to individual users or channels. The proactive messages are unprompted messages triggered by an outside event and not a message sent to a bot. For example, your bot sends a welcome message when it's installed or a new user joins a channel.
+
+Sending proactive messages requires Teams-specific identifiers. You can capture the information by fetching roster or user profile data, subscribing to conversation events, or using Microsoft Graph.
+
+Don't spam users with excessive messages. If the Teams capability supports it, the users can configure notification settings for your app. Following is an example of a notification message: Don't send me unprompted messages.
+
+Use SharePoint for file and data storage
+Integration scenarios: Standalone apps, collaboration apps, SharePoint pages
+
+When a team is created, a SharePoint site collection is also provisioned to support file and data storage for that team. Your app must leverage this feature if it interacts with files. Use the site collection to store raw data in SharePoint Lists and Microsoft Excel.
+
+
+
+BaseDashboard class
+Package:
+@microsoft/teamsfx-react
+The base component that provides basic functionality to create a dashboard.
+
+Extends
+Component<P, S & BaseDashboardState>
+
+Constructors
+BaseDashboard<P, S>(Readonly<P>)	
+Constructor of BaseDashboard.
+
+Inherited Properties
+context	
+If using the new style context, re-declare this in your class to be the React.ContextType of your static contextType. Should be used with type annotation or static contextType.
+
+Example
+
+ts
+
+Copy
+static contextType = MyContext
+// For TS pre-3.7:
+context!: React.ContextType<typeof MyContext>
+// For TS 3.7 and above:
+declare context: React.ContextType<typeof MyContext>
+See React Docs
+
+contextType	
+If set, this.context will be set at runtime to the current value of the given Context.
+
+Example
+
+ts
+
+Copy
+type MyContext = number
+const Ctx = React.createContext<MyContext>(0)
+
+class Foo extends React.Component {
+  static contextType = Ctx
+  context!: React.ContextType<typeof Ctx>
+  render () {
+    return <>My context's value: {this.context}</>;
+  }
+}
+See https://react.dev/reference/react/Component#static-contexttype
+
+props	
+refs	
+See Legacy React Docs
+
+state	
+Methods
+componentDidMount()	
+Called after the component is mounted. You can do initialization that requires DOM nodes here. You can also make network requests here if you need to load data from a remote endpoint.
+
+componentWillUnmount()	
+Called before the component is unmounted and destroyed. You can do necessary cleanup here, such as invalidating timers, canceling network requests, or removing any DOM elements.
+
+layout()	
+Override this method to define the layout of the widget in the dashboard.
+
+render()	
+Defines the default layout for the dashboard.
+
+styling()	
+Override this method to customize the dashboard style.
+
+Inherited Methods
+componentDidCatch(Error, ErrorInfo)	
+Catches exceptions generated in descendant components. Unhandled exceptions will cause the entire component tree to unmount.
+
+componentDidUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)	
+Called immediately after updating occurs. Not called for the initial render.
+
+The snapshot is only present if getSnapshotBeforeUpdate is present and returns non-null.
+
+componentWillMount()	
+Called immediately before mounting occurs, and before <xref:Component.render>. Avoid introducing any side-effects or subscriptions in this method.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#initializing-state See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+componentWillReceiveProps(Readonly<P>, any)	
+Called when the component may be receiving new props. React may call this even if props have not changed, so be sure to compare new and existing props if you only want to handle changes.
+
+Calling <xref:Component.setState> generally does not trigger this method.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#updating-state-based-on-props See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+componentWillUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)	
+Called immediately before rendering when new props or state is received. Not called for the initial render.
+
+Note: You cannot call <xref:Component.setState> here.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#reading-dom-properties-before-an-update See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+forceUpdate(() => void)	
+getSnapshotBeforeUpdate(Readonly<P>, Readonly<S & BaseDashboardState>)	
+Runs before React applies the result of render to the document, and returns an object to be given to componentDidUpdate. Useful for saving things such as scroll position before render causes changes to it.
+
+Note: the presence of this method prevents any of the deprecated lifecycle events from running.
+
+setState<K>(null | (S & BaseDashboardState) | (prevState: Readonly<S & BaseDashboardState>, props: Readonly<P>) => null | (S & BaseDashboardState) | Pick<S & BaseDashboardState, K> | Pick<S & BaseDashboardState, K>, () => void)	
+shouldComponentUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)	
+Called to determine whether the change in props and state should trigger a re-render.
+
+Component always returns true. PureComponent implements a shallow comparison on props and state and returns true if any props or states have changed.
+
+If false is returned, <xref:Component.render>, componentWillUpdate and componentDidUpdate will not be called.
+
+UNSAFE_componentWillMount()	
+Called immediately before mounting occurs, and before <xref:Component.render>. Avoid introducing any side-effects or subscriptions in this method.
+
+This method will not stop working in React 17.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#initializing-state See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+UNSAFE_componentWillReceiveProps(Readonly<P>, any)	
+Called when the component may be receiving new props. React may call this even if props have not changed, so be sure to compare new and existing props if you only want to handle changes.
+
+Calling <xref:Component.setState> generally does not trigger this method.
+
+This method will not stop working in React 17.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#updating-state-based-on-props See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+UNSAFE_componentWillUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)	
+Called immediately before rendering when new props or state is received. Not called for the initial render.
+
+Note: You cannot call <xref:Component.setState> here.
+
+This method will not stop working in React 17.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#reading-dom-properties-before-an-update See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+Constructor Details
+BaseDashboard<P, S>(Readonly<P>)
+Constructor of BaseDashboard.
+
+TypeScript
+
+Copy
+new BaseDashboard(props: Readonly<P>)
+Parameters
+props
+Readonly<P>
+
+The properties for the dashboard.
+
+Inherited Property Details
+context
+If using the new style context, re-declare this in your class to be the React.ContextType of your static contextType. Should be used with type annotation or static contextType.
+
+Example
+
+ts
+
+Copy
+static contextType = MyContext
+// For TS pre-3.7:
+context!: React.ContextType<typeof MyContext>
+// For TS 3.7 and above:
+declare context: React.ContextType<typeof MyContext>
+See React Docs
+
+TypeScript
+
+Copy
+context: unknown
+Property Value
+unknown
+
+Inherited From Component.context
+
+contextType
+If set, this.context will be set at runtime to the current value of the given Context.
+
+Example
+
+ts
+
+Copy
+type MyContext = number
+const Ctx = React.createContext<MyContext>(0)
+
+class Foo extends React.Component {
+  static contextType = Ctx
+  context!: React.ContextType<typeof Ctx>
+  render () {
+    return <>My context's value: {this.context}</>;
+  }
+}
+See https://react.dev/reference/react/Component#static-contexttype
+
+TypeScript
+
+Copy
+static contextType?: Context<any>
+Property Value
+Context<any>
+
+Inherited From Component.contextType
+
+props
+TypeScript
+
+Copy
+props: Readonly<P>
+Property Value
+Readonly<P>
+
+Inherited From Component.props
+
+refs
+ Warning
+
+This API is now deprecated.
+
+See Legacy React Docs
+
+TypeScript
+
+Copy
+refs: {[key: string]: ReactInstance}
+Property Value
+{[key: string]: ReactInstance}
+
+Inherited From Component.refs
+
+state
+TypeScript
+
+Copy
+state: Readonly<S & BaseDashboardState>
+Property Value
+Readonly<S & BaseDashboardState>
+
+Inherited From Component.state
+
+Method Details
+componentDidMount()
+Called after the component is mounted. You can do initialization that requires DOM nodes here. You can also make network requests here if you need to load data from a remote endpoint.
+
+TypeScript
+
+Copy
+function componentDidMount(): Promise<void>
+Returns
+Promise<void>
+
+componentWillUnmount()
+Called before the component is unmounted and destroyed. You can do necessary cleanup here, such as invalidating timers, canceling network requests, or removing any DOM elements.
+
+TypeScript
+
+Copy
+function componentWillUnmount()
+layout()
+Override this method to define the layout of the widget in the dashboard.
+
+TypeScript
+
+Copy
+function layout(): undefined | Element
+Returns
+undefined | Element
+
+The layout of the widget in the dashboard.
+
+render()
+Defines the default layout for the dashboard.
+
+TypeScript
+
+Copy
+function render(): Element
+Returns
+Element
+
+styling()
+Override this method to customize the dashboard style.
+
+TypeScript
+
+Copy
+function styling(): string
+Returns
+string
+
+The className for customizing the dashboard style.
+
+Inherited Method Details
+componentDidCatch(Error, ErrorInfo)
+Catches exceptions generated in descendant components. Unhandled exceptions will cause the entire component tree to unmount.
+
+TypeScript
+
+Copy
+function componentDidCatch(error: Error, errorInfo: ErrorInfo)
+Parameters
+error
+Error
+
+errorInfo
+ErrorInfo
+
+Inherited From Component.componentDidCatch
+
+componentDidUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)
+Called immediately after updating occurs. Not called for the initial render.
+
+The snapshot is only present if getSnapshotBeforeUpdate is present and returns non-null.
+
+TypeScript
+
+Copy
+function componentDidUpdate(prevProps: Readonly<P>, prevState: Readonly<S & BaseDashboardState>, snapshot?: any)
+Parameters
+prevProps
+Readonly<P>
+
+prevState
+Readonly<S & BaseDashboardState>
+
+snapshot
+any
+
+Inherited From Component.componentDidUpdate
+
+componentWillMount()
+ Warning
+
+This API is now deprecated.
+
+16.3, use componentDidMount or the constructor instead; will stop working in React 17
+
+Called immediately before mounting occurs, and before <xref:Component.render>. Avoid introducing any side-effects or subscriptions in this method.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#initializing-state See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+TypeScript
+
+Copy
+function componentWillMount()
+Inherited From Component.componentWillMount
+
+componentWillReceiveProps(Readonly<P>, any)
+ Warning
+
+This API is now deprecated.
+
+16.3, use static getDerivedStateFromProps instead; will stop working in React 17
+
+Called when the component may be receiving new props. React may call this even if props have not changed, so be sure to compare new and existing props if you only want to handle changes.
+
+Calling <xref:Component.setState> generally does not trigger this method.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#updating-state-based-on-props See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+TypeScript
+
+Copy
+function componentWillReceiveProps(nextProps: Readonly<P>, nextContext: any)
+Parameters
+nextProps
+Readonly<P>
+
+nextContext
+any
+
+Inherited From Component.componentWillReceiveProps
+
+componentWillUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)
+ Warning
+
+This API is now deprecated.
+
+16.3, use getSnapshotBeforeUpdate instead; will stop working in React 17
+
+Called immediately before rendering when new props or state is received. Not called for the initial render.
+
+Note: You cannot call <xref:Component.setState> here.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#reading-dom-properties-before-an-update See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+TypeScript
+
+Copy
+function componentWillUpdate(nextProps: Readonly<P>, nextState: Readonly<S & BaseDashboardState>, nextContext: any)
+Parameters
+nextProps
+Readonly<P>
+
+nextState
+Readonly<S & BaseDashboardState>
+
+nextContext
+any
+
+Inherited From Component.componentWillUpdate
+
+forceUpdate(() => void)
+TypeScript
+
+Copy
+function forceUpdate(callback?: () => void)
+Parameters
+callback
+() => void
+
+Inherited From Component.forceUpdate
+
+getSnapshotBeforeUpdate(Readonly<P>, Readonly<S & BaseDashboardState>)
+Runs before React applies the result of render to the document, and returns an object to be given to componentDidUpdate. Useful for saving things such as scroll position before render causes changes to it.
+
+Note: the presence of this method prevents any of the deprecated lifecycle events from running.
+
+TypeScript
+
+Copy
+function getSnapshotBeforeUpdate(prevProps: Readonly<P>, prevState: Readonly<S & BaseDashboardState>): any
+Parameters
+prevProps
+Readonly<P>
+
+prevState
+Readonly<S & BaseDashboardState>
+
+Returns
+any
+
+Inherited From Component.getSnapshotBeforeUpdate
+
+setState<K>(null | (S & BaseDashboardState) | (prevState: Readonly<S & BaseDashboardState>, props: Readonly<P>) => null | (S & BaseDashboardState) | Pick<S & BaseDashboardState, K> | Pick<S & BaseDashboardState, K>, () => void)
+TypeScript
+
+Copy
+function setState<K>(state: null | (S & BaseDashboardState) | (prevState: Readonly<S & BaseDashboardState>, props: Readonly<P>) => null | (S & BaseDashboardState) | Pick<S & BaseDashboardState, K> | Pick<S & BaseDashboardState, K>, callback?: () => void)
+Parameters
+state
+null | (S & BaseDashboardState) | (prevState: Readonly<S & BaseDashboardState>, props: Readonly<P>) => null | (S & BaseDashboardState) | Pick<S & BaseDashboardState, K> | Pick<S & BaseDashboardState, K>
+
+callback
+() => void
+
+Inherited From Component.setState
+
+shouldComponentUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)
+Called to determine whether the change in props and state should trigger a re-render.
+
+Component always returns true. PureComponent implements a shallow comparison on props and state and returns true if any props or states have changed.
+
+If false is returned, <xref:Component.render>, componentWillUpdate and componentDidUpdate will not be called.
+
+TypeScript
+
+Copy
+function shouldComponentUpdate(nextProps: Readonly<P>, nextState: Readonly<S & BaseDashboardState>, nextContext: any): boolean
+Parameters
+nextProps
+Readonly<P>
+
+nextState
+Readonly<S & BaseDashboardState>
+
+nextContext
+any
+
+Returns
+boolean
+
+Inherited From Component.shouldComponentUpdate
+
+UNSAFE_componentWillMount()
+ Warning
+
+This API is now deprecated.
+
+16.3, use componentDidMount or the constructor instead
+
+Called immediately before mounting occurs, and before <xref:Component.render>. Avoid introducing any side-effects or subscriptions in this method.
+
+This method will not stop working in React 17.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#initializing-state See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+TypeScript
+
+Copy
+function UNSAFE_componentWillMount()
+Inherited From Component.UNSAFE_componentWillMount
+
+UNSAFE_componentWillReceiveProps(Readonly<P>, any)
+ Warning
+
+This API is now deprecated.
+
+16.3, use static getDerivedStateFromProps instead
+
+Called when the component may be receiving new props. React may call this even if props have not changed, so be sure to compare new and existing props if you only want to handle changes.
+
+Calling <xref:Component.setState> generally does not trigger this method.
+
+This method will not stop working in React 17.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#updating-state-based-on-props See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+TypeScript
+
+Copy
+function UNSAFE_componentWillReceiveProps(nextProps: Readonly<P>, nextContext: any)
+Parameters
+nextProps
+Readonly<P>
+
+nextContext
+any
+
+Inherited From Component.UNSAFE_componentWillReceiveProps
+
+UNSAFE_componentWillUpdate(Readonly<P>, Readonly<S & BaseDashboardState>, any)
+ Warning
+
+This API is now deprecated.
+
+16.3, use getSnapshotBeforeUpdate instead
+
+Called immediately before rendering when new props or state is received. Not called for the initial render.
+
+Note: You cannot call <xref:Component.setState> here.
+
+This method will not stop working in React 17.
+
+Note: the presence of getSnapshotBeforeUpdate or getDerivedStateFromProps prevents this from being invoked.
+
+See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#reading-dom-properties-before-an-update See https://legacy.reactjs.org/blog/2018/03/27/update-on-async-rendering.html#gradual-migration-path
+
+TypeScript
+
+Copy
+function UNSAFE_componentWillUpdate(nextProps: Readonly<P>, nextState: Readonly<S & BaseDashboardState>, nextContext: any)
+Parameters
+nextProps
+Readonly<P>
+
+nextState
+Readonly<S & BaseDashboardState>
+
+nextContext
+any
+
+Inherited From Component.UNSAFE_componentWillUpdate
+
+
+Learn  Developer platform  SDK reference 
+@microsoft/teamsfx package
+Classes
+BotSsoExecutionDialog	
+Sso execution dialog, use to handle sso command
+
+CardActionBot	
+A card action bot to respond to adaptive card universal actions.
+
+Channel	
+A NotificationTarget that represents a team channel.
+
+CommandBot	
+A command bot for receiving commands and sending responses in Teams.
+
+ConversationBot	
+Provide utilities for bot conversation, including:
+
+handle command and response.
+send notification to varies targets (e.g., member, group, channel).
+Example
+
+For command and response, you can register your commands through the constructor, or use the registerCommand and registerCommands API to add commands later.
+
+TypeScript
+
+Copy
+import { BotBuilderCloudAdapter } from "@microsoft/teamsfx";
+import ConversationBot = BotBuilderCloudAdapter.ConversationBot;
+
+// register through constructor
+const conversationBot = new ConversationBot({
+  command: {
+    enabled: true,
+    commands: [ new HelloWorldCommandHandler() ],
+  },
+});
+
+// register through `register*` API
+conversationBot.command.registerCommand(new HelpCommandHandler());
+For notification, you can enable notification at initialization, then send notifications at any time.
+
+TypeScript
+
+Copy
+import { BotBuilderCloudAdapter } from "@microsoft/teamsfx";
+import ConversationBot = BotBuilderCloudAdapter.ConversationBot;
+
+// enable through constructor
+const conversationBot = new ConversationBot({
+  notification: {
+    enabled: true,
+  },
+});
+
+// get all bot installations and send message
+for (const target of await conversationBot.notification.installations()) {
+  await target.sendMessage("Hello Notification");
+}
+
+// alternative - send message to all members
+for (const target of await conversationBot.notification.installations()) {
+  for (const member of await target.members()) {
+    await member.sendMessage("Hello Notification");
+  }
+}
+Member	
+A NotificationTarget that represents a team member.
+
+NotificationBot	
+Provide utilities to send notification to varies targets (e.g., member, group, channel).
+
+TeamsBotInstallation	
+A NotificationTarget that represents a bot installation. Teams Bot could be installed into
+
+Personal chat
+Group chat
+Team (by default the General channel)
+ApiKeyProvider	
+Provider that handles API Key authentication
+
+AppCredential	
+Represent Microsoft 365 tenant identity, and it is usually used when user is not involved like time-triggered automation job.
+
+Example
+
+TypeScript
+
+Copy
+loadConfiguration(); // load configuration from environment variables
+const credential = new AppCredential();
+BasicAuthProvider	
+Provider that handles Basic authentication
+
+BearerTokenAuthProvider	
+Provider that handles Bearer Token authentication
+
+BotSsoExecutionDialog	
+Sso execution dialog, use to handle sso command
+
+CertificateAuthProvider	
+Provider that handles Certificate authentication
+
+ErrorWithCode	
+Error class with code and message thrown by the SDK.
+
+InvokeResponseFactory	
+Provides methods for formatting various invoke responses a bot can send to respond to an invoke request.
+
+MessageBuilder	
+Provides utility method to build bot message with cards that supported in Teams.
+
+OnBehalfOfUserCredential	
+Represent on-behalf-of flow to get user identity, and it is designed to be used in server side.
+
+Example
+
+TypeScript
+
+Copy
+const credential = new OnBehalfOfUserCredential(ssoToken);
+TeamsBotSsoPrompt	
+Creates a new prompt that leverage Teams Single Sign On (SSO) support for bot to automatically sign in user and help receive oauth token, asks the user to consent if needed.
+
+Example
+
+When used with your bots DialogSet you can simply add a new instance of the prompt as a named dialog using DialogSet.add(). You can then start the prompt from a waterfall step using either DialogContext.beginDialog() or DialogContext.prompt(). The user will be prompted to sign in as needed and their access token will be passed as an argument to the callers next waterfall step:
+
+JavaScript
+
+Copy
+const { ConversationState, MemoryStorage } = require('botbuilder');
+const { DialogSet, WaterfallDialog } = require('botbuilder-dialogs');
+const { TeamsBotSsoPrompt } = require('@microsoft/teamsfx');
+
+const convoState = new ConversationState(new MemoryStorage());
+const dialogState = convoState.createProperty('dialogState');
+const dialogs = new DialogSet(dialogState);
+
+dialogs.add(new TeamsBotSsoPrompt('TeamsBotSsoPrompt', {
+   scopes: ["User.Read"],
+}));
+
+dialogs.add(new WaterfallDialog('taskNeedingLogin', [
+     async (step) => {
+         return await step.beginDialog('TeamsBotSsoPrompt');
+     },
+     async (step) => {
+         const token = step.result;
+         if (token) {
+
+             // ... continue with task needing access token ...
+
+         } else {
+             await step.context.sendActivity(`Sorry... We couldn't log you in. Try again later.`);
+             return await step.endDialog();
+         }
+     }
+]));
+TeamsUserCredential	
+Represent Teams current user's identity, and it is used within Teams client applications.
+
+Interfaces
+ConversationOptions	
+Options to initialize ConversationBot
+
+NotificationOptions	
+Options to initialize NotificationBot.
+
+AuthProvider	
+Defines method that injects authentication info to http requests
+
+AxiosInstance
+BotSsoConfig	
+Interface for SSO configuration for Bot SSO
+
+BotSsoExecutionActivityHandler	
+Interface for user to customize SSO execution activity handler
+
+CardActionOptions	
+Options to initialize CardActionBot.
+
+CommandMessage	
+Interface for a command message that can handled in a command handler.
+
+CommandOptions	
+Options to initialize CommandBot.
+
+ConversationReferenceStore	
+A store to persist notification target references.
+
+ConversationReferenceStoreAddOptions	
+Options to add a conversation reference to the store.
+
+GetTeamsUserTokenOptions
+Logger	
+Interface for customized logger.
+
+MessageExtensionTokenResponse	
+Token response provided by Teams Bot SSO prompt
+
+NotificationTarget	
+Represent a notification target.
+
+PagedData	
+Represents a page of data.
+
+TeamsBotSsoPromptSettings	
+Settings used to configure an TeamsBotSsoPrompt instance.
+
+TeamsBotSsoPromptTokenResponse	
+Token response provided by Teams Bot SSO prompt
+
+TeamsFxAdaptiveCardActionHandler	
+Interface for adaptive card action handler that can process card action invoke and return a response.
+
+TeamsFxBotCommandHandler	
+Interface for a command handler that can process command to a TeamsFx bot and return a response.
+
+TeamsFxBotSsoCommandHandler	
+Interface for a command handler that can process sso command to a TeamsFx bot and return a response.
+
+UserInfo	
+UserInfo with user displayName, objectId and preferredUserName.
+
+Type Aliases
+AppCredentialAuthConfig	
+Authentication configuration for AppCredential used in node environment
+
+BotSsoExecutionDialogHandler
+LogFunction	
+Log function for customized logging.
+
+OnBehalfOfCredentialAuthConfig	
+Authentication configuration for OnBehalfOfCredential used in node environment
+
+TeamsUserCredentialAuthConfig	
+Authentication configuration for TeamsUserCredential used in browser environment
+
+TriggerPatterns	
+The trigger pattern used to trigger a TeamsFxBotCommandHandler instance.
+
+Enums
+SearchScope	
+The search scope when calling findMember and findAllMembers. The search scope is a flagged enum and it can be combined with |. For example, to search from personal chat and group chat, use SearchScope.Person | SearchScope.Group.
+
+AdaptiveCardResponse	
+Options used to control how the response card will be sent to users.
+
+ApiKeyLocation	
+Define available location for API Key location
+
+ErrorCode	
+Error code to trace the error types.
+
+InvokeResponseErrorCode	
+Status code for an application/vnd.microsoft.error invoke response.
+
+LogLevel	
+Log level.
+
+NotificationTargetType	
+The target type where the notification will be sent to.
+
+Functions
+createApiClient(string, AuthProvider)	
+Initializes new Axios instance with specific auth provider
+
+Example
+
+TypeScript
+
+Copy
+const client = createApiClient("https://my-api-endpoint-base-url", new BasicAuthProvider("xxx","xxx"));
+createPemCertOption(string | Buffer, string | Buffer, { ca?: string | Buffer, passphrase?: string })	
+Helper to create SecureContextOptions from PEM format cert
+
+createPfxCertOption(string | Buffer, { passphrase?: string })	
+Helper to create SecureContextOptions from PFX format cert
+
+getLogLevel()	
+Get log level.
+
+handleMessageExtensionLinkQueryWithSSO(TurnContext, OnBehalfOfCredentialAuthConfig, string, string | string[], (token: MessageExtensionTokenResponse) => Promise<any>)	
+Users execute link query in message extension with SSO or access token.
+
+handleMessageExtensionQueryWithSSO(TurnContext, OnBehalfOfCredentialAuthConfig, string, string | string[], (token: MessageExtensionTokenResponse) => Promise<any>)	
+Users execute query in message extension with SSO or access token.
+
+setLogFunction(LogFunction)	
+Set custom log function. Use the function if it's set. Priority is lower than setLogger.
+
+Example
+
+TypeScript
+
+Copy
+setLogFunction((level: LogLevel, message: string) => {
+  if (level === LogLevel.Error) {
+    console.log(message);
+  }
+});
+setLogLevel(LogLevel)	
+Update log level helper.
+
+setLogger(Logger)	
+Set custom logger. Use the output functions if it's set. Priority is higher than setLogFunction.
+
+Example
+
+TypeScript
+
+Copy
+setLogger({
+  verbose: console.debug,
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+});
+Function Details
+createApiClient(string, AuthProvider)
+Initializes new Axios instance with specific auth provider
+
+Example
+
+TypeScript
+
+Copy
+const client = createApiClient("https://my-api-endpoint-base-url", new BasicAuthProvider("xxx","xxx"));
+TypeScript
+
+Copy
+function createApiClient(apiEndpoint: string, authProvider: AuthProvider): AxiosInstance
+Parameters
+apiEndpoint
+string
+
+Base url of the API
+
+authProvider
+AuthProvider
+Auth provider that injects authentication info to each request
+
+Returns
+AxiosInstance
+axios instance configured with specfic auth provider
+
+createPemCertOption(string | Buffer, string | Buffer, { ca?: string | Buffer, passphrase?: string })
+Helper to create SecureContextOptions from PEM format cert
+
+TypeScript
+
+Copy
+function createPemCertOption(cert: string | Buffer, key: string | Buffer, options?: { ca?: string | Buffer, passphrase?: string }): SecureContextOptions
+Parameters
+cert
+string | Buffer
+
+The cert chain in PEM format
+
+key
+string | Buffer
+
+The private key for the cert chain
+
+options
+{ ca?: string | Buffer, passphrase?: string }
+
+Optional settings when create the cert options.
+
+Returns
+SecureContextOptions
+
+Instance of SecureContextOptions
+
+createPfxCertOption(string | Buffer, { passphrase?: string })
+Helper to create SecureContextOptions from PFX format cert
+
+TypeScript
+
+Copy
+function createPfxCertOption(pfx: string | Buffer, options?: { passphrase?: string }): SecureContextOptions
+Parameters
+pfx
+string | Buffer
+
+The content of .pfx file
+
+options
+{ passphrase?: string }
+
+Optional settings when create the cert options.
+
+Returns
+SecureContextOptions
+
+Instance of SecureContextOptions
+
+getLogLevel()
+Get log level.
+
+TypeScript
+
+Copy
+function getLogLevel(): LogLevel | undefined
+Returns
+LogLevel | undefined
+
+Log level
+
+handleMessageExtensionLinkQueryWithSSO(TurnContext, OnBehalfOfCredentialAuthConfig, string, string | string[], (token: MessageExtensionTokenResponse) => Promise<any>)
+Users execute link query in message extension with SSO or access token.
+
+TypeScript
+
+Copy
+function handleMessageExtensionLinkQueryWithSSO(context: TurnContext, config: OnBehalfOfCredentialAuthConfig, initiateLoginEndpoint: string, scopes: string | string[], logic: (token: MessageExtensionTokenResponse) => Promise<any>): Promise<void | MessagingExtensionResponse>
+Parameters
+context
+TurnContext
+The context object for the current turn.
+
+config
+OnBehalfOfCredentialAuthConfig
+User custom the message extension authentication configuration.
+
+initiateLoginEndpoint
+string
+
+Login page for Teams to redirect to.
+
+scopes
+string | string[]
+
+The list of scopes for which the token will have access.
+
+logic
+(token: MessageExtensionTokenResponse) => Promise<any>
+
+Business logic when executing the link query in message extension with SSO or access token.
+
+Returns
+Promise<void | @microsoft/agents-hosting-teams.MessagingExtensionResponse>
+
+A MessageExtension Response for the activity. If the logic not return any, return void instead.
+
+handleMessageExtensionQueryWithSSO(TurnContext, OnBehalfOfCredentialAuthConfig, string, string | string[], (token: MessageExtensionTokenResponse) => Promise<any>)
+Users execute query in message extension with SSO or access token.
+
+TypeScript
+
+Copy
+function handleMessageExtensionQueryWithSSO(context: TurnContext, config: OnBehalfOfCredentialAuthConfig, initiateLoginEndpoint: string, scopes: string | string[], logic: (token: MessageExtensionTokenResponse) => Promise<any>): Promise<void | MessagingExtensionResponse>
+Parameters
+context
+TurnContext
+The context object for the current turn.
+
+config
+OnBehalfOfCredentialAuthConfig
+User custom the message extension authentication configuration.
+
+initiateLoginEndpoint
+string
+
+Login page for Teams to redirect to.
+
+scopes
+string | string[]
+
+The list of scopes for which the token will have access.
+
+logic
+(token: MessageExtensionTokenResponse) => Promise<any>
+
+Business logic when executing the query in message extension with SSO or access token.
+
+Returns
+Promise<void | @microsoft/agents-hosting-teams.MessagingExtensionResponse>
+
+A MessageExtension Response for the activity. If the logic not return any, return void instead.
+
+setLogFunction(LogFunction)
+Set custom log function. Use the function if it's set. Priority is lower than setLogger.
+
+Example
+
+TypeScript
+
+Copy
+setLogFunction((level: LogLevel, message: string) => {
+  if (level === LogLevel.Error) {
+    console.log(message);
+  }
+});
+TypeScript
+
+Copy
+function setLogFunction(logFunction?: LogFunction)
+Parameters
+logFunction
+LogFunction
+custom log function. If it's undefined, custom log function will be cleared.
+
+setLogLevel(LogLevel)
+Update log level helper.
+
+TypeScript
+
+Copy
+function setLogLevel(level: LogLevel)
+Parameters
+level
+LogLevel
+log level in configuration
+
+setLogger(Logger)
+Set custom logger. Use the output functions if it's set. Priority is higher than setLogFunction.
+
+Example
+
+TypeScript
+
+Copy
+setLogger({
+  verbose: console.debug,
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+});
+TypeScript
+
+Copy
+function setLogger(logger?: Logger)
+
+AuthProvider interface
+Package:
+@microsoft/teamsfx
+Defines method that injects authentication info to http requests
+
+Properties
+AddAuthenticationInfo	
+Adds authentication info to http requests
+
+Property Details
+AddAuthenticationInfo
+Adds authentication info to http requests
+
+TypeScript
+
+Copy
+AddAuthenticationInfo: (config: AxiosRequestConfig<any>) => Promise<AxiosRequestConfig<any>>
+Property Value
+(config: AxiosRequestConfig<any>) => Promise<AxiosRequestConfig<any>>
+BasicAuthProvider class
+Package:
+@microsoft/teamsfx
+Provider that handles Basic authentication
+
+Constructors
+BasicAuthProvider(string, string)	
+Methods
+AddAuthenticationInfo(AxiosRequestConfig<any>)	
+Adds authentication info to http requests
+
+Constructor Details
+BasicAuthProvider(string, string)
+TypeScript
+
+Copy
+new BasicAuthProvider(userName: string, password: string)
+Parameters
+userName
+string
+
+Username used in basic auth
+
+password
+string
+
+Password used in basic auth
+
+Method Details
+AddAuthenticationInfo(AxiosRequestConfig<any>)
+Adds authentication info to http requests
+
+TypeScript
+
+Copy
+function AddAuthenticationInfo(config: AxiosRequestConfig<any>): Promise<AxiosRequestConfig<any>>
+Parameters
+config
+AxiosRequestConfig<any>
+
+Contains all the request information and can be updated to include extra authentication info. Refer https://axios-http.com/docs/req_config for detailed document.
+
+Returns
+Promise<AxiosRequestConfig<any>>
+
+Updated axios request config.
+
+
+Authenticate users in Microsoft Teams
+10/27/2024
+Authentication is all about validating app users, and securing the app and app users against unwarranted access. You can use an authentication method suitable for your app to validate app users who want to use the Teams app.
+
+Choose to add authentication for your app in one of the following ways:
+
+Enable single sign-on (SSO) in a Teams app: SSO within Teams is an authentication method that uses an app user's Teams identity to provide them with access to your app. A user who has logged into Teams doesn't need to log in again to your app within the Teams environment. With only a consent required from the app user, the Teams app retrieves access details for them from Microsoft Entra ID. After the app user has given consent, they can access the app even from other devices without having to be validated again.
+
+Enable authentication using third-party OAuth provider: You can use a third-party OAuth Identity Provider (IdP) to authenticate your app users. The app user is registered with the identity provider, which has a trust relationship with your app. When the user attempts to log in, the identity provider validates the app user and provides them with access to your app. Microsoft Entra ID is one such third party OAuth provider. You can use other providers, such as Google, Facebook, GitHub, or any other provider.
+
+Enable SSO for nested apps: You can use nested app authentication (NAA) to utilize SSO for authentication of apps nested (embedded) inside the supported Microsoft apps. Compared with existing full-trust authentication models and the on-behalf-of (OBO) flow, NAA provides better security and flexibility in app architecture, enabling the creation of rich, client-driven apps.
+
+With the network access account, you can use MSAL.js to obtain tokens for your Teams tab or Office Add-in apps. NAA leverages the capabilities of the Microsoft host to facilitate conditional access and Intune policies, such as registered device policy. These policies might not be supported when hosted within the native webviews.
+
+ Note
+
+NAA is available only in public developer preview.
+NAA is supported in MSAL.js v3.15 and higher. For the latest updates, see changelog entries.
+Enable authentication for your API based message extensions:
+
+You can enable the following authentication methods for your API-based message extension:
+
+API key authentication: Implement API key authentication to use a key token known only to the app and the API service to authenticate requests. For more information, see API key authentication.
+
+SSO authentication: Microsoft Entra is a comprehensive identity and access management solution that provides secure authentication for API-based message extensions. It ensures that only authenticated users can access your app’s features within Microsoft Teams. For more information, see enable SSO for API-based message extensions.
+
+None: Update none as a value for authorization in an API-based message extension when the API doesn't require any authentication for the user. When Teams service sends a request to the API, it doesn't supply any authentication information.
+
+JSON
+
+Copy
+    "authorization": {
+        "authType": "none"
+    }
+Select authentication method
+Enable authentication with SSO or third party OAuth IdPs in your tab app, bot app, and messaging extension app. Select one of the two methods for adding authentication in your app:
+
+SSO
+
+ 
+
+OAuth
+
+SSO for tab app
+
+
+              Tab app
+
+Authentication with third-party OAuth provider for tab app.
+
+SSO for bot app
+
+
+              Bot app
+
+Authentication with third-party OAuth provider for bot app.
+
+SSO for messaging extension app
+
+
+      Message extension app
+
+Authentication with third-party oAuth IdPs for messaging extension app.
+
+See also
+Enable single sign-on in a tab app
+Microsoft Teams authentication flow for tabs
+Single sign-on support for bots
+Add authentication to your message extension
+Glossary
+Microsoft Graph authentication provider based on scenario
+ Collaborate with us on GitHub
+The source for this content can be found on GitHub, where you can also create and review issues and pull requests. For more information, see our contributor guide.
+Platform Docs feedback
+
+Platform Docs is an open source project. Select a link to provide feedback:
+
+ Open a documentation issue
+ Provide product feedback
+Additional resources
+Documentation
+
+Enable OAuth Authentication for Tab - Teams
+
+Learn about Teams authentication flow in tabs using third-party OAuth provider with Microsoft Entra configuration and code samples.
+
+Support Third Party OAuth Providers - Teams
+
+Learn how to use external OAuth providers, add authentication to external browsers, and about the authenticate API parameters.
+
+Configure OAuth Authentication for Tab - Teams
+
+Learn about third-party OAuth IdP authentication, navigation and authorization page, and how to configure and initiate authentication flow.
+
+Show 5 more
+
+
