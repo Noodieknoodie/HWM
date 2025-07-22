@@ -16,7 +16,7 @@ export interface AzureApiError {
 }
 
 export class DataApiClient {
-  private async requestWithRetry<T>(
+  private async requestWithRetry(
     url: string,
     options: RequestInit = {},
     retries = 3,
