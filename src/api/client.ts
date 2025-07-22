@@ -16,6 +16,42 @@ export interface AzureApiError {
 }
 
 export class DataApiClient {
+  private async requestWithRetry<T>(
+    url: string,
+    options: RequestInit = {},
+    retries = 3,
+    delay = 1000
+  ): Promise<Response> {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const response = await fetch(url, options);
+        
+        // If successful or client error (4xx), return immediately
+        if (response.ok || (response.status >= 400 && response.status < 500)) {
+          return response;
+        }
+        
+        // For 500 errors, retry with exponential backoff
+        if (response.status >= 500 && attempt < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+          continue;
+        }
+        
+        return response;
+      } catch (error) {
+        // Network errors - retry
+        if (attempt < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+          continue;
+        }
+        throw error;
+      }
+    }
+    
+    // This should never be reached, but TypeScript needs it
+    throw new Error('Max retries exceeded');
+  }
+
   async request<T>(
     entity: string,
     options: RequestInit = {}
@@ -23,7 +59,7 @@ export class DataApiClient {
     const url = `${DATA_API_BASE}/${entity}`;
     // console.log(`[DataApiClient] Requesting: ${url}`);
     
-    const response = await fetch(url, {
+    const response = await this.requestWithRetry(url, {
       ...options,
       credentials: 'include',
       headers: {
