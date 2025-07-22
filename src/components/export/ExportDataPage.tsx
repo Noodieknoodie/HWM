@@ -12,7 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { FileText, FileSpreadsheet, Calendar as CalendarIcon, Loader2 } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
-import { CommandMultiSelect } from "@/components/ui/command-multi-select"
+import { MultiSelectSimple } from "@/components/ui/multi-select-simple"
 import { useDataApiClient } from "@/api/client"
 import { 
   exportToCSV, 
@@ -499,7 +499,7 @@ export default function ExportDataPage() {
                         </RadioGroup>
                         {clientSelectionType === "select" && (
                           <div className="pt-2">
-                            <CommandMultiSelect
+                            <MultiSelectSimple
                               options={clientOptions}
                               selected={selectedClients}
                               onChange={setSelectedClients}
