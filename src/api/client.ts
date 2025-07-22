@@ -124,7 +124,20 @@ export class DataApiClient {
 
   // Client entity methods
   async getClients() {
-    return this.request('sidebar_clients_view');
+    const cacheKey = cacheKeys.clients();
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    const data = await this.request('sidebar_clients_view');
+    
+    // Cache for 15 minutes (client list rarely changes)
+    apiCache.set(cacheKey, data, 15 * 60 * 1000);
+    
+    return data;
   }
 
   async getClient(id: number) {
@@ -180,23 +193,41 @@ export class DataApiClient {
   }
 
   async createPayment(data: any) {
-    return this.request('payments', {
+    const result = await this.request('payments', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    
+    // Invalidate summary page caches when payment is created
+    apiCache.invalidatePattern('quarterly_page_');
+    apiCache.invalidatePattern('annual_page_');
+    
+    return result;
   }
 
   async updatePayment(id: number, data: any) {
-    return this.request(`payments/payment_id/${id}`, {
+    const result = await this.request(`payments/payment_id/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+    
+    // Invalidate summary page caches when payment is updated
+    apiCache.invalidatePattern('quarterly_page_');
+    apiCache.invalidatePattern('annual_page_');
+    
+    return result;
   }
 
   async deletePayment(id: number) {
-    return this.request(`payments/payment_id/${id}`, {
+    const result = await this.request(`payments/payment_id/${id}`, {
       method: 'DELETE',
     });
+    
+    // Invalidate summary page caches when payment is deleted
+    apiCache.invalidatePattern('quarterly_page_');
+    apiCache.invalidatePattern('annual_page_');
+    
+    return result;
   }
 
   // Period methods - using payment_form_periods_view
@@ -238,13 +269,39 @@ export class DataApiClient {
 
   // NEW Summary page data methods using the page-ready views
   async getQuarterlyPageData(year: number, quarter: number) {
+    const cacheKey = `quarterly_page_${year}_${quarter}`;
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
     // Returns complete quarterly data with provider aggregates and client details including notes
-    return this.request(`quarterly_page_data?$filter=applied_year eq ${year} and quarter eq ${quarter}&$orderby=provider_name,display_name`);
+    const data = await this.request(`quarterly_page_data?$filter=applied_year eq ${year} and quarter eq ${quarter}&$orderby=provider_name,display_name`);
+    
+    // Cache for 10 minutes (summary data doesn't change often)
+    apiCache.set(cacheKey, data, 10 * 60 * 1000);
+    
+    return data;
   }
 
   async getAnnualPageData(year: number) {
+    const cacheKey = `annual_page_${year}`;
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
     // Returns complete annual data with quarterly breakdowns and provider aggregates
-    return this.request(`annual_page_data?$filter=applied_year eq ${year}&$orderby=provider_name,display_name`);
+    const data = await this.request(`annual_page_data?$filter=applied_year eq ${year}&$orderby=provider_name,display_name`);
+    
+    // Cache for 10 minutes
+    apiCache.set(cacheKey, data, 10 * 60 * 1000);
+    
+    return data;
   }
 
   async getQuarterlySummaryDetail(clientId: number, year: number, quarter: number) {

@@ -49,7 +49,9 @@
       "mcp__MSSQL_MCP__read_data",
       "mcp__MSSQL_MCP__insert_data",
       "mcp__MSSQL_MCP__update_data",
-      "Bash(npx shadcn:*)"
+      "Bash(npx shadcn:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
