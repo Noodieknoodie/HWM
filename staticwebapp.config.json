@@ -24,8 +24,17 @@
         }
     ],
     "auth": {
-        "allowedAudiences": [
-            "api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0"
-        ]
+        "identityProviders": {
+            "azureActiveDirectory": {
+                "registration": {
+                    "openIdIssuer": "https://login.microsoftonline.com/common",
+                    "clientIdSettingName": "AZURE_CLIENT_ID"
+                },
+                "login": {
+                    "loginParameters": ["prompt=none"],
+                    "allowedClientApplications": ["cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0"]
+                }
+            }
+        }
     }
 }
