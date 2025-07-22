@@ -1,7 +1,7 @@
 # TODO: Migrate Business Logic from SQL to TypeScript in HWM 401k Tracker
 ## Context
 The system currently uses SQL functions and views to calculate expected fees, variances, and rate conversions. We're moving these calculations to TypeScript to make the database a pure data store. This affects 11 views, 2 functions, and most frontend components.
----
+---  a
 ## HIGH LEVEL EXECUTION PLAN
 ### Phase 1: Build TypeScript Calculation Layer
 1. Create `/utils/calculations/` directory structure
