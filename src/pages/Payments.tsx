@@ -11,6 +11,7 @@ import PaymentForm from '@/components/payment/PaymentForm';
 import PaymentHistory from '@/components/payment/PaymentHistory';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ErrorAlert, WarningAlert } from '@/components/Alert';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const getErrorMessage = (error: any): string => {
   if (typeof error === 'string') return error;
@@ -123,15 +124,15 @@ const Payments: React.FC = () => {
               <>
                 {/* Loading skeletons for 4 cards */}
                 {[1, 2, 3, 4].map((index) => (
-                  <div key={index} className="bg-white rounded-lg shadow-sm p-6 h-full animate-pulse">
+                  <div key={index} className="bg-white rounded-lg shadow-sm p-6 h-full">
                     <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 bg-gray-200 rounded mr-3"></div>
-                      <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                      <Skeleton width={32} height={32} variant="circular" className="mr-3" />
+                      <Skeleton width={128} height={24} />
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-5 w-full bg-gray-200 rounded"></div>
-                      <div className="h-5 w-3/4 bg-gray-200 rounded"></div>
-                      <div className="h-5 w-1/2 bg-gray-200 rounded"></div>
+                    <div className="space-y-3">
+                      <Skeleton width="100%" height={20} />
+                      <Skeleton width="75%" height={20} />
+                      <Skeleton width="50%" height={20} />
                     </div>
                   </div>
                 ))}
