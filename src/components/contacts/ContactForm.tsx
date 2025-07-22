@@ -152,7 +152,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="contact_type"
                     value={formData.contact_type}
                     onChange={(e) => handleChange('contact_type', e.target.value as Contact['contact_type'])}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="form-input"
                     disabled={saving}
                   >
                     <option value="Primary">Primary</option>
@@ -208,7 +208,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="fax"
                     value={formData.fax}
                     onChange={(e) => handleChange('fax', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="form-input"
                     disabled={saving}
                   />
                 </div>
@@ -241,7 +241,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                     id="mailing_address"
                     value={formData.mailing_address}
                     onChange={(e) => handleChange('mailing_address', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="form-input"
                     placeholder="Leave blank if same as physical address"
                     disabled={saving}
                   />

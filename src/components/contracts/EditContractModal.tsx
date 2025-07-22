@@ -340,7 +340,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({
                           id="contract_number"
                           value={formData.contract_number}
                           onChange={(e) => handleChange('contract_number', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-input"
                           disabled={saving}
                           placeholder="Optional"
                         />
@@ -452,7 +452,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({
                           id="payment_schedule"
                           value={formData.payment_schedule}
                           onChange={(e) => handleChange('payment_schedule', e.target.value as 'monthly' | 'quarterly')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-input"
                           disabled={saving}
                         >
                           <option value="monthly">Monthly</option>
@@ -536,7 +536,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({
                           id="contract_number"
                           value={formData.contract_number}
                           onChange={(e) => handleChange('contract_number', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-input"
                           disabled={saving}
                           placeholder="Optional"
                         />
@@ -648,7 +648,7 @@ export const EditContractModal: React.FC<EditContractModalProps> = ({
                           id="payment_schedule"
                           value={formData.payment_schedule}
                           onChange={(e) => handleChange('payment_schedule', e.target.value as 'monthly' | 'quarterly')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-input"
                           disabled={saving}
                         >
                           <option value="monthly">Monthly</option>

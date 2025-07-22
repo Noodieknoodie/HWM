@@ -247,7 +247,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
               value={formData.received_date}
               onChange={handleInputChange}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="form-input mt-1"
             />
           </div>
           
@@ -309,7 +309,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
               value={formData.method}
               onChange={handleInputChange}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="form-input mt-1"
             >
               {PAYMENT_METHODS.map(method => (
                 <option key={method.value} value={method.value}>
@@ -382,7 +382,7 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
               value={formData.notes}
               onChange={handleInputChange}
               rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="form-input mt-1"
               placeholder="Optional notes about this payment"
             />
           </div>

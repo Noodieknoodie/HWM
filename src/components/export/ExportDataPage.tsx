@@ -165,6 +165,11 @@ export default function ExportDataPage() {
 
   // Export Annual Summary
   const handleAnnualExport = async (format: 'csv' | 'excel') => {
+    if (selectedYears.length === 0) {
+      alert('Please select at least one year to export');
+      return;
+    }
+    
     const key = `annual-${format}`;
     setLoading((prev) => ({ ...prev, [key]: true }));
     
@@ -435,15 +440,20 @@ export default function ExportDataPage() {
                   <div className="p-6">
                     <h3 className="font-medium text-lg mb-4">Annual Summary</h3>
                     <div className="space-y-1.5">
-                      <Label>Select Year(s)</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Select Year(s)</Label>
+                        <span className="text-sm text-gray-500">
+                          {selectedYears.length === 0 ? 'None selected' : `${selectedYears.length} selected`}
+                        </span>
+                      </div>
                       <ToggleGroup
                         type="multiple"
                         value={selectedYears}
                         onValueChange={setSelectedYears}
-                        className="flex-wrap justify-start"
+                        className="flex flex-wrap justify-start gap-2"
                       >
                         {years.map((year) => (
-                          <ToggleGroupItem key={year} value={year} aria-label={`Toggle ${year}`}>
+                          <ToggleGroupItem key={year} value={year} aria-label={`Toggle ${year}`} className="min-w-[60px]">
                             {year}
                           </ToggleGroupItem>
                         ))}

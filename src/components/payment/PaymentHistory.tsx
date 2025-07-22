@@ -88,7 +88,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             <select
               value={selectedYear || ''}
               onChange={(e) => onYearChange(e.target.value ? Number(e.target.value) : null)}
-              className="block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="form-input"
             >
               <option value="">All Years</option>
               {availableYears.map(year => (

@@ -59,13 +59,15 @@ export function usePaymentCompliance(clientId: number | null) {
       setError(null);
       
       try {
-        // First get the contract to find start date
+        // First get the active contract to find start date
         const contracts = await dataApiClient.getClientContracts(clientId) as any[];
-        const contract = contracts[0]; // Assuming one active contract
+        const activeContract = contracts.find(c => c.is_active === true || c.is_active === 1);
         
-        if (!contract || !contract.contract_start_date) {
-          throw new Error('No contract found for client');
+        if (!activeContract || !activeContract.contract_start_date) {
+          throw new Error('No active contract found for client');
         }
+        
+        const contract = activeContract;
         
         // Parse contract start date
         const startDate = new Date(contract.contract_start_date);
