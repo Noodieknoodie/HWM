@@ -6,6 +6,7 @@ const DATA_API_BASE = '/data-api/rest';
 // Import types
 import { Contact } from '../types/contact';
 import { apiCache, cacheKeys } from '../utils/cache';
+import { getSwaAccessToken, isInTeams } from '../teamsAuth';
 
 // Azure's standardized error format
 export interface AzureApiError {
@@ -59,12 +60,25 @@ export class DataApiClient {
     const url = `${DATA_API_BASE}/${entity}`;
     // console.log(`[DataApiClient] Requesting: ${url}`);
     
+    // Get auth headers based on context
+    const authHeaders: Record<string, string> = {};
+    if (isInTeams()) {
+      try {
+        const token = await getSwaAccessToken();
+        authHeaders['Authorization'] = `Bearer ${token}`;
+      } catch (e) {
+        console.error('Failed to get Teams token:', e);
+        // Continue without token - let SWA cookies handle it
+      }
+    }
+    
     const response = await this.requestWithRetry(url, {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'X-MS-API-ROLE': 'authenticated',
+        ...authHeaders,
         ...options.headers,
       },
     });
