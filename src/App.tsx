@@ -11,6 +11,7 @@ import Summary from './pages/Summary'
 // import Contracts from './pages/Contracts'
 import ErrorBoundary from './components/ErrorBoundary'
 import Export from './pages/Export'
+import { AuthDebug } from './components/AuthDebug'
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -113,6 +114,7 @@ function App() {
         v7_relativeSplatPath: true 
       }}>
         <AppContent />
+        <AuthDebug />
       </BrowserRouter>
     </ErrorBoundary>
   )

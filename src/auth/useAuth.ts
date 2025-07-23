@@ -33,8 +33,11 @@ export function useAuth() {
 
   useEffect(() => {
     const authenticate = async () => {
+      console.log('[Auth] Starting authentication flow...');
+      
       // For local development, create a mock user to bypass auth.
       if (window.location.hostname === 'localhost') {
+        console.log('[Auth] Localhost detected, using mock user');
         setAuthState({
           user: { 
             userId: 'dev-user', 
@@ -50,19 +53,26 @@ export function useAuth() {
 
       try {
         // First check if we're in Teams
+        console.log('[Auth] Checking Teams context...');
         const inTeams = await checkTeamsContext();
         setIsInTeams(inTeams);
         console.log('[Auth] Teams context detected:', inTeams);
 
         // Check if we already have a session
+        console.log('[Auth] Checking existing session at /.auth/me...');
         const response = await fetch('/.auth/me');
+        console.log('[Auth] /.auth/me response status:', response.status);
         const data = await response.json();
+        console.log('[Auth] /.auth/me data:', data);
 
         if (data.clientPrincipal) {
           // Already authenticated
+          console.log('[Auth] Existing session found, user:', data.clientPrincipal.userDetails);
           setAuthState({ user: data.clientPrincipal, loading: false, error: null });
           return;
         }
+
+        console.log('[Auth] No existing session found');
 
         // No existing session - need to authenticate
         if (inTeams) {
@@ -74,6 +84,7 @@ export function useAuth() {
             console.log('[Auth] Got Teams token, length:', token.length);
             
             // Send token to SWA to establish session
+            console.log('[Auth] Attempting to POST Teams token to /.auth/login/aad...');
             const authResponse = await fetch('/.auth/login/aad', {
               method: 'POST',
               headers: {
@@ -82,17 +93,26 @@ export function useAuth() {
               },
               body: JSON.stringify({ id_token: token })
             });
+            
+            console.log('[Auth] POST response status:', authResponse.status);
+            console.log('[Auth] POST response ok:', authResponse.ok);
 
             if (authResponse.ok) {
               // Check session again
+              console.log('[Auth] POST successful, checking session again...');
               const meResponse = await fetch('/.auth/me');
               const meData = await meResponse.json();
+              console.log('[Auth] Second /.auth/me check:', meData);
               
               if (meData.clientPrincipal) {
                 console.log('[Auth] Teams SSO successful, user:', meData.clientPrincipal.userDetails);
                 setAuthState({ user: meData.clientPrincipal, loading: false, error: null });
                 return;
+              } else {
+                console.log('[Auth] Teams SSO failed - no clientPrincipal after POST');
               }
+            } else {
+              console.log('[Auth] Teams token POST failed with status:', authResponse.status);
             }
           } catch (teamsError) {
             console.error('Teams SSO failed:', teamsError);
@@ -100,8 +120,10 @@ export function useAuth() {
         }
 
         // Fallback: redirect to login (works for both Teams and browser)
+        console.log('[Auth] Falling back to redirect login...');
         window.location.href = '/.auth/login/aad';
       } catch (e) {
+        console.error('[Auth] Authentication error:', e);
         setAuthState({ user: null, loading: false, error: e as Error });
       }
     };
@@ -125,10 +147,14 @@ export function useAuth() {
 
 async function checkTeamsContext(): Promise<boolean> {
   try {
+    console.log('[Auth] Initializing Teams SDK...');
     await microsoftTeams.app.initialize();
+    console.log('[Auth] Teams SDK initialized, getting context...');
     const context = await microsoftTeams.app.getContext();
+    console.log('[Auth] Teams context:', context);
     return !!context.app.host.name;
-  } catch {
+  } catch (error) {
+    console.log('[Auth] Not in Teams context:', error);
     return false;
   }
 }
