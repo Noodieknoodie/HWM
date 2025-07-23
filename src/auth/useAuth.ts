@@ -32,8 +32,17 @@ export function useAuth() {
   const [isInTeams, setIsInTeams] = useState(false);
 
   useEffect(() => {
+    // Check if we've already tried to authenticate in this session
+    const hasTriedAuth = sessionStorage.getItem('auth_attempted');
+    if (hasTriedAuth === 'true') {
+      console.log('[Auth] Already attempted auth in this session, preventing loop');
+      setAuthState({ user: null, loading: false, error: new Error('Authentication loop detected') });
+      return;
+    }
+    
     const authenticate = async () => {
       console.log('[Auth] Starting authentication flow...');
+      sessionStorage.setItem('auth_attempted', 'true');
       
       // For local development, create a mock user to bypass auth.
       if (window.location.hostname === 'localhost') {
@@ -68,6 +77,7 @@ export function useAuth() {
         if (data.clientPrincipal) {
           // Already authenticated
           console.log('[Auth] Existing session found, user:', data.clientPrincipal.userDetails);
+          sessionStorage.removeItem('auth_attempted'); // Clear flag on success
           setAuthState({ user: data.clientPrincipal, loading: false, error: null });
           return;
         }
@@ -106,6 +116,7 @@ export function useAuth() {
               
               if (meData.clientPrincipal) {
                 console.log('[Auth] Teams SSO successful, user:', meData.clientPrincipal.userDetails);
+                sessionStorage.removeItem('auth_attempted'); // Clear flag on success
                 setAuthState({ user: meData.clientPrincipal, loading: false, error: null });
                 return;
               } else {

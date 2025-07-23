@@ -82,9 +82,27 @@ function AppContent() {
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">
             Authentication Required
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             Please sign in with your Microsoft account
           </p>
+          <button 
+            onClick={() => {
+              sessionStorage.removeItem('auth_attempted');
+              window.location.href = '/.auth/login/aad';
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Sign In
+          </button>
+          <button 
+            onClick={() => {
+              sessionStorage.clear();
+              window.location.reload();
+            }}
+            className="ml-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+          >
+            Reset Auth
+          </button>
         </div>
       </div>
     );
