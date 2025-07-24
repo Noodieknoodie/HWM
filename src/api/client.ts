@@ -1,5 +1,4 @@
 // frontend/src/api/client.ts
-
 // Azure Static Web Apps data-api provides consistent REST endpoints
 const DATA_API_BASE = '/data-api/rest';
 
@@ -22,6 +21,7 @@ export class DataApiClient {
   setTeamsToken(token: string | null) {
     this.teamsToken = token;
   }
+
   private async requestWithRetry(
     url: string,
     options: RequestInit = {},
@@ -31,18 +31,15 @@ export class DataApiClient {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const response = await fetch(url, options);
-        
         // If successful or client error (4xx), return immediately
         if (response.ok || (response.status >= 400 && response.status < 500)) {
           return response;
         }
-        
         // For 500 errors, retry with exponential backoff
         if (response.status >= 500 && attempt < retries - 1) {
           await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
           continue;
         }
-        
         return response;
       } catch (error) {
         // Network errors - retry
@@ -53,7 +50,6 @@ export class DataApiClient {
         throw error;
       }
     }
-    
     // This should never be reached, but TypeScript needs it
     throw new Error('Max retries exceeded');
   }
@@ -63,17 +59,24 @@ export class DataApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${DATA_API_BASE}/${entity}`;
-    // console.log(`[DataApiClient] Requesting: ${url}`);
-    
-    const headers: Record<string, string> = {
+
+    // Build headers properly
+    const headers = new Headers({
       'Content-Type': 'application/json',
       'X-MS-API-ROLE': 'authenticated',
-      ...(options.headers as Record<string, string> || {}),
-    };
+    });
+
+    // Copy any existing headers from options
+    if (options.headers) {
+      const existingHeaders = new Headers(options.headers);
+      existingHeaders.forEach((value, key) => {
+        headers.set(key, value);
+      });
+    }
 
     // Add Bearer token if in Teams
     if (isInTeams() && this.teamsToken) {
-      headers['Authorization'] = `Bearer ${this.teamsToken}`;
+      headers.set('Authorization', `Bearer ${this.teamsToken}`);
     }
 
     // Always use SWA cookie authentication
@@ -82,7 +85,6 @@ export class DataApiClient {
       credentials: 'include',
       headers,
     });
-
     if (!response.ok) {
       let error: AzureApiError;
       const contentType = response.headers.get('content-type');
@@ -254,7 +256,7 @@ export class DataApiClient {
     const response = await this.request(`dashboard_view?$filter=client_id eq ${clientId}`);
     return Array.isArray(response) ? response[0] : response;
   }
-  
+
   // Payment form defaults
   async getPaymentDefaults(clientId: number) {
     const response = await this.request(`payment_form_defaults_view?$filter=client_id eq ${clientId}`);

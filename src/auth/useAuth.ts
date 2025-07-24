@@ -56,7 +56,7 @@ export function useAuth() {
           const tokenParts = token.split('.');
           const payload = JSON.parse(atob(tokenParts[1]));
           
-          // Set token in API client
+          // Set token in API client for all future requests
           dataApiClient.setTeamsToken(token);
           
           // Create user from token claims
@@ -77,6 +77,7 @@ export function useAuth() {
           // BROWSER PATH: Standard SWA flow
           const swaUser = await checkSwaSession();
           if (swaUser) {
+            // We have a valid SWA session
             setAuthState({ 
               user: swaUser, 
               loading: false, 
@@ -84,7 +85,7 @@ export function useAuth() {
               token: null
             });
           } else {
-            // Redirect to login
+            // No SWA session - redirect to login
             const returnUrl = window.location.href;
             window.location.href = `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(returnUrl)}`;
           }
@@ -119,6 +120,7 @@ export function useAuth() {
         token: null
       });
     } else {
+      // Use SWA logout
       window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
     }
   };
