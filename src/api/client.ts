@@ -65,10 +65,10 @@ export class DataApiClient {
     const url = `${DATA_API_BASE}/${entity}`;
     // console.log(`[DataApiClient] Requesting: ${url}`);
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-MS-API-ROLE': 'authenticated',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     };
 
     // Add Bearer token if in Teams

@@ -29,6 +29,43 @@ Key discovery: Data API Builder (DAB) already supports multiple authentication p
 - Same API endpoints work for both auth methods
 
 
+## RESEARCH:
+```
+## Yes — Data API Builder (DAB) can accept Bearer tokens
+Data API Builder supports JWT Bearer access tokens issued by any OpenID-Connect–compatible identity provider, including Microsoft Entra ID, Azure Static Web Apps EasyAuth, Keycloak, Auth0, and similar services. When a request reaches DAB:
+The caller places the token in the HTTP Authorization header: 
+Authorization: Bearer <access_token>
+DAB validates the token’s signature, issuer (iss), audience (aud), expiry (exp), and—if configured—custom claims.
+If the token is valid, DAB maps the request to one or more roles (defined in dab-config.json) and enforces row-level and action-level permissions.
+The user’s claims are made available to your SQL or Cosmos DB queries through the @claims session context.
+### How to enable Bearer authentication
+Add an authentication block to your dab-config.json:
+{
+  "authentication": {
+    "provider": "Jwt",
+    "jwt": {
+      "issuer": "https://login.microsoftonline.com/<tenant>/v2.0",
+      "audiences": [ "api://your-api-id" ],
+      "allowed_algorithms": [ "RS256" ]
+    }
+  }
+}
+Key points:
+provider: "Jwt" switches DAB to Bearer-token mode instead of Static Web Apps header mode[1].
+issuer and audiences must match the values in the tokens you issue.
+If you host on Azure Static Web Apps and want to accept EasyAuth cookies, you can add a second provider entry ("StaticWebApps"); DAB will honor either scheme at runtime[2].
+### Development and self-hosted scenarios
+DAB exposes only a subset of JwtBearerOptions. For example, RequireHttpsMetadata defaults to true; if you need HTTP tokens for local Docker or dev Kubernetes, you must override that setting by environment variable or patching the container image[3][4].
+### When would you prefer Bearer tokens over SWA cookies?
+Teams tabs or other iframe clients where third-party cookies are blocked.
+Mobile apps calling DAB directly.
+Multi-tenant or B2C scenarios where tokens come from different issuers.
+In mixed deployments you can run DAB with both Static Web Apps and Jwt providers enabled, letting browser users rely on EasyAuth cookies while API clients and Teams tabs send Bearer tokens in the header.
+### Bottom line
+Configure the Jwt provider in dab-config.json (alone or alongside StaticWebApps), make sure your identity platform issues access tokens that list DAB’s URL as an audience, and send them in the Authorization: Bearer header. DAB will validate the tokens and apply your role-based security rules automatically[2][1][3].
+```
+
+
 ===
 
 
