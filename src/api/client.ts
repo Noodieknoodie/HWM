@@ -6,6 +6,7 @@ const DATA_API_BASE = '/data-api/rest';
 // Import types
 import { Contact } from '../types/contact';
 import { apiCache, cacheKeys } from '../utils/cache';
+import { isInTeams } from '../teamsAuth';
 
 // Azure's standardized error format
 export interface AzureApiError {
@@ -16,6 +17,11 @@ export interface AzureApiError {
 }
 
 export class DataApiClient {
+  private teamsToken: string | null = null;
+
+  setTeamsToken(token: string | null) {
+    this.teamsToken = token;
+  }
   private async requestWithRetry(
     url: string,
     options: RequestInit = {},
@@ -59,15 +65,22 @@ export class DataApiClient {
     const url = `${DATA_API_BASE}/${entity}`;
     // console.log(`[DataApiClient] Requesting: ${url}`);
     
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'X-MS-API-ROLE': 'authenticated',
+      ...options.headers,
+    };
+
+    // Add Bearer token if in Teams
+    if (isInTeams() && this.teamsToken) {
+      headers['Authorization'] = `Bearer ${this.teamsToken}`;
+    }
+
     // Always use SWA cookie authentication
     const response = await this.requestWithRetry(url, {
       ...options,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-MS-API-ROLE': 'authenticated',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {

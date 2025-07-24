@@ -1,5 +1,7 @@
 // In: src/auth/useAuth.ts
 import { useEffect, useState } from 'react';
+import { isInTeams, getTeamsAuthToken } from '../teamsAuth';
+import { dataApiClient } from '../api/client';
 
 interface User {
   userId: string;
@@ -46,21 +48,46 @@ export function useAuth() {
       }
 
       try {
-        // Check SWA session
-        const swaUser = await checkSwaSession();
-        
-        if (swaUser) {
-          // We have a valid SWA session
+        if (isInTeams()) {
+          // TEAMS PATH: Get token and use it directly
+          const token = await getTeamsAuthToken();
+          
+          // Parse the JWT to get user info
+          const tokenParts = token.split('.');
+          const payload = JSON.parse(atob(tokenParts[1]));
+          
+          // Set token in API client
+          dataApiClient.setTeamsToken(token);
+          
+          // Create user from token claims
+          const user = {
+            userId: payload.oid || payload.sub,
+            userDetails: payload.preferred_username || payload.email || payload.name,
+            userRoles: ['authenticated'],
+            identityProvider: 'aad'
+          };
+          
           setAuthState({ 
-            user: swaUser, 
+            user, 
             loading: false, 
             error: null,
-            token: null
+            token 
           });
         } else {
-          // No SWA session - redirect to login
-          const returnUrl = window.location.href;
-          window.location.href = `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(returnUrl)}`;
+          // BROWSER PATH: Standard SWA flow
+          const swaUser = await checkSwaSession();
+          if (swaUser) {
+            setAuthState({ 
+              user: swaUser, 
+              loading: false, 
+              error: null,
+              token: null
+            });
+          } else {
+            // Redirect to login
+            const returnUrl = window.location.href;
+            window.location.href = `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(returnUrl)}`;
+          }
         }
       } catch (e) {
         setAuthState({ user: null, loading: false, error: e as Error, token: null });
@@ -81,8 +108,19 @@ export function useAuth() {
   }, []);
 
   const logout = () => {
-    // Use SWA logout
-    window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
+    if (isInTeams()) {
+      // Clear Teams token
+      dataApiClient.setTeamsToken(null);
+      // Teams doesn't have a logout - just clear local state
+      setAuthState({
+        user: null,
+        loading: false,
+        error: null,
+        token: null
+      });
+    } else {
+      window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
+    }
   };
 
   return {

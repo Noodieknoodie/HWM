@@ -18,7 +18,22 @@
     "host": {
       "mode": "production",
       "authentication": {
-        "provider": "StaticWebApps"
+        "provider": "Multiple",
+        "providers": [
+          {
+            "name": "StaticWebApps",
+            "type": "StaticWebApps"
+          },
+          {
+            "name": "Jwt",
+            "type": "Jwt",
+            "jwt": {
+              "issuer": "https://login.microsoftonline.com/e621abc4-3baa-4b93-badc-3b99e8609963/v2.0",
+              "audiences": ["api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0"],
+              "allowed_algorithms": ["RS256"]
+            }
+          }
+        ]
       }
     }
   },
