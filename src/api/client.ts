@@ -56,8 +56,10 @@ export class DataApiClient {
     entity: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const baseUrl = getApiBaseUrl(isInTeams());
-    const url = `${baseUrl}/data-api/rest/${entity}`;
+    const inTeams = isInTeams();
+    const baseUrl = getApiBaseUrl(inTeams);
+    // Container uses /rest, SWA uses /data-api/rest
+    const url = inTeams ? `${baseUrl}/rest/${entity}` : `${baseUrl}/data-api/rest/${entity}`;
 
     // Build headers properly
     const headers = new Headers({
