@@ -11,6 +11,7 @@
         ".json": "application/json"
     },
     "globalHeaders": {
+        "X-Frame-Options": "",
         "Content-Security-Policy": "frame-ancestors 'self' https://teams.microsoft.com https://*.teams.microsoft.com https://*.teams.microsoft.us https://*.teams.microsoft.cn https://*.office.com"
     },
     "routes": [
@@ -26,10 +27,13 @@
             "azureActiveDirectory": {
                 "registration": {
                     "openIdIssuer": "https://login.microsoftonline.com/e621abc4-3baa-4b93-badc-3b99e8609963",
-                    "clientIdSettingName": "AAD_CLIENT_ID"
+                    "clientIdSettingName": "AAD_CLIENT_ID",
+                    "clientSecretSettingName": "AAD_CLIENT_SECRET"
                 },
                 "login": {
-                    "loginParameters": "scope=openid profile email"
+                    "loginParameters": [
+                        "scope=openid profile email"
+                    ]
                 }
             }
         }
