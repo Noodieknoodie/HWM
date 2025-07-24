@@ -11,19 +11,11 @@ import Summary from './pages/Summary'
 // import Contracts from './pages/Contracts'
 import ErrorBoundary from './components/ErrorBoundary'
 import Export from './pages/Export'
-import * as microsoftTeams from '@microsoft/teams-js'
-import { isInTeams } from './teamsAuth'
 
 function AppContent() {
   const { user, loading } = useAuth();
   const dataApiClient = useDataApiClient();
   
-  // Initialize Teams SDK if in Teams context
-  useEffect(() => {
-    if (isInTeams()) {
-      microsoftTeams.app.notifySuccess();
-    }
-  }, []);
   
   // Pre-cache client list when user is authenticated
   useEffect(() => {

@@ -1,6 +1,5 @@
 // In: src/auth/useAuth.ts
 import { useEffect, useState } from 'react';
-import { getSwaAccessToken, isInTeams, getUserFromToken } from '../teamsAuth';
 
 interface User {
   userId: string;
@@ -47,53 +46,34 @@ export function useAuth() {
       }
 
       try {
-        // Check if we're running in Teams
-        if (isInTeams()) {
-          try {
-            // Get token from Teams
-            const token = await getSwaAccessToken();
-            const user = getUserFromToken(token);
-            
-            if (user) {
-              setAuthState({ 
-                user, 
-                loading: false, 
-                error: null,
-                token 
-              });
-            } else {
-              throw new Error('Failed to parse user from token');
-            }
-          } catch (teamsError) {
-            console.error('Teams SSO failed:', teamsError);
-            // Fall back to SWA auth if Teams SSO fails
-            await authenticateWithSwa();
-          }
+        // Check SWA session
+        const swaUser = await checkSwaSession();
+        
+        if (swaUser) {
+          // We have a valid SWA session
+          setAuthState({ 
+            user: swaUser, 
+            loading: false, 
+            error: null,
+            token: null
+          });
         } else {
-          // Not in Teams, use SWA auth
-          await authenticateWithSwa();
+          // No SWA session - redirect to login
+          const returnUrl = window.location.href;
+          window.location.href = `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(returnUrl)}`;
         }
       } catch (e) {
         setAuthState({ user: null, loading: false, error: e as Error, token: null });
       }
     };
 
-    const authenticateWithSwa = async () => {
-      // Check if we have an existing SWA session
-      const response = await fetch('/.auth/me');
-      const data = await response.json();
-
-      if (data.clientPrincipal) {
-        // User is authenticated via SWA
-        setAuthState({ 
-          user: data.clientPrincipal, 
-          loading: false, 
-          error: null,
-          token: null 
-        });
-      } else {
-        // No session - redirect to login
-        window.location.href = '/.auth/login/aad';
+    const checkSwaSession = async () => {
+      try {
+        const response = await fetch('/.auth/me');
+        const data = await response.json();
+        return data.clientPrincipal || null;
+      } catch {
+        return null;
       }
     };
 
@@ -101,18 +81,8 @@ export function useAuth() {
   }, []);
 
   const logout = () => {
-    if (isInTeams()) {
-      // In Teams, we can't really log out - just clear local state
-      setAuthState({
-        user: null,
-        loading: false,
-        error: null,
-        token: null
-      });
-    } else {
-      // In browser, use SWA logout
-      window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
-    }
+    // Use SWA logout
+    window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
   };
 
   return {
