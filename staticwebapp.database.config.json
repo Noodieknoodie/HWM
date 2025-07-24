@@ -224,19 +224,6 @@
           "actions": ["read", "create", "update"]
         }
       ]
-    },
-    "quarterly_notes_all_clients": {
-      "source": {
-        "object": "dbo.quarterly_notes_all_clients",
-        "type": "view",
-        "key-fields": ["client_id", "year", "quarter"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
-        }
-      ]
     }
   }
 }

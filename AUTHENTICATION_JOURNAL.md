@@ -139,4 +139,91 @@ The solution is to run DAB in a separate container configured for JWT:
 ### Next Steps for User:
 1. Build and deploy the container using container/DEPLOYMENT.md
 2. Set VITE_TEAMS_DAB_URL in Static Web App settings
-3. Test in Teams with 2024 data as requested 
+3. Test in Teams with 2024 data as requested
+
+## FINAL IMPLEMENTATION - COMPLETE SUCCESS
+
+### The Journey
+Started: July 24, 2025, ~6:00 PM
+Completed: July 24, 2025, ~11:30 PM
+Total Time: ~5.5 hours
+
+### What Actually Happened
+
+#### 1. Initial Failures
+- Tried to configure DAB on SWA to accept JWT tokens - FAILED
+- DAB on SWA is hardcoded to only accept cookies
+- Teams runs in iframe which blocks third-party cookies
+- Result: Endless 401 errors with HTML login pages
+
+#### 2. Container Solution Discovery
+- Realized we need TWO separate DAB instances:
+  - SWA-hosted DAB for browser users (cookie auth)
+  - Container-hosted DAB for Teams users (JWT auth)
+- Created Azure Container Registry: `hwmacr.azurecr.io`
+
+#### 3. Container Build Challenges
+- **v1-v3**: Failed with various DAB download URL issues
+- **v4**: Fixed URL but connection string environment variables didn't work
+- **v5**: Hardcoded connection string, but Active Directory auth failed
+- **v6**: Switched to SQL auth with user `CloudSAddb51659`
+- **v7**: FINALLY WORKED after removing non-existent `quarterly_notes_all_clients` view
+
+#### 4. Azure Resources Created
+- **Container Registry**: `hwmacr.azurecr.io`
+- **Container App**: `dab-teams` in West US 2
+- **Container URL**: `https://dab-teams.lemonglacier-fb047bc7.westus2.azurecontainerapps.io`
+- **SQL User**: CloudSAddb51659 (already existed as dbo)
+
+#### 5. Final Configuration
+- **staticwebapp.database.config.json**: Set back to `"provider": "StaticWebApps"`
+- **container/dab-config.json**: JWT auth with SQL connection string
+- **src/config/api.ts**: Routes API calls based on `isInTeams()`
+- **src/api/client.ts**: Sends Bearer tokens for Teams, cookies for browser
+- **Environment Variable**: `VITE_TEAMS_DAB_URL` set in Static Web App
+
+### Key Discoveries
+1. DAB hosted on SWA CANNOT accept multiple auth providers
+2. The `@env()` syntax in DAB configs is unreliable in containers
+3. SQL auth is more reliable than managed identity for containers
+4. The error "Invalid object name" means the table/view doesn't exist
+5. CloudSAddb51659 was already the database owner (dbo)
+
+### Architecture Summary
+```
+Browser Users                          Teams Users
+     |                                      |
+     v                                      v
+Static Web App                         Teams App
+     |                                      |
+     | (cookies)                            | (JWT Bearer)
+     v                                      v
+SWA-hosted DAB                    Container App DAB
+     |                                      |
+     +------------------+------------------+
+                        |
+                        v
+                   SQL Database
+```
+
+### Files Modified
+- `/staticwebapp.database.config.json` - Removed JWT config
+- `/container/dab-config.json` - Added SQL auth
+- `/container/Dockerfile` - DAB container setup
+- `/src/config/api.ts` - API routing logic
+- `/src/api/client.ts` - Auth header logic
+- `/container/DEPLOYMENT.md` - Deployment guide
+
+### Lessons Learned
+1. Don't trust AI suggestions about DAB capabilities - verify with actual tests
+2. Simple SQL auth works when complex auth fails
+3. Check if database objects actually exist before debugging auth
+4. Container Apps need explicit command line args handling
+5. Always enable debug logging when troubleshooting
+
+### Current Status
+✅ Browser access works with cookie auth
+✅ Teams access works with JWT auth
+✅ Both use the same SQL database
+✅ No code changes needed in the React app (besides config)
+✅ Solution is deployed and running in production 
