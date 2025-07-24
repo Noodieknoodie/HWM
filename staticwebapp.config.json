@@ -11,7 +11,6 @@
         ".json": "application/json"
     },
     "globalHeaders": {
-        "X-Frame-Options": "",
         "Content-Security-Policy": "frame-ancestors 'self' https://teams.microsoft.com https://*.teams.microsoft.com https://*.teams.microsoft.us https://*.teams.microsoft.cn https://*.office.com"
     },
     "routes": [
