@@ -1,11 +1,9 @@
 // frontend/src/api/client.ts
-// Azure Static Web Apps data-api provides consistent REST endpoints
-const DATA_API_BASE = '/data-api/rest';
-
 // Import types
 import { Contact } from '../types/contact';
 import { apiCache, cacheKeys } from '../utils/cache';
 import { isInTeams } from '../teamsAuth';
+import { getApiBaseUrl } from '../config/api';
 
 // Azure's standardized error format
 export interface AzureApiError {
@@ -58,7 +56,8 @@ export class DataApiClient {
     entity: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${DATA_API_BASE}/${entity}`;
+    const baseUrl = getApiBaseUrl(isInTeams());
+    const url = `${baseUrl}/data-api/rest/${entity}`;
 
     // Build headers properly
     const headers = new Headers({
@@ -79,10 +78,10 @@ export class DataApiClient {
       headers.set('Authorization', `Bearer ${this.teamsToken}`);
     }
 
-    // Always use SWA cookie authentication
+    // Use appropriate credentials based on context
     const response = await this.requestWithRetry(url, {
       ...options,
-      credentials: 'include',
+      credentials: isInTeams() ? 'omit' : 'include', // No cookies for Teams, cookies for browser
       headers,
     });
     if (!response.ok) {

@@ -65,7 +65,7 @@ In mixed deployments you can run DAB with both Static Web Apps and Jwt providers
 Configure the Jwt provider in dab-config.json (alone or alongside StaticWebApps), make sure your identity platform issues access tokens that list DAB’s URL as an audience, and send them in the Authorization: Bearer header. DAB will validate the tokens and apply your role-based security rules automatically[2][1][3].
 ```
 
-
+BULLSHIT LIAR ^^^^
 ===
 
 

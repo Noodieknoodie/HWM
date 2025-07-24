@@ -52,7 +52,14 @@
       "Bash(npx shadcn:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "mcp__perplexity-mcp__reason"
+      "mcp__perplexity-mcp__reason",
+      "mcp__azure-mcp-server__extension_az",
+      "Bash(docker run:*)",
+      "Bash(docker build:*)",
+      "Bash(docker push:*)",
+      "Bash(az containerapp update:*)",
+      "Bash(az containerapp logs show:*)",
+      "Bash(az containerapp revision restart:*)"
     ],
     "deny": []
   }

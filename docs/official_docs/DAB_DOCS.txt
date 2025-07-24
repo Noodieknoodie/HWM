@@ -1,0 +1,1260 @@
+Data API builder configuration schema reference
+07/22/2025
+Data API builder requires at least one configuration file to run. This JSON-based file defines your API setup, from environment settings to entity definitions. It begins with a $schema property, which enables schema validation for the rest of the file.
+
+Top-level properties
+Property	Description
+$schema	URI of the JSON schema for this configuration.
+data-source	Object containing database connectivity settings.
+data-source-files	Array of other configuration file paths.
+runtime	Object configuring runtime behaviors.
+entities	Object defining all entities exposed via REST or GraphQL.
+Data-source properties
+Property	Description
+data-source	Object containing database connectivity settings.
+data-source.database-type	Database type used in the backend (mssql, postgresql, mysql, cosmosdb_nosql, cosmosdb_postgresql).
+data-source.connection-string	Connection string for the selected database type.
+data-source.options	Database-specific options and advanced settings.
+data-source.health	Health check configuration for the data source.
+data-source-files	Array of other configuration file paths.
+Runtime properties
+Property	Description
+runtime	Object configuring runtime behaviors.
+runtime.pagination	Pagination settings for API responses.
+runtime.rest	REST API global configuration.
+runtime.graphql	GraphQL API global configuration.
+runtime.cache	Global response caching configuration.
+runtime.telemetry	Telemetry, logging, and monitoring configuration.
+runtime.health	Global health check configuration.
+Entities properties
+Property	Description
+entities	Object defining all entities exposed via REST or GraphQL.
+entities.entity-name.source	Database source details for the entity.
+entities.entity-name.rest	REST API configuration for the entity.
+entities.entity-name.graphql	GraphQL API configuration for the entity.
+entities.entity-name.permissions	Permissions and access control for the entity.
+entities.entity-name.relationships	Relationships to other entities.
+entities.entity-name.cache	Entity-level caching configuration.
+entities.entity-name.health	Entity-level health check configuration.
+Schema
+Parent	Property	Type	Required	Default
+$root	$schema	string	✔️ Yes	None
+Each configuration file begins with a $schema property, specifying the JSON schema for validation.
+
+Format
+JSON
+
+Copy
+{
+  "$schema": <string>
+}
+Example
+JSON
+
+Copy
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json"
+}
+ Tip
+
+The latest schema is always available at https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json.
+
+Versioning
+Schema files are available at specific URLs, ensuring you can use the correct version or the latest available schema.
+
+https
+
+Copy
+https://github.com/Azure/data-api-builder/releases/download/<VERSION>-<suffix>/dab.draft.schema.json
+Replace VERSION-suffix with the version you want.
+
+https
+
+Copy
+https://github.com/Azure/data-api-builder/releases/download/v0.3.7-alpha/dab.draft.schema.json
+Data source files
+Parent	Property	Type	Required	Default
+$root	data-source-files	string array	❌ No	None
+Data API builder supports multiple configuration files, with one designated as the top-level file managing runtime settings. All configurations share the same JSON schema, allowing runtime settings in any or every file without error. Split entities for better organization.
+
+Diagram of multiple configuration files referenced as an array within a single configuration file.
+
+Format
+JSON
+
+Copy
+{
+  "data-source-files": [ "<string>" ]
+}
+Multiple configuration rules
+Every configuration file must include the data-source property.
+Every configuration file must include the entities property.
+The top-level configuration must include runtime.
+Child configurations can include runtime, but it's ignored.
+Child configuration files can include their own child files.
+Configuration files can be organized into subfolders.
+Entity names must be unique across all configuration files.
+Relationships between entities in different configuration files aren't supported.
+Examples
+JSON
+
+Copy
+{
+  "data-source-files": [
+    "dab-config-2.json",
+    "my-folder/dab-config-3.json",
+    "my-folder/my-other-folder/dab-config-4.json"
+  ]
+}
+Additional resources
+
+
+===
+
+
+# DAB DRAFT SCHEMA JSON
+
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/Azure/data-api-builder/releases/download/vmajor.minor.patch/dab.draft.schema.json",
+  "title": "Data API builder",
+  "description": "Schema for Data API builder engine",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the JSON schema with which the structure, constraints, and data types of this Data API builder runtime configuration file should conform.",
+      "default": null
+    },
+    "data-source": {
+      "description": "Data source information",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "database-type": {
+          "description": "Database used in the backend",
+          "type": "string",
+          "enum": [
+            "mssql",
+            "postgresql",
+            "mysql",
+            "cosmosdb_nosql",
+            "cosmosdb_postgresql"
+          ]
+        },
+        "connection-string": {
+          "description": "Connection string for the selected database type",
+          "type": "string"
+        },
+        "options": {
+          "description": "Database specific properties for the backend database",
+          "type": "object"
+        },
+        "health": {
+          "description": "Health check configuration",
+          "type": [ "object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable health check endpoint",
+              "default": true,
+              "additionalProperties": false
+            },
+            "name": {
+              "type": [ "string", "null" ],
+              "description": "Identifier for data source in health check report.",
+              "default": null,
+              "additionalProperties": false
+            },
+            "threshold-ms": {
+              "type": "integer",
+              "description": "Health Check maximum time for query to execute (in ms).",
+              "default": 1000,
+              "additionalProperties": false,
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "database-type": {
+                "const": "cosmosdb_nosql"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "description": "Database specific properties for the backend database",
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "database": {
+                    "type": "string",
+                    "description": "Name of the database"
+                  },
+                  "container": {
+                    "description": "Name of the container",
+                    "type": "string"
+                  },
+                  "schema": {
+                    "description": "Path to the GraphQL schema file",
+                    "type": "string"
+                  }
+                },
+                "required": ["database", "schema"]
+              }
+            },
+            "required": ["options"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "database-type": {
+                "const": "mssql"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "set-session-context": {
+                    "type": "boolean",
+                    "description": "Enable sending data to MsSql using session context"
+                  }
+                }
+              }
+            },
+            "required": []
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "database-type": {
+                "enum": ["mysql", "postgresql", "cosmosdb_postgresql"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        }
+      ],
+      "required": ["database-type", "connection-string"]
+    },
+    "data-source-files": {
+      "type": "array",
+      "description": "Names of runtime configuration files referencing additional databases.",
+      "default": null
+    },
+    "runtime": {
+      "type": "object",
+      "description": "Runtime configuration settings",
+      "additionalProperties": false,
+      "properties": {
+        "pagination": {
+          "type": "object",
+          "properties": {
+            "max-page-size": {
+              "type": ["integer", "null"],
+              "description": "Defines the maximum number of records that can be returned in a single page of results. If set to null, the default value is 100,000.",
+              "default": 100000,
+              "minimum": 1
+            },
+            "default-page-size": {
+              "type": ["integer", "null"],
+              "description": "Sets the default number of records returned in a single response. When this limit is reached, a continuation token is provided to retrieve the next page. If set to null, the default value is 100.",
+              "default": 100,
+              "minimum": 1
+            }
+          }
+        },
+        "rest": {
+          "type": "object",
+          "description": "Global REST endpoint configuration",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "default": "/api",
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean",
+              "description": "Allow enabling/disabling REST requests for all entities."
+            },
+            "request-body-strict": {
+              "type": "boolean",
+              "description": "Does not allow extraneous fields in request body when set to true.",
+              "default": true
+            }
+          }
+        },
+        "graphql": {
+          "type": "object",
+          "description": "Global GraphQL endpoint configuration",
+          "additionalProperties": false,
+          "properties": {
+            "allow-introspection": {
+              "type": "boolean",
+              "description": "Allow querying of the underlying GraphQL schema."
+            },
+            "path": {
+              "default": "/graphql",
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean",
+              "description": "Allow enabling/disabling GraphQL requests for all entities."
+            },
+            "depth-limit": {
+              "type": ["integer", "null"],
+              "description": "Maximum allowed depth of a GraphQL query.",
+              "default": null
+            },
+            "multiple-mutations": {
+              "type": "object",
+              "description": "Configuration properties for multiple mutation operations",
+              "additionalProperties": false,
+              "properties": {
+                "create": {
+                  "type": "object",
+                  "description": "Options for multiple create operations",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Allow enabling/disabling multiple create operations for all entities.",
+                      "default": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "host": {
+          "type": "object",
+          "description": "Global hosting configuration",
+          "additionalProperties": false,
+          "properties": {
+            "max-response-size-mb": {
+              "type": ["integer", "null"],
+              "description": "Specifies the maximum size, in megabytes, of the database response allowed in a single result. If set to null, the default value is 158 MB.",
+              "default": 158,
+              "minimum": 1,
+              "maximum": 158
+            },
+            "mode": {
+              "description": "Set if running in Development or Production mode",
+              "type": ["string", "null"],
+              "default": "production",
+              "enum": ["production", "development"]
+            },
+            "cors": {
+              "type": ["object", "null"],
+              "description": "Configure CORS",
+              "additionalProperties": false,
+              "properties": {
+                "origins": {
+                  "type": "array",
+                  "description": "Allowed origins",
+                  "items": {
+                    "type": "string"
+                  },
+                  "default": []
+                },
+                "allow-credentials": {
+                  "type": "boolean",
+                  "default": "false",
+                  "description": "Set value for Access-Control-Allow-Credentials header"
+                }
+              }
+            },
+            "authentication": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "properties": {
+                "provider": {
+                  "description": "The name of authentication provider",
+                  "oneOf": [
+                    {
+                      "const": "StaticWebApps",
+                      "description": "Authentication provided by Azure Static Web Apps."
+                    },
+                    {
+                      "const": "EntraID",
+                      "description": "Authentication provided by Microsoft Entra ID (formerly Azure AD). Use the JWT property to configure this provider."
+                    },
+                    {
+                      "const": "Simulator",
+                      "description": "Simulated authentication for development and testing purposes."
+                    },
+                    {
+                      "const": "AppService",
+                      "description": "Authentication provided by Azure App Service."
+                    },
+                    {
+                      "const": "AzureAD",
+                      "description": "Synonymous with the EntraID value. Use the JWT property to configure this provider."
+                    },
+                    {
+                      "const": "Custom",
+                      "description": "Custom authentication provider defined by the user. Use the JWT property to configure the custom provider."
+                    }
+                  ],
+                  "default": "StaticWebApps"
+                },
+                "jwt": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "audience": {
+                      "type": "string"
+                    },
+                    "issuer": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["audience", "issuer"]
+                }
+              },
+              "allOf": [
+                {
+                  "$comment": "We want the user to provide the JWT property when the provider requires it, and omit JWT when the provider does not require it.",
+                  "if": {
+                    "properties": {
+                      "provider": {
+                        "anyOf": [
+                          { "const": "EntraID" },
+                          { "const": "AzureAD" },
+                          { "const": "Custom" }
+                        ]
+                      }
+                    },
+                    "required": ["provider"]
+                  },
+                  "then": { "required": ["jwt"] },
+                  "else": { "properties": { "jwt": false } }
+                }
+              ]
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable caching of responses globally.",
+              "default": false
+            },
+            "ttl-seconds": {
+              "type": "integer",
+              "description": "Time to live in seconds",
+              "default": 5
+            }
+          }
+        },
+        "telemetry": {
+          "type": "object",
+          "description": "Telemetry configuration",
+          "additionalProperties": false,
+          "properties": {
+            "application-insights": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "connection-string": {
+                  "type": "string",
+                  "description": "Application Insights connection string"
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Allow enabling/disabling Application Insights telemetry.",
+                  "default": true
+                }
+              },
+              "required": ["connection-string"]
+            },
+            "open-telemetry": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "endpoint": {
+                  "type": "string",
+                  "description": "Open Telemetry connection string"
+                },
+                "headers": {
+                  "type": "string",
+                  "description": "Open Telemetry headers"
+                },
+                "service-name": {
+                  "type": "string",
+                  "description": "Open Telemetry service name",
+                  "default": "dab"
+                },
+                "exporter-protocol": {
+                  "type": "string",
+                  "description": "Open Telemetry protocol",
+                  "default": "grpc",
+                  "enum": ["grpc", "httpprotobuf"]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Allow enabling/disabling Open Telemetry.",
+                  "default": true
+                }
+              },
+              "required": ["endpoint"]
+            },
+            "azure-log-analytics": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Allow enabling/disabling Azure Log Analytics.",
+                  "default": false
+                },
+                "auth": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "workspace-id": {
+                      "type": [ "string", "null" ],
+                      "description": "Azure Log Analytics Workspace ID"
+                    },
+                    "dcr-immutable-id": {
+                      "type": [ "string", "null" ],
+                      "description": "DCR ID for entra-id mode"
+                    },
+                    "dce-endpoint": {
+                      "type": [ "string", "null" ],
+                      "description": "DCE endpoint for entra-id mode"
+                    }
+                  }
+                },
+                "log-type": {
+                  "type": "string",
+                  "description": "Custom log table name in Log Analytics",
+                  "default": "DabLogs"
+                },
+                "flush-interval-seconds": {
+                  "type": "integer",
+                  "description": "Interval between log batch pushes (in seconds)",
+                  "default": 5
+                }
+              },
+              "if": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "auth": {
+                    "properties": {
+                      "workspace-id": {
+                        "type": "string",
+                        "description": "Azure Log Analytics Workspace ID"
+                      },
+                      "dcr-immutable-id": {
+                        "type": "string",
+                        "description": "DCR ID for entra-id mode"
+                      },
+                      "dce-endpoint": {
+                        "type": "string",
+                        "description": "DCE endpoint for entra-id mode"
+                      }
+                    },
+                    "required": [ "workspace-id", "dcr-immutable-id", "dce-endpoint" ]
+                  }
+                },
+                "required": [ "auth" ]
+              }
+            },
+            "log-level": {
+              "type": "object",
+              "description": "Global configuration of log level, defines logging severity levels for specific classes, when 'null' it will set logging level based on 'host: mode' property",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^[a-zA-Z_]\\w{0,}(\\.\\w{1,}){0,}$": {
+                  "description": "Only specific namespaces that are used for logging in DAB are able to be used here. The regex pattern checks that it only allows for namespace values. So it only accepts a letter as its first value, from there it accepts any alphanumeric character, each section is divided by '.' and there cannot be more than 1 '.' in a row",
+                  "type": "string",
+                  "default": null,
+                  "enum": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none",
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "health": {
+          "description": "Health check configuration for runtime properties",
+          "type": [ "object", "null" ],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable health check endpoint globally",
+              "default": true,
+              "additionalProperties": false
+            },
+            "roles": {
+              "type": "array",
+              "description": "Allowed Roles for Comprehensive Health Endpoint",
+              "items": {
+                "type": "string"
+              },
+              "default": null
+            },
+            "cache-ttl-seconds": {
+              "type": "integer",
+              "description": "Time to live in seconds for the Comprehensive Health Check Report cache entry.",
+              "default": 5
+            },
+            "max-query-parallelism": {
+              "type": "integer",
+              "description": "The max degree of parallelism for running parallel health check queries.",
+              "default": 4
+            }
+          }
+        }
+      }
+    },
+    "azure-key-vault": {
+      "type": "object",
+      "description": "Azure Key Vault configuration for storing secrets",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "Azure Key Vault endpoint URL"
+        },
+        "retry-policy": {
+          "type": "object",
+          "description": "Retry policy configuration for Azure Key Vault operations",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["fixed", "exponential"],
+              "default": "exponential",
+              "description": "Retry mode: fixed or exponential backoff"
+            },
+            "max-count": {
+              "type": "integer",
+              "default": 3,
+              "minimum": 0,
+              "description": "Maximum number of retry attempts"
+            },
+            "delay-seconds": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "description": "Initial delay between retries in seconds"
+            },
+            "max-delay-seconds": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 1,
+              "description": "Maximum delay between retries in seconds (for exponential mode)"
+            },
+            "network-timeout-seconds": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 1,
+              "description": "Network timeout for requests in seconds"
+            }
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "description": "Entities that will be exposed via REST and/or GraphQL",
+      "patternProperties": {
+        "^.*$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "health": {
+              "description": "Health check configuration for entity",
+              "type": [ "object", "null" ],
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable health check endpoint for particular entity",
+                  "default": true,
+                  "additionalProperties": false
+                },
+                "first": {
+                  "type": "integer",
+                  "description": "Number of first 'x' rows to be returned in query.",
+                  "default": 100,
+                  "additionalProperties": false,
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "threshold-ms": {
+                  "type": "integer",
+                  "description": "Health Check maximum time for query to execute (in ms).",
+                  "default": 1000,
+                  "additionalProperties": false,
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "source": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The object in the backend database that is mapped to the entity"
+                },
+                {
+                  "type": "object",
+                  "description": "The object in the backend database that is mapped to the entity",
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["table", "view", "stored-procedure"],
+                      "description": "Database object type"
+                    },
+                    "object": {
+                      "type": "string",
+                      "description": "Database object name"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "description": "Dictionary of parameters and their values",
+                      "patternProperties": {
+                        "^.*$": {
+                          "oneOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "key-fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of fields to be used as primary keys. Mandatory field for views when generated through the CLI."
+                    }
+                  },
+                  "required": ["type", "object"]
+                }
+              ]
+            },
+            "rest": {
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "methods": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": ["get", "post", "put", "patch", "delete"]
+                      }
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Allow enabling/disabling REST requests this specific entity.",
+                      "default": true
+                    }
+                  },
+                  "anyOf": [
+                    {
+                      "required": ["path"]
+                    },
+                    {
+                      "required": ["methods"]
+                    },
+                    {
+                      "required": ["enabled"]
+                    }
+                  ]
+                }
+              ]
+            },
+            "graphql": {
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "$ref": "#/$defs/singular-plural"
+                    },
+                    "operation": {
+                      "type": "string",
+                      "enum": ["mutation", "query"]
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Allow enabling/disabling GraphQL requests for this specific entity.",
+                      "default": true
+                    }
+                  },
+                  "anyOf": [
+                    {
+                      "required": ["type"]
+                    },
+                    {
+                      "required": ["operation"]
+                    },
+                    {
+                      "required": ["enabled"]
+                    }
+                  ]
+                }
+              ]
+            },
+            "permissions": {
+              "type": "array",
+              "description": "Permissions assigned to this entity"
+            },
+            "mappings": {
+              "type": "object",
+              "description": "Define mappings between database fields and GraphQL and REST fields",
+              "patternProperties": {
+                "^.*$": {
+                  "type": "string"
+                }
+              }
+            },
+            "relationships": {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cardinality": {
+                      "type": "string",
+                      "enum": ["one", "many"]
+                    },
+                    "target.entity": {
+                      "type": "string"
+                    },
+                    "source.fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "target.fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linking.object": {
+                      "type": "string",
+                      "description": "The database object used for supporting the M:N relationship"
+                    },
+                    "linking.source.fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linking.target.fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["cardinality", "target.entity"]
+                }
+              }
+            },
+            "cache": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable caching of responses for this entity.",
+                  "default": false
+                },
+                "ttl-seconds": {
+                  "type": "integer",
+                  "description": "Time to live in seconds",
+                  "default": 5
+                }
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "source": {
+                "properties": {
+                  "type": {
+                    "oneOf": [
+                      {
+                        "const": "table"
+                      },
+                      {
+                        "const": "view"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "permissions": {
+                "type": "array",
+                "description": "Permissions assigned to this object",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "role": {
+                      "type": "string"
+                    },
+                    "actions": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "pattern": "[*]"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "$ref": "#/$defs/action"
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "action": {
+                                    "$ref": "#/$defs/action"
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "include": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "exclude": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "policy": {
+                                    "type": "object",
+                                    "description": "Define item-level security policy",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "database": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "uniqueItems": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": ["role", "actions"]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "permissions": {
+                "type": "array",
+                "description": "Permissions assigned to this object",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "role": {
+                      "type": "string"
+                    },
+                    "actions": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "pattern": "[*]"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "string",
+                                "enum": ["execute", "*"]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "action": {
+                                    "type": "string",
+                                    "enum": ["execute", "*"]
+                                  },
+                                  "fields": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "include": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "exclude": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "policy": {
+                                    "type": "object",
+                                    "description": "Define item-level security policy",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "database": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "uniqueItems": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": ["role", "actions"]
+              }
+            }
+          },
+          "required": ["source", "permissions"]
+        }
+      }
+    }
+  },
+  "if": {
+    "required": ["azure-key-vault"]
+  },
+  "then": {
+    "properties": {
+      "azure-key-vault": {
+        "required": ["endpoint"]
+      }
+    }
+  },
+  "required": ["data-source", "entities"],
+  "$defs": {
+    "singular-plural": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "singular": {
+              "type": "string"
+            },
+            "plural": {
+              "type": "string"
+            }
+          },
+          "required": ["singular"]
+        }
+      ]
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["create", "read", "update", "delete"]
+        },
+        {
+          "type": "string",
+          "pattern": "[*]"
+        }
+      ]
+    }
+  }
+}
+
+
+=====
+
+Using /.auth/ behind Azure Front Door
+
+Martin Hinshelwood nkdAgility.com
+75 Reputation points• MVP
+Dec 4, 2024, 5:33 AM
+I have AFD in front of my Azure Static Web App on https://nkdagility.com and I want to use the OOB /.auth/login/github to login. However it returns to the Static Web domain instead of the AFD domain... and /{AFDDoamin}/.auth/me is empty.
+
+Is there any documentation or good practices around how to configure a Azure Static Web App behind AFD.
+
+I already have a /.auth/login/github?post_login_redirect_uri=https://nkdagility.com/ but it still ends up at https://yellow-pond.nkdagility.com.
+
+Azure Front Door
+Azure Static Web Apps
+
+4 comments
+Hide comments for this question
+
+Report a concern
+I have the same question 
+0
+{count} votes
+
+Martin Hinshelwood nkdAgility.com
+75 Reputation points• MVP
+Dec 5, 2024, 12:59 AM
+This is great @ChaitanyaNaykodi-MSFT however if I add the same hostname to the Azure Static Site it takes ownership of it in DNS...
+
+Since Azure Static Sites recommends Azure Front Door I would like to hear from them as to what the correct procedure is to maintain the URL's...
+
+
+
+I was able to poke and get it to work, thanks to your documentation. :) It would still be great to hear what he intended setup is.
+
+
+0 votes
+ 
+Report a concern
+
+ChaitanyaNaykodi-MSFT
+27,486 Reputation points• Microsoft Employee • Moderator
+Dec 5, 2024, 12:13 PM
+@Martin Hinshelwood nkdAgility.com
+Thank you for getting back.
+We have reached to the product group internally regarding the ask above will make a response here as soon as we have an update. Thanks!
+
+
+1 vote
+ 
+Report a concern
+
+Martin Hinshelwood nkdAgility.com
+75 Reputation points• MVP
+Dec 6, 2024, 8:11 AM
+Great!
+
+I have it working following your doc, but I don't want to be caught out if its not the supported procedure.
+
+
+1 vote
+ 
+Report a concern
+
+ChaitanyaNaykodi-MSFT
+27,486 Reputation points• Microsoft Employee • Moderator
+Dec 12, 2024, 12:49 PM
+@Martin Hinshelwood nkdAgility.com
+Thank you for your patience here. I just heard back from the team and the approach above for host name preservation is recommended by them in this scenario.I have added this as an update in my answer below. Please let me know if you have any additional questions. Thanks!
+
+Please "Accept the answer" if the information helped you. This will help us and others in the community as well.
+
+
+0 votes
+ 
+Report a concern
+Sign in to comment
+ Accepted answer
+
+ChaitanyaNaykodi-MSFT
+27,486 Reputation points• Microsoft Employee • Moderator
+Dec 4, 2024, 10:59 AM
+@Martin Hinshelwood nkdAgility.com
+
+Thank you for reaching out. I think the issue might be due to host name preservation as described in the article here
+https://learn.microsoft.com/en-us/azure/architecture/best-practices/host-name-preservation
+
+We recommend that you preserve the original HTTP host name when you use a reverse proxy in front of a web application. Having a different host name at the reverse proxy than the one that's provided to the back-end application server can lead to cookies or redirect URLs that don't work properly.
+
+A common and more specific case of the previous scenario occurs when absolute redirect URLs are generated as described here.
+
+The documentation does not specifically talk about static web apps as backend but The recommendation to preserve the host name typically still applies for any components in your application that depend on it, unless you specifically make your application aware of reverse proxies and respect the forwarded or X-Forwarded-Host headers, for example.
+Update 12/12:
+
+Thank you for your patience here, I just heard back from the team and the approach above for host name preservation is recommended by them in this scenario.
+
+Hope this helps! Please let me know if you have any additional questions. Thanks
+
+
