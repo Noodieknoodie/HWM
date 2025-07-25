@@ -18,7 +18,7 @@ import {
 import { dataApiClient } from '@/api/client';
 import { Alert } from '@/components/Alert';
 import { apiCache, cacheKeys } from '@/utils/cache';
-import { Skeleton } from '@/components/ui/Skeleton';
+import LoadingVault from '@/components/LoadingVault';
 
 // Interfaces for the new page-ready views
 interface QuarterlyPageData {
@@ -208,13 +208,44 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Load data using the new page-ready views
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  // Load data using the new page-ready views with stale-while-revalidate
+  const loadData = useCallback(async (showLoader = true) => {
+    if (showLoader) {
+      setLoading(true);
+    }
     setError(null);
     
     try {
       if (viewMode === 'quarterly') {
+        // Check for cached data first
+        const cacheKey = `quarterly_page_${currentYear}_${currentQuarter}`;
+        const cached = apiCache.get(cacheKey);
+        
+        if (cached && showLoader) {
+          // Show cached data immediately
+          const grouped = (cached as QuarterlyPageData[]).reduce((acc, row) => {
+            let group = acc.find(g => g.provider_name === row.provider_name);
+            if (!group) {
+              group = {
+                provider_name: row.provider_name,
+                clients: [],
+                isExpanded: true,
+                providerData: row
+              };
+              acc.push(group);
+            }
+            group.clients.push(row);
+            return acc;
+          }, [] as ProviderGroup<QuarterlyPageData>[]);
+          
+          setQuarterlyGroups(grouped);
+          setLoading(false);
+          
+          // Then refresh in background
+          loadData(false);
+          return;
+        }
+        
         // Load quarterly data from the new view
         const data = await dataApiClient.getQuarterlyPageData(currentYear, currentQuarter) as QuarterlyPageData[];
         
@@ -236,6 +267,35 @@ const Summary: React.FC = () => {
         
         setQuarterlyGroups(grouped);
       } else {
+        // Check for cached data first
+        const cacheKey = `annual_page_${currentYear}`;
+        const cached = apiCache.get(cacheKey);
+        
+        if (cached && showLoader) {
+          // Show cached data immediately
+          const grouped = (cached as AnnualPageData[]).reduce((acc, row) => {
+            let group = acc.find(g => g.provider_name === row.provider_name);
+            if (!group) {
+              group = {
+                provider_name: row.provider_name,
+                clients: [],
+                isExpanded: true,
+                providerData: row
+              };
+              acc.push(group);
+            }
+            group.clients.push(row);
+            return acc;
+          }, [] as ProviderGroup<AnnualPageData>[]);
+          
+          setAnnualGroups(grouped);
+          setLoading(false);
+          
+          // Then refresh in background
+          loadData(false);
+          return;
+        }
+        
         // Load annual data from the new view
         const data = await dataApiClient.getAnnualPageData(currentYear) as AnnualPageData[];
         
@@ -259,9 +319,13 @@ const Summary: React.FC = () => {
       }
     } catch (err) {
       // console.error('Failed to load summary data:', err);
-      setError('Failed to load summary data. Please try again.');
+      if (showLoader) {
+        setError('Failed to load summary data. Please try again.');
+      }
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   }, [currentYear, currentQuarter, viewMode]);
 
@@ -606,67 +670,7 @@ const Summary: React.FC = () => {
   const collectionRate = totals.expected > 0 ? (totals.actual / totals.expected * 100) : 0;
 
   if (loading) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header skeleton */}
-        <div className="mb-6">
-          <Skeleton width={300} height={32} className="mb-2" />
-        </div>
-        
-        {/* Navigation controls skeleton */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Skeleton width={40} height={40} variant="rectangular" />
-            <Skeleton width={100} height={24} />
-            <Skeleton width={40} height={40} variant="rectangular" />
-          </div>
-          <div className="flex items-center gap-4">
-            <Skeleton width={120} height={40} variant="rectangular" />
-            <Skeleton width={100} height={40} variant="rectangular" />
-          </div>
-        </div>
-        
-        {/* Totals skeleton */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="text-center">
-                <Skeleton width="60%" height={16} className="mx-auto mb-2" />
-                <Skeleton width="80%" height={28} className="mx-auto" />
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Provider groups skeleton */}
-        {[1, 2, 3].map(provider => (
-          <div key={provider} className="mb-6">
-            {/* Provider header */}
-            <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
-              <div className="flex items-center justify-between">
-                <Skeleton width={200} height={24} className="bg-blue-500" />
-                <Skeleton width={150} height={20} className="bg-blue-500" />
-              </div>
-            </div>
-            
-            {/* Client rows */}
-            <div className="bg-white border border-t-0 border-gray-200 rounded-b-lg">
-              {[1, 2, 3].map(client => (
-                <div key={client} className="border-b border-gray-200 last:border-b-0 p-4">
-                  <div className="grid grid-cols-5 gap-4 items-center">
-                    <Skeleton width="80%" height={20} />
-                    <Skeleton width="60%" height={20} />
-                    <Skeleton width="70%" height={20} />
-                    <Skeleton width="50%" height={20} />
-                    <Skeleton width={32} height={32} variant="rectangular" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <LoadingVault />;
   }
 
   const providerGroups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;

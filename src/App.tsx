@@ -53,13 +53,25 @@ function AppContent() {
   const dataApiClient = useDataApiClient();
   
   
-  // Pre-cache client list when user is authenticated
+  // Pre-cache client list AND summary data when user is authenticated
   useEffect(() => {
     if (user && !loading) {
-      // Fire and forget - don't wait for it
-      dataApiClient.getClients().catch(() => {
-        // Silently fail - sidebar will load it anyway
-      });
+      // Fire and forget - don't wait for these
+      Promise.all([
+        // Pre-cache client list
+        dataApiClient.getClients().catch(() => {}),
+        
+        // Pre-cache current quarter summary data
+        (() => {
+          const now = new Date();
+          const currentMonth = now.getMonth() + 1;
+          const currentQ = Math.ceil(currentMonth / 3);
+          const year = currentQ === 1 ? now.getFullYear() - 1 : now.getFullYear();
+          const quarter = currentQ === 1 ? 4 : currentQ - 1;
+          
+          return dataApiClient.getQuarterlyPageData(year, quarter).catch(() => {});
+        })()
+      ]);
     }
   }, [user, loading]);
   
