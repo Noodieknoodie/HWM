@@ -18,11 +18,7 @@
     "host": {
       "mode": "production",
       "authentication": {
-        "provider": "AzureAD",
-        "jwt": {
-          "issuer": "https://login.microsoftonline.com/e621abc4-3baa-4b93-badc-3b99e8609963/v2.0",
-          "audience": "api://green-rock-024c27f1e.1.azurestaticapps.net/cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0"
-        }
+        "provider": "StaticWebApps"
       }
     }
   },
@@ -226,19 +222,6 @@
         {
           "role": "authenticated",
           "actions": ["read", "create", "update"]
-        }
-      ]
-    },
-    "quarterly_notes_all_clients": {
-      "source": {
-        "object": "dbo.quarterly_notes_all_clients",
-        "type": "view",
-        "key-fields": ["client_id", "year", "quarter"]
-      },
-      "permissions": [
-        {
-          "role": "authenticated",
-          "actions": ["read"]
         }
       ]
     }

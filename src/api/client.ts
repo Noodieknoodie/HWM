@@ -331,25 +331,6 @@ export class DataApiClient {
     return this.request(`quarterly_notes?$filter=client_id eq ${clientId} and year eq ${year} and quarter eq ${quarter}`);
   }
 
-  // NEW: Batch method to get all quarterly notes for a period (WITH CACHING)
-  async getQuarterlyNotesBatch(year: number, quarter: number) {
-    const cacheKey = cacheKeys.quarterlyNotes(year, quarter);
-    
-    // Check cache first
-    const cached = apiCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-    
-    // If not cached, fetch from API
-    const data = await this.request(`quarterly_notes_all_clients?$filter=year eq ${year} and quarter eq ${quarter}`);
-    
-    // Cache for 5 minutes (quarterly notes don't change often)
-    apiCache.set(cacheKey, data, 5 * 60 * 1000);
-    
-    return data;
-  }
-
   async updateQuarterlyNote(clientId: number, year: number, quarter: number, notes: string) {
     // First check if note exists
     const existing = await this.getQuarterlyNote(clientId, year, quarter);
