@@ -2,8 +2,6 @@
 // Import types
 import { Contact } from '../types/contact';
 import { apiCache, cacheKeys } from '../utils/cache';
-import { isInTeams } from '../teamsAuth';
-import { getApiBaseUrl } from '../config/api';
 
 // Azure's standardized error format
 export interface AzureApiError {
@@ -14,11 +12,6 @@ export interface AzureApiError {
 }
 
 export class DataApiClient {
-  private teamsToken: string | null = null;
-
-  setTeamsToken(token: string | null) {
-    this.teamsToken = token;
-  }
 
   private async requestWithRetry(
     url: string,
@@ -56,18 +49,14 @@ export class DataApiClient {
     entity: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const inTeams = isInTeams();
-    const baseUrl = getApiBaseUrl(inTeams);
-    // Container uses /rest, SWA uses /data-api/rest
-    const url = inTeams ? `${baseUrl}/rest/${entity}` : `${baseUrl}/data-api/rest/${entity}`;
-
-    // Build headers properly
+    const url = `/data-api/rest/${entity}`;
+    
     const headers = new Headers({
       'Content-Type': 'application/json',
       'X-MS-API-ROLE': 'authenticated',
     });
 
-    // Copy any existing headers from options
+    // Keep existing header merge logic
     if (options.headers) {
       const existingHeaders = new Headers(options.headers);
       existingHeaders.forEach((value, key) => {
@@ -75,15 +64,9 @@ export class DataApiClient {
       });
     }
 
-    // Add Bearer token if in Teams
-    if (isInTeams() && this.teamsToken) {
-      headers.set('Authorization', `Bearer ${this.teamsToken}`);
-    }
-
-    // Use appropriate credentials based on context
     const response = await this.requestWithRetry(url, {
       ...options,
-      credentials: isInTeams() ? 'omit' : 'include', // No cookies for Teams, cookies for browser
+      credentials: 'include',
       headers,
     });
     if (!response.ok) {

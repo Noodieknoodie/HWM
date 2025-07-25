@@ -11,8 +11,44 @@ import Summary from './pages/Summary'
 // import Contracts from './pages/Contracts'
 import ErrorBoundary from './components/ErrorBoundary'
 import Export from './pages/Export'
+import * as microsoftTeams from '@microsoft/teams-js'
+import { isInTeams } from './teamsAuth'
+
+function TeamsRedirect() {
+  useEffect(() => {
+    microsoftTeams.app.initialize().then(() => {
+      setTimeout(() => {
+        microsoftTeams.app.openLink('https://green-rock-024c27f1e.1.azurestaticapps.net');
+      }, 1000);
+    }).catch(() => {
+      // If Teams SDK fails, try simple redirect
+      window.open('https://green-rock-024c27f1e.1.azurestaticapps.net', '_blank');
+    });
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Opening HWM 401k Tracker...
+        </h1>
+        <p className="text-gray-600">
+          Redirecting to your browser for the best experience
+        </p>
+        <div className="mt-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
+  // Check Teams context before any auth
+  if (isInTeams()) {
+    return <TeamsRedirect />;
+  }
+  
   const { user, loading } = useAuth();
   const dataApiClient = useDataApiClient();
   
