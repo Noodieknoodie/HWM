@@ -37,7 +37,8 @@
     "identity"
   ],
   "validDomains": [
-    "green-rock-024c27f1e.1.azurestaticapps.net"
+    "green-rock-024c27f1e.1.azurestaticapps.net",
+    "dab-teams.lemonglacier-fb047bc7.westus2.azurecontainerapps.io"
   ],
   "webApplicationInfo": {
     "id": "cc64b230-1e3b-49e3-9a1e-4bb95b55ddb0",
