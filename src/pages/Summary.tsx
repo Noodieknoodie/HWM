@@ -18,7 +18,6 @@ import {
 import { dataApiClient } from '@/api/client';
 import { Alert } from '@/components/Alert';
 import { apiCache, cacheKeys } from '@/utils/cache';
-import LoadingVault from '@/components/LoadingVault';
 
 // Interfaces for the new page-ready views
 interface QuarterlyPageData {
@@ -669,8 +668,68 @@ const Summary: React.FC = () => {
 
   const collectionRate = totals.expected > 0 ? (totals.actual / totals.expected * 100) : 0;
 
-  if (loading) {
-    return <LoadingVault />;
+  // NEVER show empty data - keep loading until we have data
+  if (loading || (viewMode === 'quarterly' ? quarterlyGroups.length === 0 : annualGroups.length === 0)) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header with better skeleton */}
+        <div className="mb-6">
+          <div className="h-8 bg-gray-200 rounded w-72 animate-pulse" />
+        </div>
+        
+        {/* Navigation controls - cleaner skeleton */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
+            <div className="w-24 h-6 bg-gray-200 rounded animate-pulse" />
+            <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-28 h-10 bg-gray-200 rounded animate-pulse" />
+            <div className="w-24 h-10 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+        
+        {/* Metric cards - cleaner design */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse" />
+              <div className="h-7 bg-gray-300 rounded w-32 animate-pulse" />
+            </div>
+          ))}
+        </div>
+        
+        {/* Table skeleton - cleaner, more realistic */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Table header */}
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center gap-4">
+              <div className="h-5 bg-gray-300 rounded w-40 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse ml-auto" />
+            </div>
+          </div>
+          
+          {/* Table rows */}
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="border-b border-gray-100 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 bg-gray-200 rounded animate-pulse" style={{ width: `${120 + Math.random() * 80}px` }} />
+                </div>
+                <div className="grid grid-cols-4 gap-4 flex-1">
+                  <div className="h-5 bg-gray-200 rounded w-16 animate-pulse ml-auto" />
+                  <div className="h-5 bg-gray-200 rounded w-20 animate-pulse ml-auto" />
+                  <div className="h-5 bg-gray-200 rounded w-16 animate-pulse ml-auto" />
+                  <div className="h-5 bg-gray-200 rounded w-16 animate-pulse ml-auto" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const providerGroups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;

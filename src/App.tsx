@@ -80,43 +80,35 @@ function AppContent() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           {/* Logo/Brand area */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              HWM 401k Tracker
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              HWM
             </h1>
-            <p className="text-gray-600">Hohimer Wealth Management</p>
+            <p className="text-gray-600 text-sm tracking-widest">401K TRACKER</p>
           </div>
 
-          {/* Loading animation */}
-          <div className="relative w-24 h-24 mx-auto mb-8">
-            {/* Outer ring */}
-            <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+          {/* Simple abstract loading animation */}
+          <div className="relative w-32 h-32 mx-auto mb-8">
+            {/* Three orbiting dots */}
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '3s' }}>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-600 rounded-full"></div>
+            </div>
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '3s', animationDelay: '1s' }}>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-purple-600 rounded-full"></div>
+            </div>
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '3s', animationDelay: '2s' }}>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-600 rounded-full"></div>
+            </div>
             
-            {/* Spinning gradient ring */}
-            <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
-            
-            {/* Inner pulse */}
-            <div className="absolute inset-4 bg-blue-600 rounded-full animate-pulse opacity-20"></div>
-            
-            {/* Center dot */}
-            <div className="absolute inset-8 bg-blue-600 rounded-full"></div>
+            {/* Center shape morphing */}
+            <div className="absolute inset-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full animate-pulse opacity-80"></div>
           </div>
 
-          {/* Loading text with fade animation */}
+          {/* Simple status text */}
           <div className="space-y-2">
-            <p className="text-lg font-medium text-gray-900 animate-pulse">
-              Authenticating...
+            <p className="text-sm font-medium text-gray-600">
+              Securing your session
             </p>
-            <p className="text-sm text-gray-500">
-              Connecting to Microsoft Azure
-            </p>
-          </div>
-
-          {/* Progress dots */}
-          <div className="flex justify-center space-x-2 mt-6">
-            <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-            <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-            <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
           </div>
         </div>
       </div>
