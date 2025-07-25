@@ -1,24 +1,32 @@
-# Node
+# Node and package managers
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
+api/package-lock.json
+
+# Build output
 dist/
 build/
+api/dist/
 
-# Environment variables
+# Environment variables and secrets
 .env
 .env.local
 .env.*.local
+api/local.settings.json
+container/.env
+container/dab-config.json
 
-# IDE
+# IDE/editor settings
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# OS-generated files
 .DS_Store
 Thumbs.db
 
@@ -26,21 +34,19 @@ Thumbs.db
 logs/
 *.log
 
-# Testing
+# Test output
 coverage/
 .nyc_output/
 *.lcov
 
-# Teams
+# Azure/Teams deployment artifacts
 .fx/
 .localConfigs/
-
-# Azure
 *.azurewebsites.net
 *.scm.azurewebsites.net
+api/.funcignore
+swa-db-connections/
+teams-manifest/manifest.local.json
+teams-manifest/*.zip
 
-SECRET_NO_GITHUB.md
-SECRETNOGITHUB.md
 
-Claude_Session.md
-Claude_Session.md

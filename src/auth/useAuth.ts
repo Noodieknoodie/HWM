@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { isInTeams, getTeamsAuthToken } from '../teamsAuth';
 import { dataApiClient } from '../api/client';
+import { exchangeTeamsTokenForApiToken } from '../utils/tokenExchange';
 
 interface User {
   userId: string;
@@ -49,30 +50,43 @@ export function useAuth() {
 
       try {
         if (isInTeams()) {
-          // TEAMS PATH: Get token and use it directly
-          const token = await getTeamsAuthToken();
+          // TEAMS PATH: Get Teams SSO token
+          const teamsToken = await getTeamsAuthToken();
           
           // Parse the JWT to get user info
-          const tokenParts = token.split('.');
+          const tokenParts = teamsToken.split('.');
           const payload = JSON.parse(atob(tokenParts[1]));
           
-          // Set token in API client for all future requests
-          dataApiClient.setTeamsToken(token);
-          
-          // Create user from token claims
-          const user = {
-            userId: payload.oid || payload.sub,
-            userDetails: payload.preferred_username || payload.email || payload.name,
-            userRoles: ['authenticated'],
-            identityProvider: 'aad'
-          };
-          
-          setAuthState({ 
-            user, 
-            loading: false, 
-            error: null,
-            token 
-          });
+          // Exchange Teams token for API token
+          try {
+            const apiToken = await exchangeTeamsTokenForApiToken(teamsToken);
+            
+            // Set API token in client for all future requests
+            dataApiClient.setTeamsToken(apiToken);
+            
+            // Create user from token claims
+            const user = {
+              userId: payload.oid || payload.sub,
+              userDetails: payload.preferred_username || payload.email || payload.name,
+              userRoles: ['authenticated'],
+              identityProvider: 'aad'
+            };
+            
+            setAuthState({ 
+              user, 
+              loading: false, 
+              error: null,
+              token: apiToken 
+            });
+          } catch (exchangeError) {
+            console.error('Token exchange failed:', exchangeError);
+            setAuthState({ 
+              user: null, 
+              loading: false, 
+              error: exchangeError as Error,
+              token: null 
+            });
+          }
         } else {
           // BROWSER PATH: Standard SWA flow
           const swaUser = await checkSwaSession();

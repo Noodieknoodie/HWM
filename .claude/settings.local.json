@@ -59,7 +59,8 @@
       "Bash(docker push:*)",
       "Bash(az containerapp update:*)",
       "Bash(az containerapp logs show:*)",
-      "Bash(az containerapp revision restart:*)"
+      "Bash(az containerapp revision restart:*)",
+      "mcp__seqthink__sequentialthinking"
     ],
     "deny": []
   }

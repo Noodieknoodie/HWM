@@ -1,0 +1,1 @@
+create new .md files that summarize any major implimentations. itterate on them until the task at hand is complete. 
