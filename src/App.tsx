@@ -1,18 +1,21 @@
 //src/App.tsx
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useDataApiClient } from './api/client'
 import { useAuth } from './auth/useAuth'
 import PageLayout from './components/PageLayout'
-import Payments from './pages/Payments'
-// import Documents from './pages/Documents'
-import Summary from './pages/Summary'
-// import Contacts from './pages/Contacts'
-// import Contracts from './pages/Contracts'
 import ErrorBoundary from './components/ErrorBoundary'
-import Export from './pages/Export'
 import * as microsoftTeams from '@microsoft/teams-js'
 import { isInTeams } from './teamsAuth'
+
+// Lazy load all route components for code splitting
+const Summary = lazy(() => import('./pages/Summary'))
+const Payments = lazy(() => import('./pages/Payments'))
+const Export = lazy(() => import('./pages/Export'))
+// Uncomment these when re-enabling routes
+// const Documents = lazy(() => import('./pages/Documents'))
+// const Contacts = lazy(() => import('./pages/Contacts'))
+// const Contracts = lazy(() => import('./pages/Contracts'))
 
 function TeamsRedirect() {
   useEffect(() => {
@@ -130,19 +133,28 @@ function AppContent() {
     );
   }
   
+  // Simple loading component for lazy-loaded routes
+  const RouteLoader = () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  )
+  
   return (
-    <Routes>
-      <Route path="/" element={<PageLayout />}>
-        <Route index element={<Navigate to="/Summary" replace />} />
-        <Route path="Summary" element={<Summary />} />
-        <Route path="Payments" element={<Payments />} />
-        {/* <Route path="Contacts" element={<Contacts />} /> */}
-        {/* <Route path="Contracts" element={<Contracts />} /> */}
-        <Route path="Export" element={<Export />} />
-        {/* <Route path="Documents" element={<Documents />} /> */}
-        <Route path="*" element={<Navigate to="/Summary" replace />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<RouteLoader />}>
+      <Routes>
+        <Route path="/" element={<PageLayout />}>
+          <Route index element={<Navigate to="/Summary" replace />} />
+          <Route path="Summary" element={<Summary />} />
+          <Route path="Payments" element={<Payments />} />
+          {/* <Route path="Contacts" element={<Contacts />} /> */}
+          {/* <Route path="Contracts" element={<Contracts />} /> */}
+          <Route path="Export" element={<Export />} />
+          {/* <Route path="Documents" element={<Documents />} /> */}
+          <Route path="*" element={<Navigate to="/Summary" replace />} />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 

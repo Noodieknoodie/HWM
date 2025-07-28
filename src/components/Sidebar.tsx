@@ -1,5 +1,6 @@
 // frontend/src/components/Sidebar.tsx
 import React, { useState, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@/stores/useAppStore';
 import ClientSearch from './ClientSearch';
 import { useDataApiClient } from '@/api/client';
@@ -13,8 +14,12 @@ interface Client {
 }
 
 const Sidebar: React.FC = () => {
-  const selectedClient = useAppStore((state) => state.selectedClient);
-  const setSelectedClient = useAppStore((state) => state.setSelectedClient);
+  const { selectedClient, setSelectedClient } = useAppStore(
+    useShallow((state) => ({
+      selectedClient: state.selectedClient,
+      setSelectedClient: state.setSelectedClient
+    }))
+  );
   
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -1,5 +1,6 @@
 // frontend/src/components/ClientSearch.tsx
 import React, { useState, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@/stores/useAppStore';
 
 interface Client {
@@ -16,7 +17,7 @@ interface ClientSearchProps {
 }
 
 const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = false }) => {
-  const setSelectedClient = useAppStore((state) => state.setSelectedClient);
+  const setSelectedClient = useAppStore(useShallow((state) => state.setSelectedClient));
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredClients, setFilteredClients] = useState<Client[]>(clients);
   const searchInputRef = React.useRef<HTMLInputElement>(null);

@@ -1,12 +1,13 @@
 // frontend/src/components/PageLayout.tsx
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import useAppStore from '@/stores/useAppStore';
 
 const PageLayout: React.FC = () => {
-  const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
+  const documentViewerOpen = useAppStore(useShallow((state) => state.documentViewerOpen));
   const location = useLocation();
   
   // Show sidebar only on payments page

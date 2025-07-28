@@ -1,5 +1,6 @@
 // frontend/src/pages/Payments.tsx
 import React, { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@/stores/useAppStore';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
 import { usePayments, Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
@@ -21,10 +22,13 @@ const getErrorMessage = (error: any): string => {
 };
 
 const Payments: React.FC = () => {
-  // Note: Could optimize by combining selectors: useAppStore((state) => ({ selectedClient: state.selectedClient, documentViewerOpen: state.documentViewerOpen }))
-  // But current approach is fine for readability
-  const selectedClient = useAppStore((state) => state.selectedClient);
-  const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
+  // Using useShallow to prevent unnecessary re-renders
+  const { selectedClient, documentViewerOpen } = useAppStore(
+    useShallow((state) => ({
+      selectedClient: state.selectedClient,
+      documentViewerOpen: state.documentViewerOpen
+    }))
+  );
   const { dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);
   
   // Payment form and history state
