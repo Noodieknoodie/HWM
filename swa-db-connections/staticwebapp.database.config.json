@@ -27,12 +27,19 @@
       "source": {
         "object": "dbo.comprehensive_payment_summary",
         "type": "view",
-        "key-fields": ["client_id", "year", "quarter", "period"]
+        "key-fields": [
+          "client_id",
+          "year",
+          "quarter",
+          "period"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -41,7 +48,11 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read", "create", "update"]
+          "actions": [
+            "read",
+            "create",
+            "update"
+          ]
         }
       ]
     },
@@ -50,7 +61,10 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["create", "update"]
+          "actions": [
+            "create",
+            "update"
+          ]
         }
       ]
     },
@@ -59,7 +73,11 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read", "create", "update"]
+          "actions": [
+            "read",
+            "create",
+            "update"
+          ]
         }
       ]
     },
@@ -68,7 +86,12 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read", "create", "update", "delete"]
+          "actions": [
+            "read",
+            "create",
+            "update",
+            "delete"
+          ]
         }
       ]
     },
@@ -77,7 +100,12 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read", "create", "update", "delete"]
+          "actions": [
+            "read",
+            "create",
+            "update",
+            "delete"
+          ]
         }
       ]
     },
@@ -86,7 +114,9 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -94,12 +124,16 @@
       "source": {
         "object": "dbo.sidebar_clients_view",
         "type": "view",
-        "key-fields": ["client_id"]
+        "key-fields": [
+          "client_id"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -107,12 +141,16 @@
       "source": {
         "object": "dbo.dashboard_view",
         "type": "view",
-        "key-fields": ["client_id"]
+        "key-fields": [
+          "client_id"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -120,12 +158,16 @@
       "source": {
         "object": "dbo.payment_history_view",
         "type": "view",
-        "key-fields": ["payment_id"]
+        "key-fields": [
+          "payment_id"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -133,12 +175,18 @@
       "source": {
         "object": "dbo.payment_form_periods_view",
         "type": "view",
-        "key-fields": ["client_id", "year", "period"]
+        "key-fields": [
+          "client_id",
+          "year",
+          "period"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -146,12 +194,16 @@
       "source": {
         "object": "dbo.payment_form_defaults_view",
         "type": "view",
-        "key-fields": ["client_id"]
+        "key-fields": [
+          "client_id"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -159,12 +211,18 @@
       "source": {
         "object": "dbo.quarterly_summary_aggregated",
         "type": "view",
-        "key-fields": ["client_id", "applied_year", "quarter"]
+        "key-fields": [
+          "client_id",
+          "applied_year",
+          "quarter"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -172,12 +230,17 @@
       "source": {
         "object": "dbo.yearly_summaries_view",
         "type": "view",
-        "key-fields": ["client_id", "year"]
+        "key-fields": [
+          "client_id",
+          "year"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -186,7 +249,11 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read", "create", "update"]
+          "actions": [
+            "read",
+            "create",
+            "update"
+          ]
         }
       ]
     },
@@ -194,12 +261,39 @@
       "source": {
         "object": "dbo.quarterly_page_data",
         "type": "view",
-        "key-fields": ["client_id", "applied_year", "quarter", "provider_name"]
+        "key-fields": [
+          "client_id",
+          "applied_year",
+          "quarter",
+          "provider_name"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
+        }
+      ]
+    },
+    "quarterly_page_data_fast": {
+      "source": {
+        "object": "dbo.quarterly_page_data_fast",
+        "type": "view",
+        "key-fields": [
+          "client_id",
+          "applied_year",
+          "quarter",
+          "provider_name"
+        ]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -207,12 +301,18 @@
       "source": {
         "object": "dbo.annual_page_data",
         "type": "view",
-        "key-fields": ["client_id", "applied_year", "provider_name"]
+        "key-fields": [
+          "client_id",
+          "applied_year",
+          "provider_name"
+        ]
       },
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read"]
+          "actions": [
+            "read"
+          ]
         }
       ]
     },
@@ -221,7 +321,11 @@
       "permissions": [
         {
           "role": "authenticated",
-          "actions": ["read", "create", "update"]
+          "actions": [
+            "read",
+            "create",
+            "update"
+          ]
         }
       ]
     }
