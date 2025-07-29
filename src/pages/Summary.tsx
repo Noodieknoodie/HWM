@@ -208,43 +208,44 @@ const Summary: React.FC = () => {
   };
 
   // Load data using the new page-ready views with stale-while-revalidate
-  const loadData = useCallback(async (showLoader = true) => {
-    if (showLoader) {
+  const loadData = useCallback(async (/*showLoader = true*/) => {
+    // if (showLoader) {
       setLoading(true);
-    }
+    // }
     setError(null);
     
     try {
       if (viewMode === 'quarterly') {
-        // Check for cached data first
-        const cacheKey = `quarterly_page_${currentYear}_${currentQuarter}`;
-        const cached = apiCache.get(cacheKey);
+        // CACHING COMMENTED OUT - Using fast view now
+        // // Check for cached data first
+        // const cacheKey = `quarterly_page_${currentYear}_${currentQuarter}`;
+        // const cached = apiCache.get(cacheKey);
         
-        if (cached && showLoader) {
-          // Show cached data immediately
-          const grouped = (cached as QuarterlyPageData[]).reduce((acc, row) => {
-            let group = acc.find(g => g.provider_name === row.provider_name);
-            if (!group) {
-              group = {
-                provider_name: row.provider_name,
-                clients: [],
-                isExpanded: true,
-                providerData: row
-              };
-              acc.push(group);
-            }
-            group.clients.push(row);
-            return acc;
-          }, [] as ProviderGroup<QuarterlyPageData>[]);
+        // if (cached && showLoader) {
+        //   // Show cached data immediately
+        //   const grouped = (cached as QuarterlyPageData[]).reduce((acc, row) => {
+        //     let group = acc.find(g => g.provider_name === row.provider_name);
+        //     if (!group) {
+        //       group = {
+        //         provider_name: row.provider_name,
+        //         clients: [],
+        //         isExpanded: true,
+        //         providerData: row
+        //       };
+        //       acc.push(group);
+        //     }
+        //     group.clients.push(row);
+        //     return acc;
+        //   }, [] as ProviderGroup<QuarterlyPageData>[]);
           
-          setQuarterlyGroups(grouped);
-          // Set loading false with slight delay to ensure render
-          setTimeout(() => setLoading(false), 0);
+        //   setQuarterlyGroups(grouped);
+        //   // Set loading false with slight delay to ensure render
+        //   setTimeout(() => setLoading(false), 0);
           
-          // Then refresh in background
-          loadData(false);
-          return;
-        }
+        //   // Then refresh in background
+        //   loadData(false);
+        //   return;
+        // }
         
         // Load quarterly data from the view
         const data = await dataApiClient.getQuarterlyPageData(currentYear, currentQuarter) as QuarterlyPageData[];
@@ -269,39 +270,40 @@ const Summary: React.FC = () => {
         
         // Set loading to false after data is set (even if empty)
         // Use setTimeout to ensure React has time to render
-        if (showLoader) {
+        // if (showLoader) {
           setTimeout(() => setLoading(false), 0);
-        }
+        // }
       } else {
-        // Check for cached data first
-        const cacheKey = `annual_page_${currentYear}`;
-        const cached = apiCache.get(cacheKey);
+        // CACHING COMMENTED OUT - Using fast view now
+        // // Check for cached data first
+        // const cacheKey = `annual_page_${currentYear}`;
+        // const cached = apiCache.get(cacheKey);
         
-        if (cached && showLoader) {
-          // Show cached data immediately
-          const grouped = (cached as AnnualPageData[]).reduce((acc, row) => {
-            let group = acc.find(g => g.provider_name === row.provider_name);
-            if (!group) {
-              group = {
-                provider_name: row.provider_name,
-                clients: [],
-                isExpanded: true,
-                providerData: row
-              };
-              acc.push(group);
-            }
-            group.clients.push(row);
-            return acc;
-          }, [] as ProviderGroup<AnnualPageData>[]);
+        // if (cached && showLoader) {
+        //   // Show cached data immediately
+        //   const grouped = (cached as AnnualPageData[]).reduce((acc, row) => {
+        //     let group = acc.find(g => g.provider_name === row.provider_name);
+        //     if (!group) {
+        //       group = {
+        //         provider_name: row.provider_name,
+        //         clients: [],
+        //         isExpanded: true,
+        //         providerData: row
+        //       };
+        //       acc.push(group);
+        //     }
+        //     group.clients.push(row);
+        //     return acc;
+        //   }, [] as ProviderGroup<AnnualPageData>[]);
           
-          setAnnualGroups(grouped);
-          // Set loading false with slight delay to ensure render
-          setTimeout(() => setLoading(false), 0);
+        //   setAnnualGroups(grouped);
+        //   // Set loading false with slight delay to ensure render
+        //   setTimeout(() => setLoading(false), 0);
           
-          // Then refresh in background
-          loadData(false);
-          return;
-        }
+        //   // Then refresh in background
+        //   loadData(false);
+        //   return;
+        // }
         
         // Load annual data from the view
         const data = await dataApiClient.getAnnualPageData(currentYear) as AnnualPageData[];
@@ -326,16 +328,16 @@ const Summary: React.FC = () => {
         
         // Set loading to false after data is set (even if empty)
         // Use setTimeout to ensure React has time to render
-        if (showLoader) {
+        // if (showLoader) {
           setTimeout(() => setLoading(false), 0);
-        }
+        // }
       }
     } catch (err) {
       console.error('Failed to load summary data:', err);
-      if (showLoader) {
+      // if (showLoader) {
         setError('Failed to load summary data. Please try again.');
         setLoading(false);
-      }
+      // }
     }
   }, [currentYear, currentQuarter, viewMode]);;;
 

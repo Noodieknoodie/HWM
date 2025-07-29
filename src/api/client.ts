@@ -257,37 +257,37 @@ export class DataApiClient {
 
   // NEW Summary page data methods using the page-ready views
   async getQuarterlyPageData(year: number, quarter: number) {
-    const cacheKey = `quarterly_page_${year}_${quarter}`;
+    // const cacheKey = `quarterly_page_${year}_${quarter}`;
     
-    // Check cache first
-    const cached = apiCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+    // // Check cache first
+    // const cached = apiCache.get(cacheKey);
+    // if (cached) {
+    //   return cached;
+    // }
     
     // Returns complete quarterly data with provider aggregates and client details including notes
-    const data = await this.request(`quarterly_page_data?$filter=applied_year eq ${year} and quarter eq ${quarter}&$orderby=provider_name,display_name`);
+    const data = await this.request(`quarterly_page_data_fast?$filter=applied_year eq ${year} and quarter eq ${quarter}&$orderby=provider_name,display_name`);
     
-    // Cache for 10 minutes (summary data doesn't change often)
-    apiCache.set(cacheKey, data, 10 * 60 * 1000);
+    // // Cache for 10 minutes (summary data doesn't change often)
+    // apiCache.set(cacheKey, data, 10 * 60 * 1000);
     
     return data;
   }
 
   async getAnnualPageData(year: number) {
-    const cacheKey = `annual_page_${year}`;
+    // const cacheKey = `annual_page_${year}`;
     
-    // Check cache first
-    const cached = apiCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+    // // Check cache first
+    // const cached = apiCache.get(cacheKey);
+    // if (cached) {
+    //   return cached;
+    // }
     
     // Returns complete annual data with provider aggregates and client details
     const data = await this.request(`annual_page_data?$filter=applied_year eq ${year}&$orderby=provider_name,display_name`);
     
-    // Cache for 10 minutes (summary data doesn't change often)
-    apiCache.set(cacheKey, data, 10 * 60 * 1000);
+    // // Cache for 10 minutes (summary data doesn't change often)
+    // apiCache.set(cacheKey, data, 10 * 60 * 1000);
     
     return data;
   }
