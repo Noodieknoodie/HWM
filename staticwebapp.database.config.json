@@ -203,6 +203,19 @@
         }
       ]
     },
+    "quarterly_page_data_fast": {
+      "source": {
+        "object": "dbo.quarterly_page_data_fast",
+        "type": "view",
+        "key-fields": ["client_id", "applied_year", "quarter", "provider_name"]
+      },
+      "permissions": [
+        {
+          "role": "authenticated",
+          "actions": ["read"]
+        }
+      ]
+    },
     "annual_page_data": {
       "source": {
         "object": "dbo.annual_page_data",

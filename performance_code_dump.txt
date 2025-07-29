@@ -5,20 +5,23 @@
 === src/App.tsx ===
 ```
 //src/App.tsx
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useDataApiClient } from './api/client'
 import { useAuth } from './auth/useAuth'
 import PageLayout from './components/PageLayout'
-import Payments from './pages/Payments'
-// import Documents from './pages/Documents'
-import Summary from './pages/Summary'
-// import Contacts from './pages/Contacts'
-// import Contracts from './pages/Contracts'
 import ErrorBoundary from './components/ErrorBoundary'
-import Export from './pages/Export'
 import * as microsoftTeams from '@microsoft/teams-js'
 import { isInTeams } from './teamsAuth'
+
+// Lazy load all route components for code splitting
+const Summary = lazy(() => import('./pages/Summary'))
+const Payments = lazy(() => import('./pages/Payments'))
+const Export = lazy(() => import('./pages/Export'))
+// Uncomment these when re-enabling routes
+// const Documents = lazy(() => import('./pages/Documents'))
+// const Contacts = lazy(() => import('./pages/Contacts'))
+// const Contracts = lazy(() => import('./pages/Contracts'))
 
 function TeamsRedirect() {
   useEffect(() => {
@@ -62,22 +65,28 @@ function AppContent() {
   // Pre-cache client list AND summary data when user is authenticated
   useEffect(() => {
     if (user && !loading) {
-      // Fire and forget - don't wait for these
-      Promise.all([
-        // Pre-cache client list
-        dataApiClient.getClients().catch(() => {}),
-        
-        // Pre-cache current quarter summary data
-        (() => {
+      // Pre-cache in the background - these improve subsequent load times
+      // but don't block initial render
+      const preCacheData = async () => {
+        try {
+          // Pre-cache client list
+          await dataApiClient.getClients();
+          
+          // Pre-cache current quarter summary data
           const now = new Date();
           const currentMonth = now.getMonth() + 1;
           const currentQ = Math.ceil(currentMonth / 3);
           const year = currentQ === 1 ? now.getFullYear() - 1 : now.getFullYear();
           const quarter = currentQ === 1 ? 4 : currentQ - 1;
           
-          return dataApiClient.getQuarterlyPageData(year, quarter).catch(() => {});
-        })()
-      ]);
+          await dataApiClient.getQuarterlyPageData(year, quarter);
+        } catch (error) {
+          // Pre-caching failures are non-critical
+          // Components will load their own data
+        }
+      };
+      
+      preCacheData();
     }
   }, [user, loading]);
   
@@ -136,19 +145,28 @@ function AppContent() {
     );
   }
   
+  // Simple loading component for lazy-loaded routes
+  const RouteLoader = () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  )
+  
   return (
-    <Routes>
-      <Route path="/" element={<PageLayout />}>
-        <Route index element={<Navigate to="/Summary" replace />} />
-        <Route path="Summary" element={<Summary />} />
-        <Route path="Payments" element={<Payments />} />
-        {/* <Route path="Contacts" element={<Contacts />} /> */}
-        {/* <Route path="Contracts" element={<Contracts />} /> */}
-        <Route path="Export" element={<Export />} />
-        {/* <Route path="Documents" element={<Documents />} /> */}
-        <Route path="*" element={<Navigate to="/Summary" replace />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<RouteLoader />}>
+      <Routes>
+        <Route path="/" element={<PageLayout />}>
+          <Route index element={<Navigate to="/Summary" replace />} />
+          <Route path="Summary" element={<Summary />} />
+          <Route path="Payments" element={<Payments />} />
+          {/* <Route path="Contacts" element={<Contacts />} /> */}
+          {/* <Route path="Contracts" element={<Contracts />} /> */}
+          <Route path="Export" element={<Export />} />
+          {/* <Route path="Documents" element={<Documents />} /> */}
+          <Route path="*" element={<Navigate to="/Summary" replace />} />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 
@@ -1734,7 +1752,8 @@ const Summary: React.FC = () => {
           }, [] as ProviderGroup<QuarterlyPageData>[]);
           
           setQuarterlyGroups(grouped);
-          setLoading(false);
+          // Set loading false with slight delay to ensure render
+          setTimeout(() => setLoading(false), 0);
           
           // Then refresh in background
           loadData(false);
@@ -1761,6 +1780,12 @@ const Summary: React.FC = () => {
         }, [] as ProviderGroup<QuarterlyPageData>[]);
         
         setQuarterlyGroups(grouped);
+        
+        // Set loading to false after data is set (even if empty)
+        // Use setTimeout to ensure React has time to render
+        if (showLoader) {
+          setTimeout(() => setLoading(false), 0);
+        }
       } else {
         // Check for cached data first
         const cacheKey = `annual_page_${currentYear}`;
@@ -1784,7 +1809,8 @@ const Summary: React.FC = () => {
           }, [] as ProviderGroup<AnnualPageData>[]);
           
           setAnnualGroups(grouped);
-          setLoading(false);
+          // Set loading false with slight delay to ensure render
+          setTimeout(() => setLoading(false), 0);
           
           // Then refresh in background
           loadData(false);
@@ -1811,14 +1837,17 @@ const Summary: React.FC = () => {
         }, [] as ProviderGroup<AnnualPageData>[]);
         
         setAnnualGroups(grouped);
+        
+        // Set loading to false after data is set (even if empty)
+        // Use setTimeout to ensure React has time to render
+        if (showLoader) {
+          setTimeout(() => setLoading(false), 0);
+        }
       }
     } catch (err) {
       // console.error('Failed to load summary data:', err);
       if (showLoader) {
         setError('Failed to load summary data. Please try again.');
-      }
-    } finally {
-      if (showLoader) {
         setLoading(false);
       }
     }
@@ -2164,8 +2193,9 @@ const Summary: React.FC = () => {
 
   const collectionRate = totals.expected > 0 ? (totals.actual / totals.expected * 100) : 0;
 
-  // NEVER show empty data - keep loading until we have data
-  if (loading || (viewMode === 'quarterly' ? quarterlyGroups.length === 0 : annualGroups.length === 0)) {
+  // Show loading state while data is being fetched
+  // Only show empty state if loading is complete and there's truly no data
+  if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header with better skeleton */}
@@ -2229,6 +2259,23 @@ const Summary: React.FC = () => {
   }
 
   const providerGroups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;
+
+  // Handle empty state (no data available)
+  if (!loading && providerGroups.length === 0) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {viewMode === 'quarterly' ? 'Quarterly' : 'Annual'} Payment Summary
+          </h1>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <p className="text-gray-500">No payment data available for {viewMode === 'quarterly' ? `Q${currentQuarter} ${currentYear}` : currentYear}.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -2668,6 +2715,7 @@ export default Summary;
 ```
 // frontend/src/pages/Payments.tsx
 import React, { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@/stores/useAppStore';
 import { useClientDashboard } from '@/hooks/useClientDashboard';
 import { usePayments, Payment, PaymentCreateData, PaymentUpdateData } from '@/hooks/usePayments';
@@ -2689,10 +2737,13 @@ const getErrorMessage = (error: any): string => {
 };
 
 const Payments: React.FC = () => {
-  // Note: Could optimize by combining selectors: useAppStore((state) => ({ selectedClient: state.selectedClient, documentViewerOpen: state.documentViewerOpen }))
-  // But current approach is fine for readability
-  const selectedClient = useAppStore((state) => state.selectedClient);
-  const documentViewerOpen = useAppStore((state) => state.documentViewerOpen);
+  // Using useShallow to prevent unnecessary re-renders
+  const { selectedClient, documentViewerOpen } = useAppStore(
+    useShallow((state) => ({
+      selectedClient: state.selectedClient,
+      documentViewerOpen: state.documentViewerOpen
+    }))
+  );
   const { dashboardData, loading, error } = useClientDashboard(selectedClient?.client_id || null);
   
   // Payment form and history state
@@ -2892,6 +2943,7 @@ export default Export;
 ```
 // frontend/src/components/ClientSearch.tsx
 import React, { useState, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import useAppStore from '@/stores/useAppStore';
 
 interface Client {
@@ -2908,7 +2960,7 @@ interface ClientSearchProps {
 }
 
 const ClientSearch: React.FC<ClientSearchProps> = ({ clients = [], isLoading = false }) => {
-  const setSelectedClient = useAppStore((state) => state.setSelectedClient);
+  const setSelectedClient = useAppStore(useShallow((state) => state.setSelectedClient));
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredClients, setFilteredClients] = useState<Client[]>(clients);
   const searchInputRef = React.useRef<HTMLInputElement>(null);

@@ -59,22 +59,28 @@ function AppContent() {
   // Pre-cache client list AND summary data when user is authenticated
   useEffect(() => {
     if (user && !loading) {
-      // Fire and forget - don't wait for these
-      Promise.all([
-        // Pre-cache client list
-        dataApiClient.getClients().catch(() => {}),
-        
-        // Pre-cache current quarter summary data
-        (() => {
+      // Pre-cache in the background - these improve subsequent load times
+      // but don't block initial render
+      const preCacheData = async () => {
+        try {
+          // Pre-cache client list
+          await dataApiClient.getClients();
+          
+          // Pre-cache current quarter summary data
           const now = new Date();
           const currentMonth = now.getMonth() + 1;
           const currentQ = Math.ceil(currentMonth / 3);
           const year = currentQ === 1 ? now.getFullYear() - 1 : now.getFullYear();
           const quarter = currentQ === 1 ? 4 : currentQ - 1;
           
-          return dataApiClient.getQuarterlyPageData(year, quarter).catch(() => {});
-        })()
-      ]);
+          await dataApiClient.getQuarterlyPageData(year, quarter);
+        } catch (error) {
+          // Pre-caching failures are non-critical
+          // Components will load their own data
+        }
+      };
+      
+      preCacheData();
     }
   }, [user, loading]);
   

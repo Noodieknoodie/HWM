@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { dataApiClient } from '@/api/client';
 import { Alert } from '@/components/Alert';
-import { apiCache, cacheKeys } from '@/utils/cache';
 
 // Interfaces for the new page-ready views
 interface QuarterlyPageData {
@@ -208,45 +207,18 @@ const Summary: React.FC = () => {
   };
 
   // Load data using the new page-ready views with stale-while-revalidate
-  const loadData = useCallback(async (showLoader = true) => {
-    if (showLoader) {
-      setLoading(true);
-    }
+  const loadData = useCallback(async () => {
+    setLoading(true);
     setError(null);
     
     try {
+      const start = performance.now();
+      
       if (viewMode === 'quarterly') {
-        // Check for cached data first
-        const cacheKey = `quarterly_page_${currentYear}_${currentQuarter}`;
-        const cached = apiCache.get(cacheKey);
-        
-        if (cached && showLoader) {
-          // Show cached data immediately
-          const grouped = (cached as QuarterlyPageData[]).reduce((acc, row) => {
-            let group = acc.find(g => g.provider_name === row.provider_name);
-            if (!group) {
-              group = {
-                provider_name: row.provider_name,
-                clients: [],
-                isExpanded: true,
-                providerData: row
-              };
-              acc.push(group);
-            }
-            group.clients.push(row);
-            return acc;
-          }, [] as ProviderGroup<QuarterlyPageData>[]);
-          
-          setQuarterlyGroups(grouped);
-          setLoading(false);
-          
-          // Then refresh in background
-          loadData(false);
-          return;
-        }
-        
-        // Load quarterly data from the new view
+        // Load quarterly data from the fast view
         const data = await dataApiClient.getQuarterlyPageData(currentYear, currentQuarter) as QuarterlyPageData[];
+        
+        console.log(`[Performance] Quarterly data loaded in ${(performance.now() - start).toFixed(0)}ms`);
         
         // Group by provider (data comes flat, we need to group for display)
         const grouped = data.reduce((acc, row) => {
@@ -266,37 +238,10 @@ const Summary: React.FC = () => {
         
         setQuarterlyGroups(grouped);
       } else {
-        // Check for cached data first
-        const cacheKey = `annual_page_${currentYear}`;
-        const cached = apiCache.get(cacheKey);
-        
-        if (cached && showLoader) {
-          // Show cached data immediately
-          const grouped = (cached as AnnualPageData[]).reduce((acc, row) => {
-            let group = acc.find(g => g.provider_name === row.provider_name);
-            if (!group) {
-              group = {
-                provider_name: row.provider_name,
-                clients: [],
-                isExpanded: true,
-                providerData: row
-              };
-              acc.push(group);
-            }
-            group.clients.push(row);
-            return acc;
-          }, [] as ProviderGroup<AnnualPageData>[]);
-          
-          setAnnualGroups(grouped);
-          setLoading(false);
-          
-          // Then refresh in background
-          loadData(false);
-          return;
-        }
-        
-        // Load annual data from the new view
+        // Load annual data
         const data = await dataApiClient.getAnnualPageData(currentYear) as AnnualPageData[];
+        
+        console.log(`[Performance] Annual data loaded in ${(performance.now() - start).toFixed(0)}ms`);
         
         // Group by provider
         const grouped = data.reduce((acc, row) => {
@@ -317,16 +262,12 @@ const Summary: React.FC = () => {
         setAnnualGroups(grouped);
       }
     } catch (err) {
-      // console.error('Failed to load summary data:', err);
-      if (showLoader) {
-        setError('Failed to load summary data. Please try again.');
-      }
+      console.error('Failed to load summary data:', err);
+      setError('Failed to load summary data. Please try again.');
     } finally {
-      if (showLoader) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  }, [currentYear, currentQuarter, viewMode]);
+  }, [currentYear, currentQuarter, viewMode]);;
 
   useEffect(() => {
     loadData();
@@ -392,31 +333,19 @@ const Summary: React.FC = () => {
       // Load payment details if not already loaded (only for quarterly view)
       if (viewMode === 'quarterly' && !paymentDetails.has(clientId)) {
         try {
-          const cacheKey = cacheKeys.paymentDetails(clientId, currentYear, currentQuarter);
+          const start = performance.now();
+          const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
+          console.log(`[Performance] Payment details loaded in ${(performance.now() - start).toFixed(0)}ms`);
           
-          // Check cache first
-          const cached = apiCache.get<QuarterlySummaryDetail[]>(cacheKey);
-          if (cached) {
-            // console.log(`Using cached payment details for client ${clientId}`);
-            setPaymentDetails(prev => new Map(prev).set(clientId, cached));
-          } else {
-            // console.log(`Loading payment details for client ${clientId}, year ${currentYear}, quarter ${currentQuarter}`);
-            const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
-            // console.log(`Received ${details.length} payment details:`, details);
-            
-            // Cache for 5 minutes
-            apiCache.set(cacheKey, details, 5 * 60 * 1000);
-            
-            setPaymentDetails(prev => new Map(prev).set(clientId, details));
-          }
+          setPaymentDetails(prev => new Map(prev).set(clientId, details));
         } catch (err) {
-          // console.error(`Failed to load payment details for client ${clientId}:`, err);
+          console.error(`Failed to load payment details for client ${clientId}:`, err);
         }
       }
     }
     
     setExpandedClients(newExpanded);
-  };
+  };;
 
   // Format payment detail line
   const formatPaymentLine = (payment: QuarterlySummaryDetail) => {
@@ -668,8 +597,9 @@ const Summary: React.FC = () => {
 
   const collectionRate = totals.expected > 0 ? (totals.actual / totals.expected * 100) : 0;
 
-  // NEVER show empty data - keep loading until we have data
-  if (loading || (viewMode === 'quarterly' ? quarterlyGroups.length === 0 : annualGroups.length === 0)) {
+  // Show loading state while data is being fetched
+  // Only show empty state if loading is complete and there's truly no data
+  if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header with better skeleton */}
@@ -733,6 +663,23 @@ const Summary: React.FC = () => {
   }
 
   const providerGroups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;
+
+  // Handle empty state (no data available)
+  if (!loading && providerGroups.length === 0) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {viewMode === 'quarterly' ? 'Quarterly' : 'Annual'} Payment Summary
+          </h1>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <p className="text-gray-500">No payment data available for {viewMode === 'quarterly' ? `Q${currentQuarter} ${currentYear}` : currentYear}.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
