@@ -1,0 +1,1644 @@
+Upload or replace the contents of a driveItem
+07/23/2025
+Namespace: microsoft.graph
+Provide the contents of a new file or update the contents of an existing file in a single API call. This method only supports files up to 250 MB in size.
+To upload large files, see Upload large files with an upload session.
+This API is available in the following national cloud deployments.
+Global service	US Government L4	US Government L5 (DOD)	China operated by 21Vianet
+✅	✅	✅	✅
+Permissions
+Choose the permission or permissions marked as least privileged for this API. Use a higher privileged permission or permissions only if your app requires it. For details about delegated and application permissions, see Permission types. To learn more about these permissions, see the permissions reference.
+Permission type	Least privileged permissions	Higher privileged permissions
+Delegated (work or school account)	Files.ReadWrite	Files.ReadWrite.All, Sites.ReadWrite.All
+Delegated (personal Microsoft account)	Files.ReadWrite	Files.ReadWrite.All
+Application	Files.ReadWrite.All	Sites.ReadWrite.All
+ Note
+SharePoint Embedded requires the FileStorageContainer.Selected permission to access the content of the container. This permission is different from the ones mentioned previously. In  to Microsoft Graph permissions, your app must have the necessary container type permissions to call this API. For more information, see SharePoint Embedded authentication and authorization.
+HTTP request
+To replace an existing item
+HTTP
+Copy
+PUT /drives/{drive-id}/items/{item-id}/content
+PUT /groups/{group-id}/drive/items/{item-id}/content
+PUT /me/drive/items/{item-id}/content
+PUT /sites/{site-id}/drive/items/{item-id}/content
+PUT /users/{user-id}/drive/items/{item-id}/content
+To upload a new file
+HTTP
+Copy
+PUT /drives/{drive-id}/items/{parent-id}:/{filename}:/content
+PUT /groups/{group-id}/drive/items/{parent-id}:/{filename}:/content
+PUT /me/drive/items/{parent-id}:/{filename}:/content
+PUT /sites/{site-id}/drive/items/{parent-id}:/{filename}:/content
+PUT /users/{user-id}/drive/items/{parent-id}:/{filename}:/content
+Request headers
+Name	Description
+Authorization	Bearer {token}. Required. Learn more about authentication and authorization.
+Content-Type	text/plain. Required.
+Request body
+The contents of the request body should be the binary stream of the file to be uploaded.
+Response
+If successful, this method returns a driveItem object in the response body for the newly created or updated file.
+Example (upload a new file)
+This example uploads the string "The contents of the file goes here." to a file in the signed-in user's drive under FolderA named FileB.txt.
+HTTP
+Copy
+PUT https://graph.microsoft.com//me/drive/root:/FolderA/FileB.txt:/content
+Content-Type: text/plain
+The contents of the file goes here.
+Response
+If successful, this method returns an driveItem resource in the response body for the newly created file.
+HTTP
+Copy
+HTTP/1.1 201 Created
+Content-Type: application/json
+{
+  "id": "0123456789abc",
+  "name": "FileB.txt",
+  "size": 35,
+  "file": { }
+}
+Example (updating an existing file)
+This example replaces the contents of a file with a known ID.
+HTTP
+JavaScript
+PowerShell
+HTTP
+Copy
+PUT https://graph.microsoft.com//me/drive/items/{item-id}/content
+Content-Type: text/plain
+The contents of the file goes here.
+Response
+If successful, this method returns an driveItem resource in the response body for the newly created file.
+HTTP
+Copy
+HTTP/1.1 201 Created
+Content-Type: application/json
+{
+  "id": "0123456789abc",
+  "name": "FileB.txt",
+  "size": 35,
+  "file": { }
+}
+Error responses
+See Error Responses for details about how errors are returned.
+---
+Download driveItem content
+07/04/2025
+Namespace: microsoft.graph
+Download the contents of the primary stream (file) of a driveItem. Only driveItem objects with the file property can be downloaded.
+To get the ID of the item to be downloaded, see Get driveItem.
+This API is available in the following national cloud deployments.
+Global service	US Government L4	US Government L5 (DOD)	China operated by 21Vianet
+✅	✅	✅	✅
+Permissions
+Choose the permission or permissions marked as least privileged for this API. Use a higher privileged permission or permissions only if your app requires it. For details about delegated and application permissions, see Permission types. To learn more about these permissions, see the permissions reference.
+Permission type	Least privileged permissions	Higher privileged permissions
+Delegated (work or school account)	Files.Read	Files.ReadWrite, Files.Read.All, Files.ReadWrite.All, Sites.Read.All, Sites.ReadWrite.All
+Delegated (personal Microsoft account)	Files.Read	Files.ReadWrite, Files.Read.All, Files.ReadWrite.All
+Application	Files.Read.All	Files.ReadWrite.All, Sites.Read.All, Sites.ReadWrite.All
+ Note
+SharePoint Embedded requires the FileStorageContainer.Selected permission to access the content of the container. This permission is different from the ones mentioned previously. In  to Microsoft Graph permissions, your app must have the necessary container type permissions to call this API. For more information, see SharePoint Embedded authentication and authorization.
+HTTP request
+HTTP
+Copy
+GET /drives/{drive-id}/items/{item-id}/content
+GET /groups/{group-id}/drive/items/{item-id}/content
+GET /me/drive/root:/{item-path}:/content
+GET /me/drive/items/{item-id}/content
+GET /shares/{shareIdOrEncodedSharingUrl}/driveItem/content
+GET /sites/{siteId}/drive/items/{item-id}/content
+GET /users/{userId}/drive/items/{item-id}/content
+Request headers
+Name	Description
+Authorization	Bearer {token}. Required. Learn more about authentication and authorization.
+if-none-match	String . If this request header is included and the eTag (or cTag) provided matches the current tag on the file, an HTTP 304 Not Modified response is returned.
+Example
+Here's an example to download a complete file.
+Request
+HTTP
+C#
+Go
+Java
+JavaScript
+PHP
+PowerShell
+Python
+msgraph
+Copy
+Try It
+GET /me/drive/items/{item-id}/content
+Response
+Returns a 302 Found response redirecting to a preauthenticated download URL for the file, which is the same URL available through the @microsoft.graph.downloadUrl property on the DriveItem.
+To download the contents of the file your application needs to follow the Location header in the response. Many HTTP client libraries will automatically follow the 302 redirection and start downloading the file immediately.
+Preauthenticated download URLs are only valid for a short period of time (a few minutes) and don't require an Authorization header to download.
+HTTP
+Copy
+HTTP/1.1 302 Found
+Location: https://b0mpua-by3301.files.1drv.com/y23vmagahszhxzlcvhasdhasghasodfi
+Downloading files in JavaScript apps
+To download files in a JavaScript app, you can't use the /content API, because this responds with a 302 redirect. A 302 redirect is explicitly prohibited when a Cross-Origin Resource Sharing (CORS) preflight is required, such as when providing the Authorization header.
+Instead, your app needs to select the @microsoft.graph.downloadUrl property, which returns the same URL that /content directs to. This URL can then be requested directly using XMLHttpRequest. Because these URLs are preauthenticated, they can be retrieved without a CORS preflight request.
+Example
+To retrieve the download URL for a file, first make a request that includes the @microsoft.graph.downloadUrl property:
+HTTP
+Copy
+GET /drive/items/{item-ID}?select=id,@microsoft.graph.downloadUrl
+The call returns the ID and download URL for a file:
+HTTP
+Copy
+HTTP/1.1 200 OK
+Content-Type: application/json
+{
+  "id": "12319191!11919",
+  "@microsoft.graph.downloadUrl": "https://..."
+}
+You can then make an XMLHttpRequest for the URL provided in @microsoft.graph.downloadUrl to retrieve the file.
+Partial range downloads
+To download a partial range of bytes from the file, your app can use the Range header as specified in RFC 2616. You must append the Range header to the actual @microsoft.graph.downloadUrl URL and not to the request for /content.
+HTTP
+Copy
+GET https://b0mpua-by3301.files.1drv.com/y23vmag
+Range: bytes=0-1023
+The call returns an HTTP 206 Partial Content response with the request range of bytes from the file. If the range can't be generated the Range header may be ignored and an HTTP 200 response would be returned with the full contents of the file.
+HTTP
+Copy
+HTTP/1.1 206 Partial Content
+Content-Range: bytes 0-1023/2048
+Content-Type: application/octet-stream
+<first 1024 bytes of file>
+Error responses
+See Error Responses for more info about how errors are returned.
+In this article
+Permissions
+HTTP request
+Request headers
+Example
+Downloading files in JavaScript apps
+Partial range downloads
+Was this page helpful?
+---
+Download a file in another format
+07/23/2025
+Namespace: microsoft.graph
+Use this API to retrieve the contents of an item in a specific format. Not all files can be converted into all formats.
+To download the item in its original format, see download an item's contents.
+This API is available in the following national cloud deployments.
+Global service	US Government L4	US Government L5 (DOD)	China operated by 21Vianet
+✅	✅	✅	✅
+Permissions
+Choose the permission or permissions marked as least privileged for this API. Use a higher privileged permission or permissions only if your app requires it. For details about delegated and application permissions, see Permission types. To learn more about these permissions, see the permissions reference.
+Permission type	Least privileged permissions	Higher privileged permissions
+Delegated (work or school account)	Files.Read	Files.Read.All, Files.ReadWrite, Files.ReadWrite.All, Sites.Read.All, Sites.ReadWrite.All
+Delegated (personal Microsoft account)	Files.Read	Files.Read.All, Files.ReadWrite, Files.ReadWrite.All
+Application	Files.Read.All	Files.ReadWrite.All, Sites.Read.All, Sites.ReadWrite.All
+ Note
+SharePoint Embedded requires the FileStorageContainer.Selected permission to access the content of the container. This permission is different from the ones mentioned previously. In  to Microsoft Graph permissions, your app must have the necessary container type permissions to call this API. For more information, see SharePoint Embedded authentication and authorization.
+HTTP request
+HTTP
+Copy
+GET /drive/items/{item-id}/content?format={format}
+GET /drive/root:/{path and filename}:/content?format={format}
+Query parameters
+Parameter	Type	Description
+format	string	Specify the format the item's content should be downloaded as.
+Format options
+The following values are valid for the format parameter:
+Format value	Description	Supported source extensions
+pdf	Converts the item into PDF format.	csv, doc, docx, odp, ods, odt, pot, potm, potx, pps, ppsx, ppsxm, ppt, pptm, pptx, rtf, xls, xlsx
+html	Converts the item into HTML format.	loop, fluid, wbtx
+Request headers
+Name	Description
+Authorization	Bearer {token}. Required. Learn more about authentication and authorization.
+if-none-match	String. If this request header is included and the eTag (or cTag) provided matches the current tag on the file, an HTTP 304 Not Modified response is returned.
+Example
+HTTP
+C#
+Go
+Java
+JavaScript
+PHP
+PowerShell
+Python
+msgraph
+Copy
+Try It
+GET /me/drive/items/{item-id}/content?format={format}
+Response
+Returns a 302 Found response redirecting to a pre-authenticated download URL for the converted file.
+To download the converted file, your app must follow the Location header in the response.
+Pre-authenticated URLs are only valid for a short period of time (a few minutes) and do not require an Authorization header to access.
+HTTP
+Copy
+HTTP/1.1 302 Found
+Location: https://b0mpua-by3301.files.1drv.com/y23vmagahszhxzlcvhasdhasghasodfi
+Error responses
+See Error Responses for more information about how errors are returned.
+---
+Search for DriveItems within a drive
+07/23/2025
+Namespace: microsoft.graph
+Search the hierarchy of items for items matching a query. You can search within a folder hierarchy, a whole drive, or files shared with the current user.
+Permissions
+Choose the permission or permissions marked as least privileged for this API. Use a higher privileged permission or permissions only if your app requires it. For details about delegated and application permissions, see Permission types. To learn more about these permissions, see the permissions reference.
+Permission type	Least privileged permissions	Higher privileged permissions
+Delegated (work or school account)	Files.Read	Files.Read.All, Files.ReadWrite, Files.ReadWrite.All, Sites.Read.All, Sites.ReadWrite.All
+Delegated (personal Microsoft account)	Files.Read	Files.Read.All, Files.ReadWrite, Files.ReadWrite.All
+Application	Files.Read.All	Files.ReadWrite.All, Sites.Read.All, Sites.ReadWrite.All
+Note: This method does not support the Sites.Selected application permission.
+HTTP request
+HTTP
+Copy
+GET /drives/{drive-id}/root/search(q='{search-text}')
+GET /groups/{group-id}/drive/root/search(q='{search-text}')
+GET /me/drive/root/search(q='{search-text}')
+GET /sites/{site-id}/drive/root/search(q='{search-text}')
+GET /users/{user-id}/drive/root/search(q='{search-text}')
+Optional query parameters
+This method supports the $expand, $select, $skipToken, $top, and $orderby OData query parameters to customize the response.
+Function parameters
+Parameter	Type	Description
+q	string	The query text used to search for items. Values may be matched across several fields including filename, metadata, and file content.
+Request headers
+Name	Description
+Authorization	Bearer {token}. Required. Learn more about authentication and authorization.
+Example
+Request
+The following example searches for a match for "Contoso Project" across several fields in the signed-in user's drive items.
+HTTP
+C#
+Go
+Java
+JavaScript
+PHP
+PowerShell
+Python
+msgraph
+Copy
+Try It
+GET /me/drive/root/search(q='Contoso Project')
+Response
+This method returns an object containing an collection of DriveItems that match the search criteria. If no items were found, an empty collection is returned.
+If there are too many matches the response will be paged and an @odata.nextLink property will contain a URL to the next page of results. You can use the $top query parameter to specify the number of items in the page.
+HTTP
+Copy
+HTTP/1.1 200 OK
+Content-type: application/json
+{
+    "value": [
+      {
+        "id": "0123456789abc!123",
+        "name": "Contoso Project",
+        "folder": {},
+        "searchResult": { "onClickTelemetryUrl": "https://bing.com/0123456789abc!123" }
+      },
+      {
+        "id": "0123456789abc!456",
+        "name": "Contoso Project 2016",
+        "folder": {},
+        "searchResult": { "onClickTelemetryUrl": "https://bing.com/0123456789abc!456" }
+      }
+    ],
+    "@odata.nextLink": "https://graph.microsoft.com//me/drive/root/search(query='contoso project')&skipToken=1asdlnjnkj1nalkm!asd"
+}
+Searching for items a user can access
+In  to searching for items within a drive, your app can search more broadly to include items shared with the current user. To broaden the search scope, use the search method on the Drive resource.
+Example
+HTTP
+C#
+Go
+Java
+JavaScript
+PHP
+PowerShell
+Python
+msgraph
+Copy
+Try It
+GET /me/drive/search(q='Contoso Project')
+Response
+Responses when searching from the drive resource may include items outside of the drive (items shared with the current user). These items include the remoteItem facet to indicate they are stored outside of the target drive.
+HTTP
+Copy
+HTTP/1.1 200 OK
+Content-type: application/json
+{
+    "value": [
+      {
+        "id": "0123456789abc!123",
+        "name": "Contoso Project",
+        "folder": {},
+        "searchResult": { "onClickTelemetryUrl": "https://bing.com/0123456789abc!123" },
+        "remoteItem": { "id": "!23141901", "parentReference": { "driveId": "s!1020101jlkjl12lx" } }
+      },
+      {
+        "id": "0123456789abc!456",
+        "name": "Contoso Project 2016",
+        "folder": {},
+        "searchResult": { "onClickTelemetryUrl": "https://bing.com/0123456789abc!456" }
+      }
+    ],
+    "@odata.nextLink": "https://graph.microsoft.com//me/drive/root/search(query='contoso project')&skipToken=1asdlnjnkj1nalkm!asd"
+}
+Error responses
+For more information about how errors are returned, see Error responses.
+---
+driveItem: createUploadSession
+07/03/2025
+Namespace: microsoft.graph
+Create an upload session to allow your app to upload files up to the maximum file size. An upload session allows your app to upload ranges of the file in sequential API requests. Upload sessions also allow the transfer to resume if a connection is dropped while the upload is in progress.
+To upload a file using an upload session:
+Create an upload session
+Upload bytes to the upload session
+This API is available in the following national cloud deployments.
+Global service	US Government L4	US Government L5 (DOD)	China operated by 21Vianet
+✅	✅	✅	✅
+Permissions
+Choose the permission or permissions marked as least privileged for this API. Use a higher privileged permission or permissions only if your app requires it. For details about delegated and application permissions, see Permission types. To learn more about these permissions, see the permissions reference.
+Permission type	Least privileged permissions	Higher privileged permissions
+Delegated (work or school account)	Files.ReadWrite	Files.ReadWrite.All, Sites.ReadWrite.All
+Delegated (personal Microsoft account)	Files.ReadWrite	Files.ReadWrite.All
+Application	Sites.ReadWrite.All	Not available.
+ Note
+SharePoint Embedded requires the FileStorageContainer.Selected permission to access the content of the container. This permission is different from the ones mentioned previously. In  to Microsoft Graph permissions, your app must have the necessary container type permissions to call this API. For more information, see SharePoint Embedded authentication and authorization.
+Create an upload session
+To begin a large file upload, your app must first request a new upload session. This request creates a temporary storage location where the bytes of the file are saved until the complete file is uploaded. When the last byte of the file is uploaded, the upload session is completed and the final file is shown in the destination folder. Alternatively, you can defer final creation of the file in the destination until you explicitly make a request to complete the upload, by setting the deferCommit property in the request arguments.
+HTTP request
+To upload a new file, you must provide both the parent ID and the new file name in the request. However, an update only requires the ID of the item that will be updated.
+Create new file
+HTTP
+Copy
+POST /me/drive/items/{parentItemId}:/{fileName}:/createUploadSession
+Update existing file
+HTTP
+Copy
+POST /drives/{driveId}/items/{itemId}/createUploadSession
+POST /groups/{groupId}/drive/items/{itemId}/createUploadSession
+POST /me/drive/items/{itemId}/createUploadSession
+POST /me/drive/items/{parentItemId}:/{fileName}:/createUploadSession
+POST /sites/{siteId}/drive/items/{itemId}/createUploadSession
+POST /users/{userId}/drive/items/{itemId}/createUploadSession
+Request headers
+Name	Value	Description
+if-match	etag	If this request header is included and the eTag (or cTag) provided doesn't match the current etag on the item, a 412 Precondition Failed error response is returned.
+if-none-match	etag	If this request header is included and the eTag (or cTag) provided matches the current etag on the item, a 412 Precondition Failed error response is returned.
+Request body
+No request body is required. However, you can specify properties in the request body to provide more information about the file being uploaded and to customize the semantics of the upload operation.
+For example, the item property allows setting the following parameters:
+JSON
+Copy
+{
+  "@microsoft.graph.conflictBehavior": "fail (default) | replace | rename",
+  "description": "description",
+  "driveItemSource": { "@odata.type": "microsoft.graph.driveItemSource" },
+  "fileSize": 1234,
+  "name": "filename.txt",
+  "mediaSource": { "@odata.type": "microsoft.graph.mediaSource" }
+}
+The following example controls the behavior if the filename is already taken. The example also specifies that the final file shouldn't be created until an explicit completion request is made.
+JSON
+Copy
+{
+  "item": {
+    "@microsoft.graph.conflictBehavior": "rename"
+  },
+  "deferCommit": true
+}
+Optional request headers
+Name	Value	Description
+if-match	etag	If this request header is included and the eTag (or cTag) provided doesn't match the current etag on the item, a 412 Precondition Failed error response is returned.
+Parameters
+Parameter	Type	Description
+deferCommit	Boolean	If set to true, the final creation of the file in the destination requires an explicit request.
+item	driveItemUploadableProperties	Data about the file being uploaded.
+Request
+The response to this request provides the details of the newly created uploadSession, which includes the URL used for uploading the parts of the file.
+Note: The {item-path} must contain the name of the item that's specified in the request body.
+HTTP
+Copy
+POST /me/drive/items/{itemID}:/{item-path}:/createUploadSession
+Content-Type: application/json
+{
+  "item": {
+    "@microsoft.graph.conflictBehavior": "rename",
+    "name": "largefile.dat"
+  }
+}
+Response
+If successful, the response to this request provides the details of where the remainder of the requests should be sent as an uploadSession resource.
+When a session is created and generates pre-authenticated upload URLs, the upload URL can be used to complete the upload within a time window sufficient for large files.
+The uploadSession resource provides details about where each byte range of the file should be uploaded and specifies when the session expires. The expirationDateTime property indicates the time at which the current session expires if no further activity occurs. This results in the following:
+You must upload the next fragment or commit the session before the time specified in the expirationDateTime property.
+Each uploaded fragment extends the expiration time, which allows large file uploads to be completed successfully. The updated expiration time is returned in every request to upload a file fragment.
+If no fragments are received and the session isn't committed, all previously uploaded fragments are discarded.
+This process supports large file uploads and ensures that upload sessions are efficiently managed by preventing stale or abandoned data from remaining in the system too long.
+If the fileSize parameter is specified and exceeds the available quota, a 507 Insufficent Storage response is returned and the upload session won't be created.
+HTTP
+Copy
+HTTP/1.1 200 OK
+Content-Type: application/json
+{
+  "uploadUrl": "https://sn3302.up.1drv.com/up/fe6987415ace7X4e1eF866337",
+  "expirationDateTime": "2015-01-29T09:21:55.523Z"
+}
+Upload bytes to the upload session
+To upload the file, or a portion of the file, your app makes a PUT request to the uploadUrl value received in the createUploadSession response. You can upload the entire file, or split the file into multiple byte ranges, as long as the maximum bytes in any given request is less than 60 MiB.
+The fragments of the file must be uploaded sequentially in order. Uploading fragments out of order results in an error.
+Note: If your app splits a file into multiple byte ranges, the size of each byte range MUST be a multiple of 320 KiB (327,680 bytes).
+Using a fragment size that doesn't divide evenly by 320 KiB results in errors committing some files.
+Example
+In this example, the app is uploading the first 26 bytes of a 128-byte file.
+The Content-Length header specifies the size of the current request.
+The Content-Range header indicates the range of bytes in the overall file that this request represents.
+The total length of the file is known before you can upload the first fragment of the file.
+HTTP
+Copy
+PUT https://sn3302.up.1drv.com/up/fe6987415ace7X4e1eF866337
+Content-Length: 26
+Content-Range: bytes 0-25/128
+<bytes 0-25 of the file>
+ Note
+To upload large files using SDKs see Upload large files using the Microsoft Graph SDKs.
+Your app must ensure the total file size specified in the Content-Range header is the same for all requests. If a byte range declares a different file size, the request will fail.
+Response
+When the request is complete, the server responds with 202 Accepted if there are more byte ranges that need to be uploaded.
+HTTP
+Copy
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+{
+  "expirationDateTime": "2015-01-29T09:21:55.523Z",
+  "nextExpectedRanges": ["26-"]
+}
+Your app can use the nextExpectedRanges value to determine where to start the next byte range. You may see multiple ranges specified, indicating parts of the file that the server hasn't yet received. This is useful if you need to resume a transfer that was interrupted and your client is unsure of the state on the service.
+You should always determine the size of your byte ranges according to the best practices below. Don't assume that nextExpectedRanges will return ranges of proper size for a byte range to upload. The nextExpectedRanges property indicates ranges of the file that haven't been received and not a pattern for how your app should upload the file.
+HTTP
+Copy
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+{
+  "expirationDateTime": "2015-01-29T09:21:55.523Z",
+  "nextExpectedRanges": [
+  "12345-55232",
+  "77829-99375"
+  ]
+}
+Remarks
+The nextExpectedRanges property doesn't always list all of the missing ranges.
+On successful fragment writes, it will return the next range to start from (for example "523-").
+On failures when the client sent a fragment the server had already received, the server responds with HTTP 416 Requested Range Not Satisfiable. You can request upload status to get a more detailed list of missing ranges.
+If you include the Authorization header when issuing the PUT call, it may result in an HTTP 401 Unauthorized response. Only send the Authorization header and bearer token when issuing the POST during the first step. Don't include it when you issue the PUT call.
+Completing a file
+If deferCommit is false or unset, then the upload is automatically completed when the final byte range of the file is PUT to the upload URL.
+If deferCommit is true, you can explicitly complete the upload in two ways:
+After the final byte range of the file is PUT to the upload URL, send a final POST request to the upload URL with zero-length content (currently only supported on OneDrive for Business and SharePoint).
+After the final byte range of the file is PUT to the upload URL, send a final PUT request in the same way that you would handle upload errors (currently only supported on OneDrive Personal).
+When the upload is completed, the server responds to the final request with an HTTP 201 Created or HTTP 200 OK. The response body will also include the default property set for the driveItem representing the completed file.
+Copy
+PUT https://sn3302.up.1drv.com/up/fe6987415ace7X4e1eF866337
+Content-Length: 21
+Content-Range: bytes 101-127/128
+<final bytes of the file>
+ Note
+To upload large files using SDKs see Upload large files using the Microsoft Graph SDKs.
+HTTP
+Copy
+HTTP/1.1 201 Created
+Content-Type: application/json
+{
+  "id": "912310013A123",
+  "name": "largefile.vhd",
+  "size": 128,
+  "file": { }
+}
+HTTP
+Copy
+POST https://sn3302.up.1drv.com/up/fe6987415ace7X4e1eF866337
+Content-Length: 0
+ Note
+To upload large files using SDKs see Upload large files using the Microsoft Graph SDKs.
+HTTP
+Copy
+HTTP/1.1 201 Created
+Content-Type: application/json
+{
+  "id": "912310013A123",
+  "name": "largefile.vhd",
+  "size": 128,
+  "file": { }
+}
+Handling upload conflicts
+If a conflict occurs after the file is uploaded (for example, an item with the same name was created during the upload session), an error is returned when the last byte range is uploaded.
+HTTP
+Copy
+HTTP/1.1 409 Conflict
+Content-Type: application/json
+{
+  "error":
+  {
+    "code": "nameAlreadyExists",
+    "message": "Another file exists with the same name as the uploaded session. You can redirect the upload session to use a new filename by calling PUT with the new metadata and @microsoft.graph.sourceUrl attribute.",
+  }
+}
+Cancel the upload session
+To cancel an upload session, send a DELETE request to the upload URL. This cleans up the temporary file holding the data previously uploaded. This should be used in scenarios where the upload is aborted, for example, if the user cancels the transfer.
+Temporary files and their accompanying upload session are automatically cleaned up after the expirationDateTime has passed. Temporary files might not be deleted immediately after the expiration time has elapsed.
+Request
+HTTP
+Copy
+DELETE https://sn3302.up.1drv.com/up/fe6987415ace7X4e1eF866337
+ Note
+To upload large files using SDKs see Upload large files using the Microsoft Graph SDKs.
+Response
+The following example shows the response.
+HTTP
+Copy
+HTTP/1.1 204 No Content
+Resuming an in-progress upload
+If an upload request is disconnected or fails before the request is completed, all bytes in that request are ignored. This can occur if the connection between your app and the service is dropped. If this occurs, your app can still resume the file transfer from the previously completed fragment.
+To find out which byte ranges have been received previously, your app can request the status of an upload session.
+Example
+Query the status of the upload by sending a GET request to the uploadUrl.
+HTTP
+Copy
+GET https://sn3302.up.1drv.com/up/fe6987415ace7X4e1eF86633784148bb98a1zjcUhf7b0mpUadahs
+The server responds with a list of missing byte ranges that need to be uploaded and the expiration time for the upload session.
+ Note
+To upload large files using SDKs see Upload large files using the Microsoft Graph SDKs.
+HTTP
+Copy
+HTTP/1.1 200 OK
+Content-Type: application/json
+{
+  "expirationDateTime": "2015-01-29T09:21:55.523Z",
+  "nextExpectedRanges": ["12345-"]
+}
+Upload remaining data
+Now that your app knows where to start the upload from, resume the upload by following the steps in upload bytes to the upload session.
+Handle upload errors
+When the last byte range of a file is uploaded, it's possible for an error to occur. This can be due to a name conflict or quota limitation being exceeded. The upload session is preserved until the expiration time, which allows your app to recover the upload by explicitly committing the upload session.
+To explicitly commit the upload session, your app must make a PUT request with a new driveItem resource that will be used when committing the upload session. This new request should correct the source of error that generated the original upload error.
+To indicate that your app is committing an existing upload session, the PUT request must include the @microsoft.graph.sourceUrl property with the value of your upload session URL.
+HTTP
+Copy
+PUT https://graph.microsoft.com//me/drive/root:/{path_to_parent}
+Content-Type: application/json
+If-Match: {etag or ctag}
+{
+  "name": "largefile.vhd",
+  "@microsoft.graph.conflictBehavior": "rename",
+  "@microsoft.graph.sourceUrl": "{upload session URL}"
+}
+Response
+If the file can be committed using the new metadata, an HTTP 201 Created or HTTP 200 OK response is returned with the Item metadata for the uploaded file.
+HTTP
+Copy
+HTTP/1.1 201 Created
+Content-Type: application/json
+{
+  "id": "912310013A123",
+  "name": "largefile.vhd",
+  "size": 128,
+  "file": { }
+}
+Best practices
+Resume or retry uploads that fail due to connection interruptions or any 5xx errors, including:
+500 Internal Server Error
+502 Bad Gateway
+503 Service Unavailable
+504 Gateway Timeout
+Use an exponential back off strategy if any 5xx server errors are returned when resuming or retrying upload requests.
+For other errors, you shouldn't use an exponential back off strategy but limit the number of retry attempts made.
+Handle 404 Not Found errors when doing resumable uploads by starting the entire upload over. This indicates the upload session no longer exists.
+Use resumable file transfers for files larger than 10 MiB (10,485,760 bytes).
+A byte range size of 10 MiB for stable high speed connections is optimal. For slower or less reliable connections you might get better results from a smaller fragment size. The recommended fragment size is between 5-10 MiB.
+Use a byte range size that is a multiple of 320 KiB (327,680 bytes). Failing to use a fragment size that is a multiple of 320 KiB can result in large file transfers failing after the last byte range is uploaded.
+Error responses
+See the Error Responses article for details about how errors are returned.
+---
+Upload large files using the Microsoft Graph SDKs
+11/07/2024
+Many entities in Microsoft Graph support resumable file uploads to make it easier to upload large files. Instead of trying to upload the entire file in a single request, the file is sliced into smaller pieces and a request is used to upload a single slice. In order to simplify this process, the Microsoft Graph SDKs implement a large file upload task that manages the uploading of the slices.
+Upload large file to OneDrive
+C#
+Go
+Java
+PHP
+TypeScript
+C#
+Copy
+using var fileStream = File.OpenRead(filePath);
+// Use properties to specify the conflict behavior
+// IMPORTANT: you must add the following using directive to define DriveUpload:
+// using DriveUpload = Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
+// For more information, see:
+// https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/using-directive#the-using-alias
+var uploadSessionRequestBody = new DriveUpload.CreateUploadSessionPostRequestBody
+{
+    Item = new DriveItemUploadableProperties
+    {
+        alData = new Dictionary<string, object>
+        {
+            { "@microsoft.graph.conflictBehavior", "replace" },
+        },
+    },
+};
+// Create the upload session
+// itemPath does not need to be a path to an existing item
+var myDrive = await graphClient.Me.Drive.GetAsync();
+var uploadSession = await graphClient.Drives[myDrive?.Id]
+    .Items["root"]
+    .ItemWithPath(itemPath)
+    .CreateUploadSession
+    .PostAsync(uploadSessionRequestBody);
+// Max slice size must be a multiple of 320 KiB
+int maxSliceSize = 320 * 1024;
+var fileUploadTask = new LargeFileUploadTask<DriveItem>(
+    uploadSession, fileStream, maxSliceSize, graphClient.RequestAdapter);
+var totalLength = fileStream.Length;
+// Create a callback that is invoked after each slice is uploaded
+IProgress<long> progress = new Progress<long>(prog =>
+{
+    Console.WriteLine($"Uploaded {prog} bytes of {totalLength} bytes");
+});
+try
+{
+    // Upload the file
+    var uploadResult = await fileUploadTask.UploadAsync(progress);
+    Console.WriteLine(uploadResult.UploadSucceeded ?
+        $"Upload complete, item ID: {uploadResult.ItemResponse.Id}" :
+        "Upload failed");
+}
+catch (ODataError ex)
+{
+    Console.WriteLine($"Error uploading: {ex.Error?.Message}");
+}
+Resuming a file upload
+The Microsoft Graph SDKs support resuming in-progress uploads. If your application encounters a connection interruption or a 5.x.x HTTP status during upload, you can resume the upload.
+C#
+Go
+Java
+PHP
+TypeScript
+C#
+Copy
+await fileUploadTask.ResumeAsync(progress);
+Upload large attachment to Outlook message
+C#
+Go
+Java
+PHP
+TypeScript
+C#
+Copy
+// Create message
+var draftMessage = new Message
+{
+    Subject = "Large attachment",
+};
+var savedDraft = await graphClient.Me
+    .Messages
+    .PostAsync(draftMessage);
+using var fileStream = File.OpenRead(filePath);
+var largeAttachment = new AttachmentItem
+{
+    AttachmentType = AttachmentType.File,
+    Name = Path.GetFileName(filePath),
+    Size = fileStream.Length,
+};
+// IMPORTANT: you must add the following using directive to define AttachmentUpload:
+// using AttachmentUpload = Microsoft.Graph.Me.Messages.Item.Attachments.CreateUploadSession;
+// For more information, see:
+// https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/using-directive#the-using-alias
+var uploadSessionRequestBody = new AttachmentUpload.CreateUploadSessionPostRequestBody
+{
+    AttachmentItem = largeAttachment,
+};
+var uploadSession = await graphClient.Me
+    .Messages[savedDraft?.Id]
+    .Attachments
+    .CreateUploadSession
+    .PostAsync(uploadSessionRequestBody);
+// Max slice size must be a multiple of 320 KiB
+int maxSliceSize = 320 * 1024;
+var fileUploadTask = new LargeFileUploadTask<FileAttachment>(
+    uploadSession, fileStream, maxSliceSize, graphClient.RequestAdapter);
+var totalLength = fileStream.Length;
+// Create a callback that is invoked after each slice is uploaded
+IProgress<long> progress = new Progress<long>(prog =>
+{
+    Console.WriteLine($"Uploaded {prog} bytes of {totalLength} bytes");
+});
+try
+{
+    // Upload the file
+    var uploadResult = await fileUploadTask.UploadAsync(progress);
+    Console.WriteLine(uploadResult.UploadSucceeded ? "Upload complete" : "Upload failed");
+}
+catch (ODataError ex)
+{
+    Console.WriteLine($"Error uploading: {ex.Error?.Message}");
+}
+---
+reate a Microsoft Graph client
+12/13/2024
+The Microsoft Graph client is designed to make it simple to make calls to Microsoft Graph. You can use a single client instance for the lifetime of the application. For information about how to add and install the Microsoft Graph client package into your project, see Install the SDK.
+The following code examples show how to create an instance of a Microsoft Graph client with an authentication provider in the supported languages. The authentication provider handles acquiring access tokens for the application.
+Many different authentication providers are available for each language and platform. The different authentication providers support different client scenarios. For details about which provider and options are appropriate for your scenario, see Choose an Authentication Provider.
+The client ID is the app registration ID that is generated when you register your app in the Azure portal.
+C#
+Go
+Java
+PHP
+Python
+TypeScript
+C#
+Copy
+var scopes = new[] { "User.Read" };
+// Multi-tenant apps can use "common",
+// single-tenant apps must use the tenant ID from the Azure portal
+var tenantId = "common";
+// Value from app registration
+var clientId = "YOUR_CLIENT_ID";
+// using Azure.Identity;
+var options = new DeviceCodeCredentialOptions
+{
+    AuthorityHost = AzureAuthorityHosts.AzurePublicCloud,
+    ClientId = clientId,
+    TenantId = tenantId,
+    // Callback function that receives the user prompt
+    // Prompt contains the generated device code that user must
+    // enter during the auth process in the browser
+    DeviceCodeCallback = (code, cancellation) =>
+    {
+        Console.WriteLine(code.Message);
+        return Task.FromResult(0);
+    },
+};
+// https://learn.microsoft.com/dotnet/api/azure.identity.devicecodecredential
+var deviceCodeCredential = new DeviceCodeCredential(options);
+var graphClient = new GraphServiceClient(deviceCodeCredential, scopes);
+Include using statements for Azure.Identity and Microsoft.Graph to run this code.
+---
+Install a Microsoft Graph SDK
+11/07/2024
+Microsoft Graph SDKs can be included in your projects via GitHub and popular platform package managers. This article describes how to install a Microsoft Graph SDK into your project.
+SDKs are available in the following languages:
+.NET
+Go
+Java
+JavaScript
+PHP
+PowerShell
+Python
+Install the Microsoft Graph .NET SDK
+The Microsoft Graph .NET SDK is included in the following NuGet packages:
+Microsoft.Graph: Contains the models and request builders for accessing the  endpoint with the fluent API. Microsoft.Graph has a dependency on Microsoft.Graph.Core.
+Microsoft.Graph.Beta: Contains the models and request builders for accessing the beta endpoint with the fluent API. Microsoft.Graph.Beta has a dependency on Microsoft.Graph.Core.
+Microsoft.Graph.Core: The core library for making calls to Microsoft Graph.
+To install the Microsoft.Graph packages into your project, you can use the dotnet CLI, the Package Manager UI in Visual Studio or the Package Manager Console in Visual Studio. The following commands install the Microsoft.Graph and Microsoft.Graph.Core libraries. Microsoft.Graph.Core is installed as a dependency of Microsoft.Graph.
+dotnet CLI
+.NET CLI
+Copy
+dotnet add package Microsoft.Graph
+Package Manager Console
+PowerShell
+Copy
+Install-Package Microsoft.Graph
+Install the Microsoft Graph Go SDK
+The Microsoft Graph Go SDK is included in the following packages:
+Microsoft Graph SDK for Go: Contains the models and request builders for accessing the  endpoint with the fluent API.
+Microsoft Graph Beta SDK for Go: Contains the models and request builders for accessing the beta endpoint with the fluent API.
+Microsoft Graph Core SDK for Go: The core library for making calls to Microsoft Graph.
+Shell
+Copy
+go get github.com/microsoftgraph/msgraph-sdk-go
+go get github.com/Azure/azure-sdk-for-go/sdk/azidentity
+Install the Microsoft Graph Java SDK
+The Microsoft Graph Java SDK is included in the following packages:
+microsoft-graph: Contains the models and request builders for accessing the  endpoint with the fluent API.
+microsoft-graph-beta: Contains the models and request builders for accessing the beta endpoint with the fluent API.
+microsoft-graph-core: The core library for making calls to Microsoft Graph.
+To install the Microsoft Graph Java SDK, you can use one of these two options:
+Use Gradle to install the Microsoft Graph Java SDK. Add the repository and a compile dependency for microsoft-graph to your project's build.gradle:
+Gradle
+Copy
+  repository {
+      mavenCentral()
+  }
+  dependency {
+      // Include the sdk as a dependency
+      implementation 'com.microsoft.graph:microsoft-graph:6.+'
+      // Beta
+      implementation 'com.microsoft.graph:microsoft-graph-beta:6.+'
+      // Include Azure identity for authentication
+      implementation 'com.azure:azure-identity:1.+'
+  }
+Use Maven to install the Microsoft Graph Java SDK. Add the dependency in the dependencies element in pom.xml:
+XML
+Copy
+  <dependency>
+      <groupId>com.microsoft.graph</groupId>
+      <artifactId>microsoft-graph</artifactId>
+      <version>[6.0,)</version>
+  </dependency>
+  <dependency>
+      <groupId>com.microsoft.graph</groupId>
+      <artifactId>microsoft-graph-beta</artifactId>
+      <version>[6.0,)</version>
+  </dependency>
+  <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-identity</artifactId>
+      <version>[1.11,)</version>
+  </dependency>
+Install the Microsoft Graph JavaScript SDK
+The Microsoft Graph JavaScript SDK is included in the following packages:
+@microsoft/microsoft-graph-client (npm): The core library for making calls to Microsoft Graph.
+@microsoft/microsoft-graph-types (npm): The TypeScript types for the Microsoft Graph entities.
+Use npm to install the Microsoft Graph JavaScript SDK:
+Shell
+Copy
+npm install @microsoft/microsoft-graph-client --save
+npm install @microsoft/microsoft-graph-types --save-dev
+Install the Microsoft Graph PHP SDK
+The Microsoft Graph PHP SDK is available from packagist.org and can be installed in the following ways:
+Use composer to install the Microsoft Graph PHP SDK manually:
+Shell
+Copy
+composer require microsoft/microsoft-graph
+Use composer.json to install the Microsoft Graph PHP SDK:
+JSON
+Copy
+{
+    "require": {
+        "microsoft/microsoft-graph": "^2.0.0"
+    }
+}
+Install the Microsoft Graph PowerShell SDK
+All the modules are published on PowerShell Gallery. To install:
+PowerShell
+Copy
+Install-Module Microsoft.Graph
+If you're upgrading from the preview modules, run Install-Module with AllowClobber and Force parameters to avoid command name conflicts:
+PowerShell
+Copy
+Install-Module Microsoft.Graph -AllowClobber -Force
+Install the Microsoft Graph Python SDK
+The Microsoft Graph Python SDK is available on PyPI.
+py
+Copy
+pip install msgraph-sdk
+Related content
+For more information, see the SDK design requirements documentation.
+For a list of samples for Microsoft Graph, see the Microsoft Graph resources page.
+For step-by-step training for creating a Microsoft Graph app, see the Microsoft Graph tutorials.
+---
+rn  Microsoft Graph 
+Build interactive apps by using Microsoft Graph APIs
+11/07/2024
+This article describes a common Microsoft Graph integration pattern for a business scenario that requires a UI that can create, update, and manage channel messages in real time. This scenario depends on Microsoft 365 services such as sending and receiving messages from different teams.
+This scenario has the following architecture requirements:
+An application integration type, because it relies on complex Microsoft 365 functionality.
+A bidirectional data flow between the app and Microsoft 365.
+A low volume of data compared to automated systems based on single human interations. Depending on the number of users, however, the data volume might be high.
+A real-time data operation on the app, with some asynchronous server-side operations, such as delivering email to a remote client.
+The best choice for this application is to use Microsoft Graph RESTful HTTP APIs. The client app responds to user actions and can make requests and process the data at a speed that's controlled by the client environment.
+The following diagram shows the architecture for this solution.
+A diagram that shows a third-party app authenticating with Microsoft Entra ID and communicating with Microsoft Graph APIs, which interact via HTTP with apps such as Teams, Planner, OneDrive, and SharePoint.
+Solution components
+The solution architecture includes the following components:
+Azure App Service, which lets you build and host web apps, mobile backends, and RESTful APIs in your preferred programming language, without managing infrastructure. It offers auto-scaling and high availability, supports both Windows and Linux, and enables automated deployments from GitHub, Azure DevOps, or any Git repo.
+Microsoft Entra ID is required to manage authentication for Microsoft Graph APIs and supports delegated and application permissions to enable OAuth flow.
+SQL Database is used to store application data and state; this component is optional.
+Microsoft Graph RESTful APIs, accessed via a single endpoint: https://graph.microsoft.com.
+An app that implements custom logic.
+Considerations
+The following considerations support the use of this integration pattern:
+Availability: The client app periodically polls Microsoft Graph APIs for data. The client app can make requests and process the data at a speed controlled by the client environment.
+Latency: The client app queries Microsoft Graph APIs for data in real time; however, there may be some latency depending on the network conditions and the load on the Microsoft Graph service.
+Scalability: The client app can scale horizontally by adding more instances to the App Service plan. Microsoft Graph APIs can handle a large number of requests, but they also have throttling limits and policies to prevent abuse. The client app should implement retry logic and exponential back-off to handle throttling errors gracefully.
+Solution complexity: Although this solution might use the Microsoft Graph SDK, it still requires custom code to poll and process the data. If the data volume is large, sequential processing might not be sufficient, and parallel processing might be necessary. For this reason, this solution has a medium level of complexity.
+Related content
+Best practices in cloud applications
+---
+Common integration patterns with Microsoft Graph
+11/07/2024
+Microsoft Graph is a technology platform that allows organizations to connect their business systems with Microsoft 365 SaaS data and services. Microsoft Graph includes all the options available in modern cloud integration platforms, including interactive APIs, data ingress and egress capabilities, and event-based integration, and includes the following integration options:
+Transactional RESTful HTTP APIs - Provide control and data plane interfaces for various Microsoft 365 SaaS offerings. These APIs support synchronous communication and are granular by nature. 
+Enhanced RESTful HTTP APIs - A subclass of RESTful HTTP APIs that provide extra capabilities for effective data extraction. The enhanced APIs consist of Microsoft Teams APIs that enable specialized operations to retrieve large amounts of data, and Microsoft SharePoint and Exchange Online APIs, which raise throttling limits for paid apps.
+Microsoft Graph Data Connect - A bulk data export mechanism that follows an ETL (extract, transform & load) pattern, with a data gathering phase that stages data before transferring it in bulk to the customers' provided storage, and serves data with high latency. 
+Event-driven integration APIs - Allows client applications to receive notifications of changes or full object data after an event in the Microsoft 365 ecosystem. This push mechanism is supported by webhooks and doesn’t guarantee message delivery or message order.
+Event streaming integration APIs - Allows client applications to react to activities in Microsoft 365 at their own pace and guarantees the persistence of immutable event data. Microsoft Graph change notifications with Azure Event Hubs support this pull mechanism.
+Microsoft 365 Copilot connectors (formerly Microsoft Graph connectors) - Enable the ingestion of large amounts of customer data into Microsoft 365 storage, which enriches Microsoft 365 Copilot, the augmentation loop, and search-based Microsoft 365 experiences. These connectors are available through product-specific connectors, such as Copilot connector for ServiceNow, or generic-content REST APIs.
+The following image shows the Microsoft Graph integration patterns, their associated architectural characteristic, and the types of solutions they map to.
+A diagram that lists integration patterns, the associated architectural components for each, and types of solutions
+The wide range of integration options can make it difficult to choose the best option for your needs. We recommend that you start with a business scenario and identify your functional and nonfunctional requirements. Then you can select an integration option based on those requirements.
+Diagram of the analysis flow which starts with a business scenario, then the definition of architecture requirements, and then the selection of an integration option
+Based on many known scenarios in the Microsoft Graph ecosystem, the following architecture requirements impact the selection of integration options:
+Integration type - Application integrations involve client applications that depend on both the data and functionality of the Microsoft 365 services; for example, the sendMail API accesses user data and also send an email. Data integrations involve applications that produce or consume Microsoft Graph data but don't rely in Microsoft 365 services. All Microsoft Graph integration options support data integration scenarios.
+Direction of data flow - Outbound flow is when customer data leaves the Microsoft Graph compliance boundaries and inbound flow is when customer data enters Microsoft Graph.
+Volume of data - The amount of customer data processed in a critical period, such as a business day.
+Data latency - The time difference between when data is created and when it's extracted.
+Use the following decision tree to choose an integration option based on your architecture requirements.
+A diagram that lists business scenarios and the associated integration pattern options
+Application integration requirements - Use Microsoft Graph APIs.
+Data integration scenarios:
+Outbound flow of Microsoft 365 data:
+For high data latency and high data volume - Use Data Connect.
+For high data latency and low data volume - Use Microsoft Graph APIs or notifications
+For low data latency and high data volume -Use Microsoft Graph notifications via Event Hub.
+For low data latency and low data volume - Use Microsoft Graph notifications via webhooks.
+Inbound flow of custom data - Use Microsoft 365 Copilot connectors (formerly Microsoft Graph connectors).
+Many business scenarios require multiple integration building blocks to implement a solution. For example, Data Loss Prevention (DLP) scenarios might need Microsoft Graph Data Connect for the initial data collection and malicious behavior patterns analysis, and subsequent event streaming integration for near real-time data ingestion and processing to recognize a potential security incident. Choose your integration options based on your constraints and requirements such as complexity, cost, and time to market, to best accelerate your path to value.
+To explore each of the integration options in more detail, see the following topics:
+Analyze Microsoft Graph data in your data storage
+Build interactive apps
+Build interactive Microsoft Graph apps with real-time feed
+Get real-time updates for data changes by using Microsoft Graph
+Retrieve events at your speed by using Microsoft Graph
+Use Microsoft Graph to augment Microsoft Search with custom data
+---
+rn  Microsoft Graph 
+Address resources in a drive on OneDrive
+11/07/2024
+Learn how to access items within a drive on OneDrive with ID-based and path-based addressing, and how to properly encode paths for Microsoft Graph.
+ID-based addressing
+OneDrive supports ID-based addressing of items. Items are assigned a unique identifier when they are created and the ID persists across the actions a user performs on the item. Renaming or moving the item will not change the item's ID.
+ID-based addressing is a useful way to track items that might be moved by the user to different locations on OneDrive. As long as you have the item's ID and the item exists, you'll be able to find it.
+Path-based addressing
+OneDrive also supports path-based addressing. This allows you to use a friendly URL syntax to address items relative to the hierarchy of items visible in OneDrive. If you know the hierarchy to an item, you can directly address that item, without spending any time making repeated calls to discover each level of the hierarchy.
+However, since path-based addressing is based on the name of the item, renaming or moving the item to a new location will cause the path of the item to change.
+You can use path-based addressing relative to any item in OneDrive. For example, when working with shared folders, you can use a path-based URL relative to the shared folder's item ID to address something in the shared folder by path.
+Examples
+The following examples show the different URL formats available to access data. All of these URLs are logically equivalent and return the content of MyFile.xlsx.
+URL example	Description
+/drive/root:/Documents/MyFile.xlsx:/content	Specified by path relative to the root of a drive.
+/drive/special/documents:/MyFile.xlsx:/content	Specified by filename in the documents special folder.
+/drive/items/0123456789AB/content	Specified by item-id.
+/drives/AB0987654321/items/0123456789AB/content	Specified by drive-id and item-id.
+Path encoding
+OneDrive supports addressing files and folders using the path of the item in the user's OneDrive. However, because the path contains user specified content, which can potentially contain characters that are not URL safe, you should ensure proper encoding of any path segments.
+Microsoft Graph expects that URLs conform to RFC 3986. The following is a summary of how to properly encode paths for Microsoft Graph.
+OneDrive reserved characters
+The following characters are OneDrive reserved characters and can't be used in OneDrive folder and file names.
+Copy
+  onedrive-reserved  = "/" / "\" / "*" / "<" / ">" / "?" / ":" / "|"
+  onedrive-business-reserved
+                     = "/" / "\" / "*" / "<" / ">" / "?" / ":" / "|" / "#" / "%"
+ Note
+Folder names can't end with a period (.).
+File or folder names cannot begin with a tilde ('~').
+For more information, see Restrictions and limitations when you sync SharePoint libraries to your computer through OneDrive for work or school.
+URI path characters
+When constructing the path segment of a URL for the Microsoft Graph API, the following characters are allowed for path names, based on the URI RFC.
+Copy
+  pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
+  pct-encoded = "%" HEXDIG HEXDIG
+  unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
+  sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
+              / "*" / "+" / "," / ";" / "="
+Item name characters, which are not included in the pchar group, such as # and (space), must be percent encoded.
+Encoding characters
+Microsoft Graph uses standard percent encoding, where URL-invalid characters are encoded with a % and then the UTF-8 character code for the character. For example:
+" " -> %20
+"#" -> %23
+Common URL encoding mistakes
+You can't encode an entire URL in one call, because the encoding rules for each segment of a URL are different. Without proper encoding, the unencoded URL will be ambiguous for which segments contain which content. As such, you need to encode the URL path when building your URL string.
+For example, instead of writing this:
+Copy
+string url = url_encode("https://graph.microsoft.com//me/drive/root:/" + path + ":/children")
+Write this:
+Copy
+string url = "https://graph.microsoft.com//me/drive/root:/" + url_path_encode(path) + ":/children")
+However, not all URL encoding libraries respect all the requirements of standard URL path encoding.
+.NET / C-Sharp / Visual Basic
+The .NET classes for HttpUtility and Uri include various methods for URL encoding. However, none of those methods properly encode all reserved characters for the path component of the URL (including HttpUtility.UrlPathEncode).
+Instead of using those methods, you should use UriBuilder to construct a properly escaped URL.
+C#
+Copy
+UriBuilder builder = new UriBuilder("https://graph.microsoft.com");
+builder.Path = "//me/drive/root:/Documents/My Files/#nine.docx";
+Uri url = builder.Uri;
+Objective-C / iOS
+For Objective-C, iOS and Mac OS X development, use the stringByAddingPercentEncodingWithAllowedCharacters method and [NSCharacterSet URLPathAllowedCharacterSet] to properly encode the path component of the URL.
+Objective-C
+Copy
+NSString *root = @"https://graph.microsoft.com//me/drive/root:/";
+NSString *path = @"Documents/My Files/#nine.docx";
+NSString *encPath = [path stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]];
+NSURL *url = [[NSURL alloc] initWithString:[root stringByAppendingString:encPath]];
+Android
+Use the Uri.Builder class to construct a properly encoded URL.
+Java
+Copy
+Uri.Builder builder = new Uri.Builder();
+builder.
+  scheme("https").
+  authority("graph.microsoft.com").
+  appendPath("").
+  appendPath("me").
+  appendPath("drive").
+  appendPath("root:").
+  appendPath("Documents").
+  appendPath("My Files").
+  appendPath("#nine.docx");
+String url = builder.build().toString();
+JavaScript
+Use escape() in JavaScript to properly encode a path component.
+JavaScript
+Copy
+var root = "https://graph.microsoft.com//me/drive/root:";
+var path = "/Documents/My Files/#nine.docx";
+var url = root + escape(path);
+Examples
+Here is an example of a OneDrive user (Adele) with the following folder hierarchy:
+Copy
+OneDrive
+	\Adele's Files
+		\doc (1).docx
+    \estimate%s.docx
+	\Break#Out
+		\saved_game[1].bin
+To address each of Adele's files, you use percent encoding, as follows:
+Path	Encoded URL for path
+\Adele's Files	/root:/Adele's%20Files
+\...\doc (1).docx	/root:/Adele's%20Files/doc%20(1).docx
+\...\estimate%.docx	/root:/Adele's%20Files/estimate%25s.docx
+\Break#Out	/root:/Break%23Out
+\...\saved_game[1].bin	/root:/Break%23Out/saved_game[1].bin
+Related content
+OneDrive file storage API overview
+---
+Overview of Microsoft Graph
+01/09/2025
+Microsoft Graph is the gateway to data and intelligence in Microsoft cloud services like Microsoft Entra and Microsoft 365. Use the wealth of data accessible through Microsoft Graph to build apps for organizations and consumers that interact with millions of users.
+Microsoft Graph, Microsoft Graph Data Connect, and Copilot connectors enable extending Microsoft 365 experiences and building intelligent apps.
+Data and services powering the Microsoft 365 platform
+In the Microsoft 365 platform, three main components facilitate the access and flow of data:
+The Microsoft Graph API offers a single endpoint, https://graph.microsoft.com, to provide access to rich, people-centric data and insights in the Microsoft cloud, including Microsoft 365, Windows, and Enterprise Mobility + Security. You can use REST APIs or SDKs to access the endpoint and build apps that support Microsoft 365 scenarios, spanning across productivity, collaboration, education, people and workplace intelligence, and more. Microsoft Graph also includes a powerful set of services that manage user and device identity, access, compliance, and security and help protect organizations from data leakage or loss.
+Microsoft 365 Copilot connectors (formerly Microsoft Graph connectors) work in the incoming direction, delivering data external to the Microsoft cloud into Microsoft Graph services and applications to enhance Microsoft 365 experiences such as Microsoft Search. Connectors exist for many commonly used data sources such as Box, Google Drive, Jira, and Salesforce.
+Microsoft Graph Data Connect provides a set of tools to streamline secure and scalable delivery of Microsoft Graph data to popular Azure data stores. The cached data serves as data sources for Azure development tools that you can use to build intelligent applications.
+Together, the Microsoft Graph API, connectors, and Data Connect power the Microsoft 365 platform. With the ability to access Microsoft Graph data and other datasets, you can derive insights and analytics, extend Microsoft 365 experiences, and build unique, intelligent applications.
+What's in Microsoft Graph?
+Microsoft Graph exposes REST APIs and client libraries to access data on the following Microsoft cloud services:
+Microsoft 365 core services: Bookings, Calendar, Excel, Microsoft Purview eDiscovery, Microsoft Search, OneDrive, OneNote, Outlook/Exchange, People (Outlook contacts), Planner, SharePoint, Teams, To Do, Viva Insights
+Enterprise Mobility + Security services: Advanced Threat Analytics, Advanced Threat Protection, Microsoft Entra, Identity Manager, and Intune
+Windows services: activities, devices, notifications, Universal Print
+Dynamics 365 Business Central services
+Microsoft Partner Center services
+To find out more, see Major services and features in Microsoft Graph.
+An image showing the primary resources and relationships that are part of Microsoft Graph
+What can you do with Microsoft Graph?
+Use Microsoft Graph to build experiences around the user's unique context to help them be more productive. Imagine an app that...
+Looks at your next meeting and helps you prepare for it by providing profile information for attendees, including their job titles and managers, as well as information about the latest documents they're working on, and people they're collaborating with.
+Scans your calendar, and suggests the best times for the next team meeting.
+Fetches the latest sales projection chart from an Excel file in your OneDrive and lets you update the forecast in real time, all from your phone.
+Subscribes to changes in your calendar, sends you an alert when you're spending too much time in meetings, and provides recommendations for the ones you can miss or delegate based on how relevant the attendees are to you.
+Helps you sort out personal and work information on your phone; for example, by categorizing pictures that should go to your personal OneDrive and business receipts that should go to your OneDrive for Business.
+Analyzes at-scale Microsoft 365 data so that decision makers can unlock valuable insights into time allocation and collaboration patterns that improve business productivity.
+Brings custom business data into Microsoft Graph, indexing it to make it searchable along with data from Microsoft 365 services.
+Pick the first scenario about researching meeting attendees as an example. With the Microsoft Graph API, you can:
+Get the email addresses of the meeting event attendees.
+Look them up individually as a user in Microsoft Entra ID to get their profile information.
+You can then navigate to other resources using relationships:
+Connect to their manager through a manager relationship.
+Get valuable insights and intelligence including the popular files trending around the user.
+Get the most relevant people around the user.
+Extend the scenario to get to the user's groups through a memberOf relationship.
+Reach other members in each group.
+Tap into other scenarios enabled by groups, such as education and teamwork.
+To find out more, see Integration patterns.
+Microsoft Graph is secured and only authorized callers can access the data. For more information, see Authentication and authorization.
+ Note
+When you use Microsoft Graph APIs, you agree to the Microsoft APIs Terms of Use and the Microsoft Privacy Statement.
+Popular API requests
+Check out some of these common scenarios for working with the Microsoft Graph API. The links take you to the Graph Explorer.
+Operation	URL
+GET my profile	https://graph.microsoft.com//me
+GET my files	https://graph.microsoft.com//me/drive/root/children
+GET my photo	https://graph.microsoft.com//me/photo/$value
+GET my mail	https://graph.microsoft.com//me/messages
+GET my high importance email	https://graph.microsoft.com//me/messages?$filter=importance%20eq%20'high'
+GET my calendar events	https://graph.microsoft.com//me/events
+GET my manager	https://graph.microsoft.com//me/manager
+GET last user to modify file foo.txt	https://graph.microsoft.com//me/drive/root/children/foo.txt/lastModifiedByUser
+GET Microsoft 365 groups I'm a member of	https://graph.microsoft.com//me/memberOf/$/microsoft.graph.group?$filter=groupTypes/any(a:a%20eq%20'unified')
+GET users in my organization	https://graph.microsoft.com//users
+GET groups in my organization	https://graph.microsoft.com//groups
+GET people related to me	https://graph.microsoft.com//me/people
+GET items trending around me	https://graph.microsoft.com/beta/me/insights/trending
+GET my notes	https://graph.microsoft.com//me/onenote/notebooks
+Bring data from an external content source to Microsoft Graph
+Use Copilot connectors to bring data that is external to the Microsoft cloud into Microsoft Graph. Examples of such data can be an organization's human resources database or product catalog, hosted on-premises or in the public or private clouds.
+Copilot connectors create connections to external data sources, index the data, and store it as external custom items and files. Once indexed, those items can show up in Microsoft Search and for apps that use the Microsoft Search API.
+Access Microsoft Graph data at scale
+Use Microsoft Graph Data Connect to access data on Microsoft Graph at scale, while allowing administrators granular consent and full control over their Microsoft Graph data. Data Connect streamlines the delivery of this data to Microsoft Azure.
+Using Azure tools, you can then build intelligent apps that:
+Find you the closest expert on a subject area to you in your organization.
+Automate knowledge base creation.
+Analyze meeting requests to provide insights into conference room utilization.
+Detect fraud with productivity and communication data.
+When should I use Microsoft Graph API or Data Connect?
+Microsoft Graph Data Connect provides a new way for you to interact with the data that's available through Microsoft Graph APIs. Data Connect provides a unique set of tools that streamline the building of intelligent applications, all within the Microsoft cloud.
+Feature	Microsoft Graph API	Microsoft Graph Data Connect
+Access scope	Single user or entire tenant	Many users or groups
+Access pattern	Real time	Recurrent schedule
+Data operations	Operates on data master	Operates on a cache of the data
+Data protection	Data is protected while in the source service like Microsoft 365 and Microsoft Entra	Data protection is extended to the cache of data in your Azure subscription
+User consent	Self
+Resource types	None
+Admin consent	Entire organization
+Resource types	Select groups of users
+Resource types and properties
+Excludes users
+Access tools	RESTful web queries	Azure Data Factory
+Related content
+Try a sample request in the Graph Explorer.
+Use the quick start to set up a ready-to-run sample app.
+Explore the services and features that you can use in your scenarios.
+Explore the integration patterns that might apply to your scenario.
+See what's new in Microsoft Graph.
+Learn about metered APIs and services in Microsoft Graph.
+Find out how to get an auth token in your app.
+Start using the API.
+---
+Showing 1-10 of 648 items.
+RSS
+Sort by
+
+Reports | Identity and access reports - July 3, 2025
+Added the confirmCompromised method to the signIn resource.
+Added the confirmSafe method to the signIn resource.
+Added the dismiss method to the signIn resource.
+
+Security - July 1, 2025
+Added the contentProcessingErrorType enumeration type.
+Added the dlpAction enumeration type.
+Added the executionMode enumeration type.
+Added the labelActionSource enumeration type.
+Added the policyPivotProperty enumeration type.
+Added the protectionScopeState enumeration type.
+Added the restrictionAction enumeration type.
+Added the usageRights enumeration type.
+Added the userActivityType enumeration type.
+Added the userActivityTypes enumeration type.
+
+Identity and access | Identity and sign-in - June 26, 2025
+Added the certificateAuthorityType enumeration type.
+Added the certificateAuthorityDetail resource.
+Added the certificateBasedAuthPki resource.
+Added the publicKeyInfrastructure relationship to the directory resource.
+Added the publicKeyInfrastructureRoot resource.
+Added the upload method to the certificateBasedAuthPki resource.
+
+Identity and access | Directory management - June 25, 2025
+Added the isMemberManagementRestricted property to the administrativeUnit resource.
+Added the isManagementRestricted property to the device resource.
+Added the isManagementRestricted property to the group resource.
+Added the isManagementRestricted property to the user resource.
+
+Teamwork and communications | Shift management - June 24, 2025
+Deprecated the MS-APP-ACTS-AS request header for the stageForDeletion method to the changeTrackedEntity resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the offerShiftRequest resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the openShift resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the openShiftChangeRequest resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the schedule resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the schedulingGroup resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the shift resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the shiftPreferences resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the shiftsRoleDefinition resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the swapShiftsChangeRequest resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the timeCard resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the timeOff resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the timeOffReason resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the timeOffRequest resource.
+Deprecation
+Deprecated the MS-APP-ACTS-AS request header for all operations of the workforceIntegration resource.
+
+Education - June 24, 2025
+Added the responseEmotionType enumeration type.
+Added the responseFeedbackType enumeration type.
+Added the challengingWord resource.
+Added the educationRoot resource.
+Added the readingAssignmentSubmission resource and an associated method.
+Added the reflectCheckInResponse resource and an associated method.
+Added the reportsRoot resource.
+
+Reports | Partner billing reports - June 10, 2025
+Added the unbilled relationship to the billingReconciliation resource.
+Added the unbilledReconciliation resource type.
+Added the export method to the unbilledReconciliation resource.
+
+Identity and access | Directory management - June 10, 2025
+Added the dataSecurityAndGovernance relationship to the user resource.
+
+EnhancedRestore | Backup and Restore - June 2, 2025
+Added the protectionUnitsBulkJobStatus enumeration type.
+Added the driveProtectionUnitsBulkJob resource.
+Added the mailboxProtectionUnitsBulkJob resource.
+Added the protectionUnitsBulkJobBase resource.
+Added the siteProtectionUnitsBulkJob resource.
+
+Identity and access | Identity and sign-in - May 29, 2025
+Added the confirmSafe method to the riskyUser resource.
+Showing 11-20 of 648 items.
+RSS
+Sort by
+
+Files - May 28, 2025
+Added the childrenOnly parameter to the copy method.
+Added the includeAllVersionHistory parameter to the copy method.
+
+Teamwork - May 26, 2025
+Added the post method to the timeOffRequest resource.
+Added the scheduleChangeRequest resource.
+
+Security - May 25, 2025
+Added the microsoftThreatIntelligence member to the detectionSource enumeration.
+Added the microsoftThreatIntelligence member to the serviceSource enumeration.
+
+Security - May 20, 2025
+Added the customDetails property to the alert resource.
+
+Backup storage - May 20, 2025
+Added the restoreArtifactsBulkRequestStatus enumeration type.
+Added the driveRestoreArtifactsBulkRequest resource and associated methods.
+Added the mailboxRestoreArtifactsBulkRequests relationship to the exchangeRestoreSession resource.
+Added the mailboxRestoreArtifactsBulkRequest resource and associated methods.
+Added the driveRestoreArtifactsBulkRequests relationship to the oneDriveForBusinessRestoreSession resource.
+Added the restoreArtifactsBulkRequestBase resource.
+Added the siteRestoreArtifactsBulkRequests relationship to the sharePointRestoreSession resource.
+Added the siteRestoreArtifactsBulkRequest resource and associated methods.
+
+Teamwork - May 15, 2025
+Added the onBehalfOfUserId parameter to the clockIn method.
+
+Calendars - May 14, 2025
+Added the cancelledOccurrences property to the event resource.
+Added the exceptionOccurrences relationship to the event resource.
+
+Identity and access | Governance - May 13, 2025
+Added the isRequestorJustificationRequired property to the accessPackageAssignmentApprovalSettings resource.
+Added the isRequestorJustificationRequired property to the accessPackageAssignmentRequestRequirements resource.
+Added the refresh method to the accessPackageResource resource.
+Added the justification property to the accessPackageAssignmentRequest resource.
+
+Identity and access | Governance - May 12, 2025
+Added the accessPackageNotificationSettings resource.
+Added the accessPackageNotificationSettings property to the accessPackageAssignmentPolicy resource.
+
+Teamwork and communications | Calls and online meetings - May 8, 2025
+Added the copilotAdmin resource type.
+Showing 21-30 of 648 items.
+RSS
+Sort by
+
+Security | eDiscovery - May 4, 2025
+Added the description property to the ediscoveryReviewSet resource.
+Added the description property to the dataSet resource.
+Added the update method to the ediscoveryReviewSet resource.
+
+Teamwork and communications | Calls and online meetings - April 30, 2025
+Added the videoOnDemandWebUrl property to the virtualEventSession resource.
+
+Teamwork and communications | AI interactions - April 25, 2025
+Added the aiInteractionType enumeration type.
+Added the aiInteractionAttachment resource type.
+Added the aiInteractionContext resource type.
+Added the aiInteractionLink resource type.
+Added the aiInteractionMention resource type.
+Added the aiInteractionMentionedIdentitySet resource type.
+Added the aiInteraction resource type.
+Added the aiInteractionHistory resource type.
+Added the aiUser resource type.
+Added the copilotRoot resource type.
+Added the getAllEnterpriseInteractions method to the aiInteractionHistory resource.
+Added the copilot singleton.
+
+Identity and access | Identity and sign-in - April 24, 2025
+Added the authenticationMethodPlatform enumeration type.
+Added the platformCredentialMethods relationship to the authentication resource.
+Added the platformCredentialAuthenticationMethod resource and associated methods.
+
+Education - April 14, 2025
+Added the getRecentlyModifiedSubmissions method to the educationClass resource.
+Added the lastModifiedBy property to the educationSubmission resource.
+Added the lastModifiedDateTime property to the educationSubmission resource.
+Added the assignmentId property to the educationSubmission resource.
+
+Teamwork and communications | Calls and online meetings - April 14, 2025
+Updated the list operation to support retrieving callTranscript resources for channel meetings.
+Updated the get operation to support retrieving callTranscript resources for channel meetings.
+Updated the list operation to support retrieving callRecording resources for channel meetings.
+Updated the get operation to support retrieving callRecording resources for channel meetings.
+Added channel meeting support for transcript and recording change notifications specific to tenant-level, online meeting-specific, and user-level subscriptions in V1.
+
+Identity and access | Identity and sign-in - April 10, 2025
+Added the externalUsersSelfServiceSignUpEventsFlow resource.
+Added the onAttributeCollectionStartCustomExtension resource.
+Added the onAttributeCollectionStartCustomExtensionHandler resource.
+Added the onAttributeCollectionStartHandler resource.
+Added the onAttributeCollectionStartListener resource.
+Added the onAttributeCollectionSubmitCustomExtension resource.
+Added the onAttributeCollectionSubmitCustomExtensionHandler resource.
+Added the onAttributeCollectionSubmitHandler resource.
+Added the onAttributeCollectionSubmitListener resource.
+
+Teamwork and communications | Calls and online meetings - April 7, 2025
+Added the externalRegistrationInformation property to the attendanceRecord resource.
+Added the registrationId property to the attendanceRecord resource.
+Added the externalEventInformation property to the meetingAttendanceReport resource.
+
+Security - March 26, 2025
+Added the md5 property to the fileDetails resource.
+Added the sha256Ac property to the fileDetails resource.
+
+Identity and access | Identity and sign-in - March 20, 2025
+Added the applicationFilter
+Showing 31-40 of 648 items.
+RSS
+Sort by
+
+Identity and access | Directory management - March 18, 2025
+Added the newUserPrincipalName parameter to the restore deleted item method. Use the property to assign a new userPrincipalName as you restore the user object.
+
+Device and app management | Cloud PC - March 17, 2025
+Added the cloudPcProvisioningPolicyAutopatch resource type.
+Added the autopatch property to the cloudPcProvisioningPolicy resource.
+
+Identity and access | Identity and sign-in - March 10, 2025
+Added the x509CertificateCRLValidationConfigurationState enumeration type.
+Added the x509CertificateCRLValidationConfiguration resource.
+Added the crlValidationConfiguration property to the x509CertificateAuthenticationMethodConfiguration resource.
+
+Teamwork and communications | Messaging - March 7, 2025
+Added the firstChannelName property on a team resource.
+
+Sites and lists - March 3, 2025
+Enabled the $filter query parameter for the List method of the listItem resource.
+
+Device and app management | Cloud printing - February 25, 2025
+Added the incompatiblePrinterSettings enumeration type.
+Added the airPrintSettings resource type.
+Added the printerDiscoverySettings resource type.
+Added the printerDiscoverySettings property to the printSettings resource.
+
+Security | eDiscovery - February 25, 2025
+Added the delete method to the unifiedGroupSource resource.
+Added the delete ediscoveryCustodian method to the siteSource resource.
+Added the delete ediscoveryHoldPolicy method to the siteSource resource.
+Added the delete ediscoveryCustodian method to the userSource resource.
+Added the delete ediscoveryHoldPolicy method to the userSource resource.
+Added the list ediscoveryCustodian method to the userSource resource.
+Added the list ediscoveryHoldPolicy method to the userSource resource.
+Added the list ediscoveryCustodian method to the siteSource resource.
+Added the list ediscoveryHoldPolicy method to the siteSource resource.
+Added the contentQuery parameter to the update operation of the ediscoveryHoldPolicy resource.
+
+Devices and apps | Cloud printing - February 17, 2025
+Added the downloadedDateTime property to the printDocument resource.
+Added the uploadedDateTime property to the printDocument resource.
+Added the acknowledgedDateTime property to the printJob resource.
+Added the errorCode property to the printJob resource.
+
+Security - February 12, 2025
+Added the antispamTeamsDirection enumeration type.
+Added the teamsDeliveryLocation enumeration type.
+Added the teamsMessageDeliveryAction enumeration type.
+Added the teamsMessageEvidence resource type.
+Added the upn property to the mailboxEvidence resource.
+
+Mail - February 10, 2025
+Added the 
+Showing 41-50 of 648 items.
+RSS
+Sort by
+
+Teamwork - January 30, 2025
+Added the confirmedBy enumeration type.
+Added the timeCardState enumeration type.
+Added the timeCard member to the workforceIntegrationSupportedEntities enumeration.
+Added the timeCardBreak resource.
+Added the timeCardEntry resource.
+Added the timeCardEvent resource.
+Added the timeClockSettings resource.
+Added the createdBy property to the changeTrackedEntity resource.
+Added the dayNote resource.
+Added the isActivitiesIncludedWhenCopyingShiftsEnabled property to the schedule resource.
+Added the startDayOfWeek property to the schedule resource.
+Added the timeClockSettings property to the schedule resource.
+Added the dayNotes relationship to the schedule resource.
+Added the timeCards relationship to the schedule resource.
+Added the code property to the schedulingGroup resource.
+Added the timeCard resource.
+Added the code property to the timeOffReason resource.
+
+Teamwork and communications - January 30, 2025
+Added the List allMembers method to the channel resource.
+Added the allMembers relationship to the channel resource.
+
+Users - January 29, 2025
+Added the Microsoft Graph Bicep resource for deploying the user resource type using Bicep templates for Microsoft Graph resources in infrastructure-as-code (IaC) scenarios. For more information, see Microsoft.Graph users resource.
+
+Teamwork and communications | Calls and online meetings - January 28, 2025
+Added the allowedLobbyAdmitterRoles enumeration type.
+Added the allowedLobbyAdmitters property to the onlineMeetingBase resource.
+Added the allowedLobbyAdmitters property to the onlineMeeting resource.
+Added the allowedLobbyAdmitters property to the virtualEventSession resource.
+
+Teamwork and communications | Calls and online meetings - January 27, 2025
+Added the meetingLiveShareOptions enumeration type.
+Added the allowBreakoutRooms property to the onlineMeetingBase resource.
+Added the allowLiveShare property to the onlineMeetingBase resource.
+Added the allowPowerPointSharing property to the onlineMeetingBase resource.
+Added the allowWhiteboard property to the onlineMeetingBase resource.
+Added the allowBreakoutRooms property to the onlineMeeting resource.
+Added the allowLiveShare property to the onlineMeeting resource.
+Added the allowPowerPointSharing property to the onlineMeeting resource.
+Added the allowWhiteboard property to the onlineMeeting resource.
+Added the allowBreakoutRooms property to the virtualEventSession resource.
+Added the allowLiveShare property to the virtualEventSession resource.
+Added the allowPowerPointSharing property to the virtualEventSession resource.
+Added the allowWhiteboard property to the virtualEventSession resource.
+
+Files - January 19, 2025
+Change
+Updated the endpoint for the fileStorageContainer: restore operation of the fileStorageContainer resource to use /storage/fileStorage/deletedContainers/{containerId}/restore instead of /deletedStorageContainers/{containerId}/restore in the request URL.
+
+Identity and access | Identity and sign-in - January 15, 2025
+Change
+Added suspiciousAPITraffic as a supported value for the riskEventType property in the servicePrincipalRiskDetection resource.
+
+Teamwork and communications | Calls and online meetings - January 15, 2025
+Added the allowRecording property to the onlineMeetingBase resource.
+Added the allowTranscription property to the onlineMeetingBase resource.
+Added the allowRecording property to the onlineMeeting resource.
+Added the allowTranscription property to the onlineMeeting resource.
+Added the allowRecording property to the virtualEventSession resource.
+Added the allowTranscription property to the virtualEventSession resource.
+
+Teamwork and communications | Messaging - January 14, 2025
+Change
+Added chat as a supported value for the mentions property in the chatMessage resource.
+
+Teamwork and communications | Messaging - January 14, 2025
+Change
+Added 
+Showing 41-50 of 648 items.
+RSS
+Sort by
+
+Teamwork - January 30, 2025
+Added the confirmedBy enumeration type.
+Added the timeCardState enumeration type.
+Added the timeCard member to the workforceIntegrationSupportedEntities enumeration.
+Added the timeCardBreak resource.
+Added the timeCardEntry resource.
+Added the timeCardEvent resource.
+Added the timeClockSettings resource.
+Added the createdBy property to the changeTrackedEntity resource.
+Added the dayNote resource.
+Added the isActivitiesIncludedWhenCopyingShiftsEnabled property to the schedule resource.
+
+Teamwork and communications - January 30, 2025
+Added the List allMembers method to the channel resource.
+Added the allMembers relationship to the channel resource.
+
+Users - January 29, 2025
+Added the Microsoft Graph Bicep resource for deploying the user resource type using Bicep templates for Microsoft Graph resources in infrastructure-as-code (IaC) scenarios. For more information, see Microsoft.Graph users resource.
+
+Teamwork and communications | Calls and online meetings - January 28, 2025
+Added the allowedLobbyAdmitterRoles enumeration type.
+Added the allowedLobbyAdmitters property to the onlineMeetingBase resource.
+Added the allowedLobbyAdmitters property to the onlineMeeting resource.
+Added the allowedLobbyAdmitters property to the virtualEventSession resource.
+
+Teamwork and communications | Calls and online meetings - January 27, 2025
+Added the meetingLiveShareOptions enumeration type.
+Added the allowBreakoutRooms property to the onlineMeetingBase resource.
+Added the allowLiveShare property to the onlineMeetingBase resource.
+Added the allowPowerPointSharing property to the onlineMeetingBase resource.
+Added the allowWhiteboard property to the onlineMeetingBase resource.
+Added the allowBreakoutRooms property to the onlineMeeting resource.
+Added the allowLiveShare property to the onlineMeeting resource.
+Added the allowPowerPointSharing property to the onlineMeeting resource.
+Added the allowWhiteboard property to the onlineMeeting resource.
+Added the allowBreakoutRooms property to the virtualEventSession resource.
+Added the allowLiveShare property to the virtualEventSession resource.
+Added the allowPowerPointSharing property to the virtualEventSession resource.
+Added the allowWhiteboard property to the virtualEventSession resource.
+
+Files - January 19, 2025
+Change
+Updated the endpoint for the fileStorageContainer: restore operation of the fileStorageContainer resource to use /storage/fileStorage/deletedContainers/{containerId}/restore instead of /deletedStorageContainers/{containerId}/restore in the request URL.
+
+Identity and access | Identity and sign-in - January 15, 2025
+Change
+Added suspiciousAPITraffic as a supported value for the riskEventType property in the servicePrincipalRiskDetection resource.
+
+Teamwork and communications | Calls and online meetings - January 15, 2025
+Added the allowRecording property to the onlineMeetingBase resource.
+Added the allowTranscription property to the onlineMeetingBase resource.
+Added the allowRecording property to the onlineMeeting resource.
+Added the allowTranscription property to the onlineMeeting resource.
+Added the allowRecording property to the virtualEventSession resource.
+Added the allowTranscription property to the virtualEventSession resource.
+
+Teamwork and communications | Messaging - January 14, 2025
+Change
+Added chat as a supported value for the mentions property in the chatMessage resource.
+
+Teamwork and communications | Messaging - January 14, 2025
+Change
+Added forwardedMessageReference as a supported value for the contentType property in the chatMessageAttachment resource.
+Showing 51-60 of 648 items.
+RSS
+Sort by
+
+Teamwork and communications | Messaging - January 14, 2025
+Change
+Added Microsoft Loop components as two types of attachments, a Loop component and a place holder. New contentType properties application/vnd.microsoft.card.fluidEmbedCard and application/vnd.microsoft.card.codesnippet are in the chatMessageAttachment resource.
+
+Change notifications - January 5, 2025
+Enabled change notifications support to delete a subscription for user-scoped chat notifications.
+Enabled change notifications support to update a subscription for user-scoped chat notifications.
+Enabled change notifications support to get or list a subscription for user-scoped chat notifications.
+Enabled change notifications support to create a subscription for user-scoped chat notifications.
+Enabled change notifications support to reauthorize a subscription for user-scoped chat notifications.
+Enabled the $notifyOnUserSpecificProperties query parameter when you subscribe either to user-scoped chat notifications or notifications in a particular chat.
+
+Teamwork and communications | Messaging - January 5, 2025
+Added the isHiddenForAllMembers property to the chat resource.
+
+Teamwork and communications | Calls and online meetings - December 25, 2024
+Added the meetingTemplateId property to the onlineMeeting resource.
+
+Cloud communications | Call - December 25, 2024
+Added the chatRestrictions resource.
+Added the chatRestrictions property to the onlineMeetingBase resource.
+Added the chatRestrictions property to the onlineMeeting resource.
+Added the chatRestrictions property to the virtualEventSession resource.
+Added the chatRestrictions property to the onlineMeetingBase resource.
+Added the chatRestrictions property to the onlineMeeting resource.
+Added the chatRestrictions property to the virtualEventSession resource.
+
+User - December 22, 2024
+Added support for the User-Mail.ReadWrite.All delegated and application permissions to the read and write operations of the user resource. This property is the least privileged permission required to update the otherMails property for a user. It also allows you to read some identifier-related properties on the user object.
+Added support for the User-PasswordProfile.ReadWrite.All delegated and application permissions to the read and write operations of the user resource. This permission is the least privileged permission required to reset a user's password and read and write password reset-related properties on the user object. It also allows you to read some identifier-related properties on the user object.
+Added support for the User-Phone.ReadWrite.All delegated and application permissions to the read and write operations of the user resource. This permission is the least privileged required to read and update the businessPhones and mobilePhone properties for a user, including admin users. It also allows you to read some identifier-related properties on the user object. Previously, only the Directory.AccessAsUser.All permission was supported to update the properties for admin user. We recommend you move the lesser privileged ** permission instead.
+Added support for the User-Phone.ReadWrite.All delegated and application permissions to the read and write operations of the user resource. This permission is the least privilege required to read and update the businessPhones and mobilePhone properties for a user, including admin users. It also allows you to read some identifier-related properties on the user object.
+Added support for the User.EnableDisableAccount.All delegated and application permissions to the read and write operations of the user resource. This permission in combination with User.Read.All is the least privileged combination of permissions to read and update the accountEnabled property for a user, including admin users. Previously, only the Directory.AccessAsUser.All permission was supported to update the account status for admin users. We recommend you move the lesser privileged permission instead.
+Added support for the User.DeleteRestore.All delegated and application permissions to the read and write operations of the user resource. This property is the least privileged permission required to delete a user account, restore a deleted user from the recycle bin, or permanently delete a user from the recycle bin.
+
+Teamwork and communications | Messaging - December 20, 2024
+Added the remove method to the conversationMember resource.
+
+Microsoft Graph activity logs - December 15, 2024
+Microsoft Graph activity logs are now available in China operated by 21Vianet.
+
+Files - December 10, 2024
+Added the deletedContainers relationship to the fileStorage resource.
+Added the lockState property to the fileStorageContainer resource.
+Added the recycleBin relationship to the fileStorageContainer resource.
+Added the delete recyclebinitem method to the fileStorageContainer resource.
+Added the lock method to the fileStorageContainer resource.
+Added the restore method to the fileStorageContainer resource.
+Added the unlock method to the fileStorageContainer resource.
+Added the siteLockState enumeration type.
+Added the recycleBinSettings resource.
+Added the recycleBin resource.
+Added the recycleBinItem resource and its methods.
+Added the discardCheckout method to the driveItem resource.
+Added the list columns method to the fileStorageContainer resource.
+Added the list recyclebinitem method to the fileStorageContainer resource.
+Added the restore recyclebinitem method to the fileStorageContainer resource.
+Added the delete deleted containers method to the fileStorage resource.
+Added the list items method to the recyclebin resource.
+
+Teamwork and communications | Calls and online meetings - December 8, 2024
+Added the list operation to the virtualEventTownhall resource.
+Added the getByUserIdAndRole method to the virtualEventTownhall resource.
+Added the getByUserRole method to the virtualEventTownhall resource.
+Added the setexternaleventinformation method to the virtualEventTownhall resource.
+Added the virtualEventExternalInformation resource type.
+Added the externalEventInformation property to the virtualEvent resource.
+Added the externalEventInformation property to the virtualEventTownhall resource.
+Added the setexternaleventinformation method to the virtualEventWebinar resource.
+Added the externalEventInformation property to the virtualEventWebinar resource.
+Added the setExternalEventInformation method to the virtualEvent resource.
+Added the virtualEventExternalRegistrationInformation resource type.
+Added the externalRegistrationInformation property to the virtualEventRegistration resource.
