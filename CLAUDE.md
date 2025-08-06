@@ -28,10 +28,21 @@ PS: ADD NEW MD FILE INTO CLAUDE_JOURNAL FOLDER AFTER COMPLETION OF SIGNIFICANT T
 
 #### 1.1 MCP Server -- FIRST!
 Your knowledge is deprecated. Pull from:
-- Context7 (official library docs - catch up since your cutoff)
-- Perplexity (web search for July 2025 practices)
-- Azure SQL DB (understand schema AND actual data)
-- GitHub Server (real implementations)
+
+perplexity-mcp: This server integrates with Perplexity AI's API to give you the ability to perform real-time web searches and research. It allows users to query the web for recent information directly within their AI assistant.
+
+seqthink: This server provides a structured framework for breaking down complex problems into a sequence of organized thoughts. It helps track the progression of a thinking process through stages like research, analysis, and conclusion.
+
+serena: A powerful MCP server that turns a compatible Large Language Model into a coding agent by providing it with tools for semantic code retrieval and editing. It allows the AI to interact directly with and understand codebases without needing separate API keys.
+
+github-server: This server allows AI tools, such as GitHub Copilot, to access live GitHub data and functionality, including issues, pull requests, and code files. This enables more context-aware and dynamic workflows for developers.
+
+azure-mcp-server: This server enables AI agents to interact with Microsoft Azure resources using natural language commands. It supports interaction with Azure services like the Azure CLI and Azure Developer CLI.
+
+context7: An MCP server that provides AI assistants with up-to-date, version-specific documentation and code examples directly within the user's prompt. This helps developers avoid using outdated APIs and improves productivity.
+
+consult7: An MCP server that enables AI agents to analyze extensive file collections, such as entire codebases or large document repositories. It connects to large context window models to process content that exceeds the agent's own context limits. This is essentially a tool to summarize findings from context7 so preserve token limitations since documentation is LONG. 
+
 
 #### 1.2 Documentation study (if prompted to do so)
 - Read any local documentation the user directs you to
