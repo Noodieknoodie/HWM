@@ -5,5 +5,11 @@
       "/assets/*",
       "/rest/*"
     ]
-  }
+  },
+  "routes": [
+    {
+      "route": "/data-api/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ]
 }

@@ -53,7 +53,6 @@ export class DataApiClient {
     
     const headers = new Headers({
       'Content-Type': 'application/json',
-      'X-MS-API-ROLE': 'authenticated',
     });
 
     // Keep existing header merge logic

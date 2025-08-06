@@ -1,4 +1,3 @@
-// src/pages/Summary.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import useAppStore from '@/stores/useAppStore';
@@ -18,8 +17,6 @@ import {
 import { dataApiClient } from '@/api/client';
 import { apiCache, cacheKeys } from '@/utils/cache';
 import { Alert } from '@/components/Alert';
-
-// Interfaces for the new page-ready views
 interface QuarterlyPageData {
   // Provider-level fields
   provider_name: string;
@@ -134,42 +131,32 @@ const Summary: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // URL parameters with arrears logic
   const now = new Date();
   const defaultYear = (() => {
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const currentQ = Math.ceil(currentMonth / 3); // 1-4
-    // If we're in Q1, we bill for Q4 of previous year
+    const currentMonth = now.getMonth() + 1;
+    const currentQ = Math.ceil(currentMonth / 3);
     if (currentQ === 1) {
       return now.getFullYear() - 1;
     }
     return now.getFullYear();
   })();
   const currentYear = parseInt(searchParams.get('year') || defaultYear.toString());
-  
-  // Arrears logic: default to previous quarter (billing is for the quarter that just ended)
   const defaultQuarter = (() => {
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const currentQ = Math.ceil(currentMonth / 3); // 1-4
+    const currentMonth = now.getMonth() + 1;
+    const currentQ = Math.ceil(currentMonth / 3);
     if (currentQ === 1) {
-      // If we're in Q1, we bill for Q4 of previous year
       return 4;
     }
     return currentQ - 1;
   })();
   const currentQuarter = parseInt(searchParams.get('quarter') || defaultQuarter.toString());
   const viewMode = searchParams.get('view') || 'quarterly';
-  
-  // Data state
   const [quarterlyGroups, setQuarterlyGroups] = useState<ProviderGroup<QuarterlyPageData>[]>([]);
   const [annualGroups, setAnnualGroups] = useState<ProviderGroup<AnnualPageData>[]>([]);
   const [expandedClients, setExpandedClients] = useState<Set<number>>(new Set());
   const [paymentDetails, setPaymentDetails] = useState<Map<number, QuarterlySummaryDetail[]>>(new Map());
   const [notePopover, setNotePopover] = useState<{ clientId: number; note: string; position: { top: number; left: number } } | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
-
-  // Navigation functions
   const navigateQuarter = (direction: 'prev' | 'next') => {
     let newQuarter = currentQuarter;
     let newYear = currentYear;
@@ -207,50 +194,13 @@ const Summary: React.FC = () => {
     }
   };
 
-  // Load data using the new page-ready views with stale-while-revalidate
-  const loadData = useCallback(async (/*showLoader = true*/) => {
-    // if (showLoader) {
-      setLoading(true);
-    // }
+  const loadData = useCallback(async () => {
+    setLoading(true);
     setError(null);
     
     try {
       if (viewMode === 'quarterly') {
-        // CACHING COMMENTED OUT - Using fast view now
-        // // Check for cached data first
-        // const cacheKey = `quarterly_page_${currentYear}_${currentQuarter}`;
-        // const cached = apiCache.get(cacheKey);
-        
-        // if (cached && showLoader) {
-        //   // Show cached data immediately
-        //   const grouped = (cached as QuarterlyPageData[]).reduce((acc, row) => {
-        //     let group = acc.find(g => g.provider_name === row.provider_name);
-        //     if (!group) {
-        //       group = {
-        //         provider_name: row.provider_name,
-        //         clients: [],
-        //         isExpanded: true,
-        //         providerData: row
-        //       };
-        //       acc.push(group);
-        //     }
-        //     group.clients.push(row);
-        //     return acc;
-        //   }, [] as ProviderGroup<QuarterlyPageData>[]);
-          
-        //   setQuarterlyGroups(grouped);
-        //   // Set loading false with slight delay to ensure render
-        //   setTimeout(() => setLoading(false), 0);
-          
-        //   // Then refresh in background
-        //   loadData(false);
-        //   return;
-        // }
-        
-        // Load quarterly data from the view
         const data = await dataApiClient.getQuarterlyPageData(currentYear, currentQuarter) as QuarterlyPageData[];
-        
-        // Group by provider (data comes flat, we need to group for display)
         const grouped = data.reduce((acc, row) => {
           let group = acc.find(g => g.provider_name === row.provider_name);
           if (!group) {
@@ -258,7 +208,7 @@ const Summary: React.FC = () => {
               provider_name: row.provider_name,
               clients: [],
               isExpanded: true,
-              providerData: row // Store first row as provider data
+              providerData: row
             };
             acc.push(group);
           }
@@ -267,48 +217,10 @@ const Summary: React.FC = () => {
         }, [] as ProviderGroup<QuarterlyPageData>[]);
         
         setQuarterlyGroups(grouped);
-        
-        // Set loading to false after data is set (even if empty)
-        // Use setTimeout to ensure React has time to render
-        // if (showLoader) {
-          setTimeout(() => setLoading(false), 0);
-        // }
+
+        setLoading(false);
       } else {
-        // CACHING COMMENTED OUT - Using fast view now
-        // // Check for cached data first
-        // const cacheKey = `annual_page_${currentYear}`;
-        // const cached = apiCache.get(cacheKey);
-        
-        // if (cached && showLoader) {
-        //   // Show cached data immediately
-        //   const grouped = (cached as AnnualPageData[]).reduce((acc, row) => {
-        //     let group = acc.find(g => g.provider_name === row.provider_name);
-        //     if (!group) {
-        //       group = {
-        //         provider_name: row.provider_name,
-        //         clients: [],
-        //         isExpanded: true,
-        //         providerData: row
-        //       };
-        //       acc.push(group);
-        //     }
-        //     group.clients.push(row);
-        //     return acc;
-        //   }, [] as ProviderGroup<AnnualPageData>[]);
-          
-        //   setAnnualGroups(grouped);
-        //   // Set loading false with slight delay to ensure render
-        //   setTimeout(() => setLoading(false), 0);
-          
-        //   // Then refresh in background
-        //   loadData(false);
-        //   return;
-        // }
-        
-        // Load annual data from the view
         const data = await dataApiClient.getAnnualPageData(currentYear) as AnnualPageData[];
-        
-        // Group by provider
         const grouped = data.reduce((acc, row) => {
           let group = acc.find(g => g.provider_name === row.provider_name);
           if (!group) {
@@ -316,7 +228,7 @@ const Summary: React.FC = () => {
               provider_name: row.provider_name,
               clients: [],
               isExpanded: true,
-              providerData: row // Store first row as provider data
+              providerData: row
             };
             acc.push(group);
           }
@@ -325,27 +237,20 @@ const Summary: React.FC = () => {
         }, [] as ProviderGroup<AnnualPageData>[]);
         
         setAnnualGroups(grouped);
-        
-        // Set loading to false after data is set (even if empty)
-        // Use setTimeout to ensure React has time to render
-        // if (showLoader) {
-          setTimeout(() => setLoading(false), 0);
-        // }
+
+        setLoading(false);
       }
     } catch (err) {
       console.error('Failed to load summary data:', err);
-      // if (showLoader) {
-        setError('Failed to load summary data. Please try again.');
-        setLoading(false);
-      // }
+      setError('Failed to load summary data. Please try again.');
+      setLoading(false);
     }
-  }, [currentYear, currentQuarter, viewMode]);;;
+  }, [currentYear, currentQuarter, viewMode]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Close export menu when clicking outside
   useEffect(() => {
     if (!showExportMenu) return;
 
@@ -357,12 +262,8 @@ const Summary: React.FC = () => {
     };
 
     document.addEventListener('click', handleClickOutside);
-    
-    // Always return cleanup function when listener was added
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showExportMenu]);
-
-  // Handle escape key for note popover
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && notePopover) {
@@ -375,8 +276,6 @@ const Summary: React.FC = () => {
       return () => document.removeEventListener('keydown', handleEscapeKey);
     }
   }, [notePopover]);
-
-  // Toggle provider expansion
   const toggleProvider = (providerName: string) => {
     if (viewMode === 'quarterly') {
       setQuarterlyGroups(prev => prev.map(provider => 
@@ -392,8 +291,6 @@ const Summary: React.FC = () => {
       ));
     }
   };
-
-  // Toggle client expansion
   const toggleClient = async (clientId: number) => {
     const newExpanded = new Set(expandedClients);
     
@@ -401,34 +298,24 @@ const Summary: React.FC = () => {
       newExpanded.delete(clientId);
     } else {
       newExpanded.add(clientId);
-      
-      // Load payment details if not already loaded (only for quarterly view)
       if (viewMode === 'quarterly' && !paymentDetails.has(clientId)) {
         try {
           const cacheKey = cacheKeys.paymentDetails(clientId, currentYear, currentQuarter);
-          
-          // Check cache first
           const cached = apiCache.get<QuarterlySummaryDetail[]>(cacheKey);
           if (cached) {
             setPaymentDetails(prev => new Map(prev).set(clientId, cached));
           } else {
             const details = await dataApiClient.getQuarterlySummaryDetail(clientId, currentYear, currentQuarter) as QuarterlySummaryDetail[];
-            
-            // Cache for 5 minutes
             apiCache.set(cacheKey, details, 5 * 60 * 1000);
             
             setPaymentDetails(prev => new Map(prev).set(clientId, details));
           }
-        } catch (err) {
-          console.error(`Failed to load payment details for client ${clientId}:`, err);
-        }
+        } catch (err) {}
       }
     }
     
     setExpandedClients(newExpanded);
-  };;;
-
-  // Format payment detail line
+  };
   const formatPaymentLine = (payment: QuarterlySummaryDetail) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
@@ -447,22 +334,16 @@ const Summary: React.FC = () => {
     
     return `${period}: $${amount.toLocaleString()} paid ${date} via ${payment.method}`;
   };
-
-  // Update posted status - simple toggle for internal marking
   const updatePostedStatus = async (clientId: number, currentStatus: boolean) => {
     try {
       await dataApiClient.updateClientQuarterMarker(clientId, currentYear, currentQuarter, !currentStatus);
-      
-      // Update state directly instead of reloading all data
+
       setQuarterlyGroups(prev => prev.map(provider => {
-        // Update client status
         const updatedClients = provider.clients.map(client => 
           client.client_id === clientId 
             ? { ...client, is_posted: !currentStatus }
             : client
         );
-        
-        // Recalculate provider posted counts
         const postedCount = updatedClients.filter(c => c.is_posted).length;
         const updatedProviderData = provider.providerData ? {
           ...provider.providerData,
@@ -476,13 +357,8 @@ const Summary: React.FC = () => {
           providerData: updatedProviderData
         };
       }));
-    } catch (err) {
-      // console.error('Failed to update posted status:', err);
-    }
+    } catch (err) {}
   };
-
-
-  // Save note from popover
   const saveNotePopover = async () => {
     if (!notePopover) return;
     
@@ -493,8 +369,6 @@ const Summary: React.FC = () => {
         currentQuarter, 
         notePopover.note
       );
-      
-      // Update state directly
       setQuarterlyGroups(prev => prev.map(provider => ({
         ...provider,
         clients: provider.clients.map(client => 
@@ -505,12 +379,8 @@ const Summary: React.FC = () => {
       })));
       
       setNotePopover(null);
-    } catch (err) {
-      // console.error('Failed to save note:', err);
-    }
+    } catch (err) {}
   };
-
-  // Handle note icon click
   const handleNoteClick = (e: React.MouseEvent, clientId: number, currentNote: string | null) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -523,36 +393,24 @@ const Summary: React.FC = () => {
       }
     });
   };
-
-  // Handle export
   const handleExport = async (format: 'csv' | 'excel') => {
     setShowExportMenu(false);
     
     try {
       const Papa = (await import('papaparse')).default;
       const XLSX = format === 'excel' ? await import('xlsx') : null;
-      
-      // Build export data
       const exportRows: any[] = [];
-      
-      // Add title row
       const title = viewMode === 'quarterly' 
         ? `Q${currentQuarter} ${currentYear} Payment Summary`
         : `${currentYear} Annual Payment Summary`;
-      
-      // Build header row based on view mode
       const headers = viewMode === 'quarterly'
         ? ['Client', 'Frequency', 'Quarterly Rate', 'Expected', 'Actual', 'Variance', 'Posted', 'Notes']
         : ['Client', 'Frequency', 'Annual Rate', 'Q1 ' + currentYear, 'Q2 ' + currentYear, 'Q3 ' + currentYear, 'Q4 ' + currentYear, 'Total'];
-      
-      // Process provider groups
       const groups = viewMode === 'quarterly' ? quarterlyGroups : annualGroups;
       
       groups.forEach(provider => {
         const providerData = provider.providerData;
         if (!providerData) return;
-        
-        // Provider row
         const providerRow: any = {
           Client: provider.provider_name.toUpperCase(),
           Frequency: '',
@@ -577,8 +435,6 @@ const Summary: React.FC = () => {
         }
         
         exportRows.push(providerRow);
-        
-        // Client rows
         provider.clients.forEach(client => {
           const clientRow: any = {
             Client: `  ${client.display_name}`,
@@ -614,8 +470,6 @@ const Summary: React.FC = () => {
           exportRows.push(clientRow);
         });
       });
-      
-      // Generate and download file
       const filename = viewMode === 'quarterly' 
         ? `summary-${currentYear}-Q${currentQuarter}`
         : `summary-${currentYear}-annual`;
@@ -628,7 +482,6 @@ const Summary: React.FC = () => {
         link.download = `${filename}.csv`;
         link.click();
       } else if (format === 'excel' && XLSX) {
-        // Add title as first row
         const titleRow: any = {};
         headers.forEach((header, index) => {
           titleRow[header] = index === 0 ? title : '';
@@ -641,13 +494,9 @@ const Summary: React.FC = () => {
         XLSX.writeFile(wb, `${filename}.xlsx`);
       }
     } catch (err) {
-      // console.error('Export failed:', err);
       setError('Export failed. Please make sure required libraries are installed.');
     }
   };
-
-
-  // Calculate totals
   const totals = (() => {
     if (viewMode === 'quarterly') {
       return quarterlyGroups.reduce((acc, provider) => {
@@ -677,18 +526,12 @@ const Summary: React.FC = () => {
   })();
 
   const collectionRate = totals.expected > 0 ? (totals.actual / totals.expected * 100) : 0;
-
-  // Show loading state while data is being fetched
-  // Only show empty state if loading is complete and there's truly no data
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
-        {/* Header with better skeleton */}
         <div className="mb-6">
           <div className="h-8 bg-gray-200 rounded w-72 animate-pulse" />
         </div>
-        
-        {/* Navigation controls - cleaner skeleton */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
@@ -700,8 +543,6 @@ const Summary: React.FC = () => {
             <div className="w-24 h-10 bg-gray-200 rounded animate-pulse" />
           </div>
         </div>
-        
-        {/* Metric cards - cleaner design */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -710,18 +551,13 @@ const Summary: React.FC = () => {
             </div>
           ))}
         </div>
-        
-        {/* Table skeleton - cleaner, more realistic */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {/* Table header */}
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <div className="flex items-center gap-4">
               <div className="h-5 bg-gray-300 rounded w-40 animate-pulse" />
               <div className="h-4 bg-gray-200 rounded w-20 animate-pulse ml-auto" />
             </div>
           </div>
-          
-          {/* Table rows */}
           {[...Array(8)].map((_, i) => (
             <div key={i} className="border-b border-gray-100 px-4 py-3">
               <div className="flex items-center justify-between">

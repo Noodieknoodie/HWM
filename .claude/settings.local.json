@@ -82,7 +82,18 @@
       "mcp__serena__think_about_whether_you_are_done",
       "mcp__serena__summarize_changes",
       "mcp__serena__read_memory",
-      "mcp__serena__get_symbols_overview"
+      "mcp__serena__get_symbols_overview",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(npx @azure/data-api-builder start:*)",
+      "Bash(npm search:*)",
+      "Bash(dotnet tool list:*)",
+      "Bash(dos2unix:*)",
+      "Bash(sed:*)",
+      "Bash(bash:*)",
+      "mcp__azure-mcp-server__documentation",
+      "Bash(cp:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
