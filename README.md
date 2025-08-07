@@ -1,5 +1,13 @@
 # HWM 401k Payment Tracker
 
+# LAUNCH
+
+Terminal 1:
+npx vite --host
+
+Terminal 2 (after vite starts):
+swa start http://localhost:5173 --data-api-location swa-db-connections --port 4280
+
 > 🤖 **AI Coder Navigation Guide**: This README is optimized for AI agents to quickly understand and modify the codebase without extensive grepping. Start here for all context.
 
 ## 🎯 Quick Context for AI Coders

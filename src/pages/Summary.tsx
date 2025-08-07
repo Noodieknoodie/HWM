@@ -18,6 +18,7 @@ import {
 import { dataApiClient } from '@/api/client';
 import { apiCache, cacheKeys } from '@/utils/cache';
 import { Alert } from '@/components/Alert';
+import { PaymentTrackerGrid } from '@/components/PaymentTrackerGrid';
 
 // Interfaces for the new page-ready views
 interface QuarterlyPageData {
@@ -160,6 +161,7 @@ const Summary: React.FC = () => {
   })();
   const currentQuarter = parseInt(searchParams.get('quarter') || defaultQuarter.toString());
   const viewMode = searchParams.get('view') || 'quarterly';
+  const [displayStyle, setDisplayStyle] = useState<'table' | 'tracker'>('table');
   
   // Data state
   const [quarterlyGroups, setQuarterlyGroups] = useState<ProviderGroup<QuarterlyPageData>[]>([]);
@@ -257,7 +259,7 @@ const Summary: React.FC = () => {
             group = {
               provider_name: row.provider_name,
               clients: [],
-              isExpanded: true,
+              isExpanded: false,
               providerData: row // Store first row as provider data
             };
             acc.push(group);
@@ -315,7 +317,7 @@ const Summary: React.FC = () => {
             group = {
               provider_name: row.provider_name,
               clients: [],
-              isExpanded: true,
+              isExpanded: false,
               providerData: row // Store first row as provider data
             };
             acc.push(group);
@@ -817,6 +819,14 @@ const Summary: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4">
+          {viewMode === 'quarterly' && (
+            <button
+              onClick={() => setDisplayStyle(prev => prev === 'table' ? 'tracker' : 'table')}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium"
+            >
+              {displayStyle === 'table' ? 'Tracker View' : 'Table View'}
+            </button>
+          )}
           <button
             onClick={toggleViewMode}
             className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium"
@@ -875,8 +885,15 @@ const Summary: React.FC = () => {
         </div>
       </div>
 
-      {/* Data Table */}
+      {/* Data Display - Table or Tracker */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        {viewMode === 'quarterly' && displayStyle === 'tracker' ? (
+          <PaymentTrackerGrid 
+            groups={quarterlyGroups}
+            year={currentYear}
+            quarter={currentQuarter}
+          />
+        ) : (
         <table className="w-full">
           <thead className="border-b border-gray-200">
             <tr className="text-left text-sm font-medium text-gray-600">
@@ -1137,6 +1154,7 @@ const Summary: React.FC = () => {
             ))}
           </tbody>
         </table>
+        )}
       </div>
 
       {/* Note Popover */}
