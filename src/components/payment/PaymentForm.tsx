@@ -151,7 +151,6 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
       const data: PaymentCreateData | PaymentUpdateData = editingPayment ? {
         received_date: formData.received_date,
         total_assets: formData.total_assets ? parseFloat(formData.total_assets) : null,
-        expected_fee: expectedFee,
         actual_fee: parseFloat(formData.actual_fee),
         method: formData.method,
         notes: formData.notes || null,
@@ -159,11 +158,10 @@ const PaymentForm: React.FC<PaymentFormProps> = (props) => {
         applied_period: period,
         applied_year: year,
       } : {
-        contract_id: contractId || 0,
+        contract_id: contractId,
         client_id: clientId,
         received_date: formData.received_date,
         total_assets: formData.total_assets ? parseFloat(formData.total_assets) : null,
-        expected_fee: expectedFee,
         actual_fee: parseFloat(formData.actual_fee),
         method: formData.method,
         notes: formData.notes || null,

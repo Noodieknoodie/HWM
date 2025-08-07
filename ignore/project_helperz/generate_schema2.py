@@ -874,7 +874,7 @@ if __name__ == "__main__":
         "Server=tcp:hohimerpro-db-server.database.windows.net,1433;"
         "Database=HohimerPro-401k;"
         "Uid=CloudSAddb51659;"
-        "Pwd=Prunes27$$$$;"
+        "Pwd=Peaches27$$$$;"
         "Encrypt=yes;"
         "TrustServerCertificate=no;"
         "Connection Timeout=30;"

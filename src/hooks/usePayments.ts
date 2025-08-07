@@ -37,7 +37,6 @@ export interface PaymentCreateData {
   client_id: number;
   received_date: string;
   total_assets: number | null;
-  expected_fee: number | null;
   actual_fee: number;
   method: string | null;
   notes: string | null;
@@ -49,7 +48,6 @@ export interface PaymentCreateData {
 export interface PaymentUpdateData {
   received_date?: string;
   total_assets?: number | null;
-  expected_fee?: number | null;
   actual_fee?: number;
   method?: string | null;
   notes?: string | null;
