@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "swa start http://localhost:5173 --run \"vite --host\" --data-api-location swa-db-connections --port 4280",
+    "dev:local": "bash start-local.sh",
     "dev:vite": "vite --host --port 5173",
     "build": "tsc && vite build",
     "preview": "vite preview",
