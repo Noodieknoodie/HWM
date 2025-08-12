@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import useAppStore from '@/stores/useAppStore';
 import ClientSearch from './ClientSearch';
-import { useDataApiClient } from '@/api/client';
+import { useDataApiClient } from '@/context/ApiContext';
 
 interface Client {
   client_id: number;

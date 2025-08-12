@@ -412,10 +412,11 @@ export class DataApiClient {
   }
 }
 
-// Create a singleton instance
+// Create a singleton instance by default
 export const dataApiClient = new DataApiClient();
 
 // Hook to get the API client instance
 export function useDataApiClient() {
+  // This will be overridden by clientFactory
   return dataApiClient;
 }

@@ -1,6 +1,6 @@
 // src/hooks/usePayments.ts
 import { useState, useEffect } from 'react';
-import { useDataApiClient } from '@/api/client';
+import { useDataApiClient } from '@/context/ApiContext';
 import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface Payment {

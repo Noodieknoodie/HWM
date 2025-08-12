@@ -1,6 +1,6 @@
 // src/hooks/useClientDashboard.ts
 import { useEffect, useState } from 'react';
-import { useDataApiClient } from '../api/client';
+import { useDataApiClient } from '../context/ApiContext';
 import { getErrorMessage } from '../utils/errorUtils';
 
 // New consolidated dashboard view data

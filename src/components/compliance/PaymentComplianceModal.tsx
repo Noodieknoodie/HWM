@@ -4,7 +4,7 @@ import { X, ChevronDown, ChevronRight, Download, AlertCircle, CheckCircle, Exter
 import { usePaymentCompliance } from '../../hooks/usePaymentCompliance';
 import { Alert } from '../Alert';
 import PaymentForm from '../payment/PaymentForm';
-import { useDataApiClient } from '@/api/client';
+import { useDataApiClient } from '@/context/ApiContext';
 
 interface PaymentComplianceModalProps {
   isOpen: boolean;

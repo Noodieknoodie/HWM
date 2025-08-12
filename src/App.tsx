@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './auth/useAuth'
 import { useEffect } from 'react'
-import { useDataApiClient } from './api/client'
+import { ApiProvider, useDataApiClient } from './context/ApiContext'
 import PageLayout from './components/PageLayout'
 import Payments from './pages/Payments'
 // import Documents from './pages/Documents'
@@ -14,17 +14,17 @@ import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const dataApiClient = useDataApiClient();
+  const apiClient = useDataApiClient();
   
   // Pre-cache client list when user is authenticated
   useEffect(() => {
-    if (user && !loading) {
-      // Fire and forget - don't wait for it
-      dataApiClient.getClients().catch(() => {
+    if (user && !loading && apiClient) {
+      // Pre-cache client list
+      apiClient.getClients().catch(() => {
         // Silently fail - sidebar will load it anyway
       });
     }
-  }, [user, loading]);
+  }, [user, loading, apiClient]);
   
   if (loading) {
     return (
@@ -112,7 +112,9 @@ function App() {
         v7_startTransition: true,
         v7_relativeSplatPath: true 
       }}>
-        <AppContent />
+        <ApiProvider>
+          <AppContent />
+        </ApiProvider>
       </BrowserRouter>
     </ErrorBoundary>
   )

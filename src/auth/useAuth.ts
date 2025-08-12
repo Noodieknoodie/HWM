@@ -26,7 +26,7 @@ export function useAuth() {
         setAuthState({
           user: {
             userId: 'dev-user',
-            userDetails: 'dev@hohimer.com',
+            userDetails: 'dev@hohimerwealthmanagement.com',
             userRoles: ['authenticated'],
             identityProvider: 'aad'
           },

@@ -1,6 +1,6 @@
 // src/hooks/usePeriods.ts
 import { useState, useEffect } from 'react';
-import { useDataApiClient } from '@/api/client';
+import { useDataApiClient } from '@/context/ApiContext';
 import { getErrorMessage } from '@/utils/errorUtils';
 
 // Period data from payment_form_periods_view

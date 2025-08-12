@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Alert } from '../Alert';
-import { useDataApiClient } from '../../api/client';
+import { useDataApiClient } from '../../context/ApiContext';
 import { DashboardContract } from '../../hooks/useClientDashboard';
 
 interface EditContractModalProps {

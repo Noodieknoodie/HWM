@@ -1,6 +1,6 @@
 // src/hooks/useContacts.ts
 import { useState, useEffect, useCallback } from 'react';
-import { useDataApiClient } from '../api/client';
+import { useDataApiClient } from '../context/ApiContext';
 import { Contact } from '../types/contact';
 import { getErrorMessage } from '../utils/errorUtils';
 
