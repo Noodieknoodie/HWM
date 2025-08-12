@@ -4,6 +4,7 @@ import { useAuth } from './auth/useAuth'
 import { useEffect } from 'react'
 import { ApiProvider, useDataApiClient } from './context/ApiContext'
 import PageLayout from './components/PageLayout'
+import Landing from './pages/Landing'
 import Payments from './pages/Payments'
 // import Documents from './pages/Documents'
 import Summary from './pages/Summary'
@@ -74,32 +75,21 @@ function AppContent() {
     );
   }
   
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            Authentication Required
-          </h1>
-          <p className="text-gray-600">
-            Please sign in with your Microsoft account
-          </p>
-        </div>
-      </div>
-    );
-  }
-  
   return (
     <Routes>
-      <Route path="/" element={<PageLayout />}>
-        <Route index element={<Navigate to="/Summary" replace />} />
+      {/* Landing page - shown when not authenticated */}
+      <Route path="/" element={!user && !loading ? <Landing /> : <Navigate to="/dashboard" replace />} />
+      
+      {/* Protected dashboard routes */}
+      <Route path="/dashboard/*" element={user ? <PageLayout /> : <Navigate to="/" replace />}>
+        <Route index element={<Navigate to="/dashboard/Summary" replace />} />
         <Route path="Summary" element={<Summary />} />
         <Route path="Payments" element={<Payments />} />
         {/* <Route path="Contacts" element={<Contacts />} /> */}
         {/* <Route path="Contracts" element={<Contracts />} /> */}
         <Route path="Export" element={<Export />} />
         {/* <Route path="Documents" element={<Documents />} /> */}
-        <Route path="*" element={<Navigate to="/Summary" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard/Summary" replace />} />
       </Route>
     </Routes>
   )

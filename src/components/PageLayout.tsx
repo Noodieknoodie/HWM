@@ -10,7 +10,7 @@ const PageLayout: React.FC = () => {
   const location = useLocation();
   
   // Show sidebar only on payments page
-  const showSidebar = location.pathname === '/Payments';
+  const showSidebar = location.pathname === '/dashboard/Payments';
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

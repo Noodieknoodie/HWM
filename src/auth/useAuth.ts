@@ -22,6 +22,22 @@ export function useAuth() {
 
   useEffect(() => {
     const authenticateUser = async () => {
+      // Check for demo mode first
+      const isDemoMode = sessionStorage.getItem('demoMode') === 'true';
+      if (isDemoMode) {
+        setAuthState({
+          user: {
+            userId: 'demo-user',
+            userDetails: 'demo@example.com',
+            userRoles: ['authenticated'],
+            identityProvider: 'demo'
+          },
+          loading: false,
+          error: null
+        });
+        return;
+      }
+
       if (window.location.hostname === 'localhost') {
         setAuthState({
           user: {

@@ -6,19 +6,19 @@ const Header: React.FC = () => {
   const location = useLocation();
   
   const navItems = [
-    { title: 'SUMMARY', path: '/Summary' },
-    { title: 'PAYMENTS', path: '/Payments' },
-    // { title: 'CONTACTS', path: '/Contacts' },
-    // { title: 'CONTRACTS', path: '/Contracts' },
-    // { title: 'DOCUMENTS', path: '/Documents' },
-    { title: 'EXPORT', path: '/Export' },
+    { title: 'SUMMARY', path: '/dashboard/Summary' },
+    { title: 'PAYMENTS', path: '/dashboard/Payments' },
+    // { title: 'CONTACTS', path: '/dashboard/Contacts' },
+    // { title: 'CONTRACTS', path: '/dashboard/Contracts' },
+    // { title: 'DOCUMENTS', path: '/dashboard/Documents' },
+    { title: 'EXPORT', path: '/dashboard/Export' },
   ];
   
   return (
     <header className="navbar-dark shadow-md relative z-40">
       <div className="flex h-14 items-center justify-between px-6">
         <div className="flex items-center">
-          <Link to="/" className="text-xl font-semibold text-white mr-8 hover:text-blue-300 transition-colors duration-200">
+          <Link to="/dashboard" className="text-xl font-semibold text-white mr-8 hover:text-blue-300 transition-colors duration-200">
             401k Payment Tracker
           </Link>
           <nav className="hidden md:flex space-x-1">
