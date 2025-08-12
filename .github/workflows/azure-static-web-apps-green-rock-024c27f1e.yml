@@ -3,11 +3,11 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches:
-      - main
+      - mock-data-test
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
-      - main
+      - mock-data-test
 
 jobs:
   build_and_deploy_job:
