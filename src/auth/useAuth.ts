@@ -22,6 +22,12 @@ export function useAuth() {
 
   useEffect(() => {
     const authenticateUser = async () => {
+      // Check URL params for demo mode
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('demo') === 'true') {
+        sessionStorage.setItem('demoMode', 'true');
+      }
+
       // Check for demo mode first
       const isDemoMode = sessionStorage.getItem('demoMode') === 'true';
       if (isDemoMode) {

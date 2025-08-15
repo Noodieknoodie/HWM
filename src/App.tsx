@@ -12,6 +12,7 @@ import Summary from './pages/Summary'
 // import Contracts from './pages/Contracts'
 import Export from './pages/Export'
 import ErrorBoundary from './components/ErrorBoundary'
+import { DemoBanner } from './components/DemoBanner'
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -103,6 +104,7 @@ function App() {
         v7_relativeSplatPath: true 
       }}>
         <ApiProvider>
+          <DemoBanner />
           <AppContent />
         </ApiProvider>
       </BrowserRouter>
