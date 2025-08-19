@@ -1022,4 +1022,4 @@
   I was overthinking this. It's not a public-facing app that needs to work on phones. It's your internal tool that you use on desktop/laptop screens to quickly see       
   who hasn't paid.
 
-  The tracker is literally just the existing table data reorganized into a grid. Same container, same width, just different visualization. That's it.
+  The tracker is literally just the existing table data reorganized into a grid. Same container, same width, just different visualization. That's it. 
