@@ -154,7 +154,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({
               {payments.map((payment) => (
                 <tr key={payment.payment_id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(payment.received_date).toLocaleDateString()}
+                    {/* Parse date in local timezone to prevent day shift */}
+                    {new Date(payment.received_date + 'T00:00:00').toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {payment.provider_name || 'N/A'}

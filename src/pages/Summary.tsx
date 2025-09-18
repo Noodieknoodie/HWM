@@ -443,7 +443,8 @@ const Summary: React.FC = () => {
     }
       
     const amount = Math.round(payment.actual_fee);
-    const date = new Date(payment.received_date!).toLocaleDateString('en-US', 
+    // Parse date in local timezone to prevent day shift
+    const date = new Date(payment.received_date! + 'T00:00:00').toLocaleDateString('en-US',
       { month: '2-digit', day: '2-digit' }
     );
     
