@@ -31,7 +31,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -40,7 +40,7 @@
       "source": "dbo.clients",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read", "create", "update"]
         }
       ]
@@ -49,7 +49,7 @@
       "source": "dbo.clients_all",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["create", "update"]
         }
       ]
@@ -58,7 +58,7 @@
       "source": "dbo.contracts",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read", "create", "update"]
         }
       ]
@@ -67,7 +67,7 @@
       "source": "dbo.contacts",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read", "create", "update", "delete"]
         }
       ]
@@ -76,7 +76,7 @@
       "source": "dbo.payments",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read", "create", "update", "delete"]
         }
       ]
@@ -85,7 +85,7 @@
       "source": "dbo.payment_periods",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -98,7 +98,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -111,7 +111,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -124,7 +124,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -137,7 +137,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -150,7 +150,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -163,7 +163,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -176,7 +176,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -185,7 +185,7 @@
       "source": "dbo.quarterly_notes",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read", "create", "update"]
         }
       ]
@@ -198,7 +198,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -211,7 +211,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -224,7 +224,7 @@
       },
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read"]
         }
       ]
@@ -233,7 +233,7 @@
       "source": "dbo.client_quarter_markers",
       "permissions": [
         {
-          "role": "authenticated",
+          "role": "anonymous"  ,
           "actions": ["read", "create", "update"]
         }
       ]

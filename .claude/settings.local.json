@@ -93,7 +93,10 @@
       "Bash(az webapp log tail:*)",
       "Bash(az webapp config:*)",
       "Bash(az staticwebapp environment:*)",
-      "Bash(az monitor activity-log:*)"
+      "Bash(az monitor activity-log:*)",
+      "Bash(az monitor app-insights component show:*)",
+      "Bash(jq:*)",
+      "Bash(az rest:*)"
     ],
     "deny": []
   }
