@@ -49,11 +49,10 @@ export class DataApiClient {
     entity: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `/data-api/rest/${entity}`;
-    
+    const url = `https://dab-teams.lemonglacier-fb047bc7.westus2.azurecontainerapps.io/rest/${entity}`;
+
     const headers = new Headers({
       'Content-Type': 'application/json',
-      'X-MS-API-ROLE': 'authenticated',
     });
 
     // Keep existing header merge logic
@@ -66,7 +65,6 @@ export class DataApiClient {
 
     const response = await this.requestWithRetry(url, {
       ...options,
-      credentials: 'include',
       headers,
     });
     if (!response.ok) {
