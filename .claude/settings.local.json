@@ -83,7 +83,17 @@
       "mcp__serena__summarize_changes",
       "Bash(npx tsc:*)",
       "Bash(ss:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "mcp__serena__read_memory",
+      "Bash(az staticwebapp list:*)",
+      "Bash(az sql server:*)",
+      "Bash(az staticwebapp show:*)",
+      "Bash(az staticwebapp appsettings list:*)",
+      "Bash(az webapp show:*)",
+      "Bash(az webapp log tail:*)",
+      "Bash(az webapp config:*)",
+      "Bash(az staticwebapp environment:*)",
+      "Bash(az monitor activity-log:*)"
     ],
     "deny": []
   }
